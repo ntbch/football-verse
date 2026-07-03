@@ -10,13 +10,16 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "news_comments")
+@Table(name = "news_comments", indexes = {
+    @Index(name = "idx_news_comments_art_created", columnList = "article_id, created_at ASC")
+})
 @Getter
 @Setter
 @NoArgsConstructor

@@ -14,4 +14,10 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
     Optional<NewsArticle> findBySlugAndStatus(String slug, ArticleStatus status);
 
     Optional<NewsArticle> findByIdAndStatusNot(Long id, ArticleStatus status);
+
+    boolean existsBySourceUrl(String sourceUrl);
+
+    boolean existsByContentHash(String contentHash);
+
+    boolean existsBySlug(String slug);
 }

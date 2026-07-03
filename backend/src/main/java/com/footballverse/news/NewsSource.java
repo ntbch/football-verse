@@ -11,6 +11,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "news_sources")
 @Getter
@@ -29,6 +31,9 @@ public class NewsSource extends AuditableEntity {
 
     @Column(nullable = false)
     private boolean active = true;
+
+    @Column(name = "last_crawled_at")
+    private Instant lastCrawledAt;
 
     public NewsSource(String name, String feedUrl) {
         this.name = name;

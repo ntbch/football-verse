@@ -7,6 +7,8 @@ import com.footballverse.news.NewsArticle;
 import com.footballverse.news.NewsArticleRepository;
 import com.footballverse.news.NewsCategory;
 import com.footballverse.news.NewsCategoryRepository;
+import com.footballverse.news.NewsSource;
+import com.footballverse.news.NewsSourceRepository;
 import com.footballverse.user.UserAccount;
 import com.footballverse.user.UserAccountRepository;
 import com.footballverse.user.UserProfile;
@@ -31,6 +33,7 @@ public class DataSeeder implements CommandLineRunner {
     private final NewsArticleRepository newsArticles;
     private final ForumCategoryRepository forumCategories;
     private final PasswordEncoder passwordEncoder;
+    private final NewsSourceRepository newsSources;
 
     @Value("${app.seed.enabled}")
     private boolean enabled;
@@ -54,6 +57,13 @@ public class DataSeeder implements CommandLineRunner {
         seedForumCategory("Premier League", "premier-league");
         seedForumCategory("Transfers", "transfers");
         seedForumCategory("General Football", "general-football");
+        seedNewsSource("ESPN Soccer", "https://www.espn.com/espn/rss/soccer/news");
+        seedNewsSource("BBC Sport Football", "https://feeds.bbci.co.uk/sport/football/rss.xml");
+        seedNewsSource("Thể thao 247", "https://thethao247.vn/bong-da.rss");
+        seedNewsSource("Bóng đá 24h", "https://bongda24h.vn/RSS/1.rss");
+        seedNewsSource("Goal.com", "https://www.goal.com/feeds/en/news");
+        seedNewsSource("Transfermarkt", "https://www.transfermarkt.co.uk/rss/news");
+        seedNewsSource("Tribuna.com", "https://tribuna.com/rss/news");
     }
 
     private UserAccount seedAdmin() {
@@ -76,7 +86,7 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedArticle(UserAccount admin) {
-        if (newsArticles.findBySlugAndStatus("opening-whistle", ArticleStatus.PUBLISHED).isPresent()) {
+        if (newsArticles.existsBySlug("opening-whistle")) {
             return;
         }
         NewsCategory category = newsCategories.findBySlug("matchday")
@@ -92,5 +102,11 @@ public class DataSeeder implements CommandLineRunner {
         article.setAuthor(admin);
         article.setPublishedAt(Instant.now());
         newsArticles.save(article);
+    }
+
+    private void seedNewsSource(String name, String feedUrl) {
+        if (!newsSources.existsByFeedUrl(feedUrl)) {
+            newsSources.save(new NewsSource(name, feedUrl));
+        }
     }
 }

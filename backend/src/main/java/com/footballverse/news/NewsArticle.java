@@ -15,6 +15,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,7 +26,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "news_articles")
+@Table(name = "news_articles", indexes = {
+    @Index(name = "idx_news_articles_status_pub", columnList = "status, published_at DESC")
+})
 @Getter
 @Setter
 @NoArgsConstructor

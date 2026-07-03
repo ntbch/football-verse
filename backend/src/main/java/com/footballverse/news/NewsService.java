@@ -14,10 +14,10 @@ import com.footballverse.news.dto.NewsSourceRequest;
 import com.footballverse.news.dto.NewsSourceResponse;
 import com.footballverse.user.UserAccount;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.text.Normalizer;
 import java.time.Instant;
 import java.util.List;
@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class NewsService {
     private final NewsArticleRepository articles;
     private final NewsCategoryRepository categories;
@@ -37,6 +38,7 @@ public class NewsService {
     private final NewsBookmarkRepository bookmarks;
     private final RichTextSanitizer sanitizer;
     private final CurrentUser currentUser;
+    private final CrawlService crawlService;
 
     @Transactional(readOnly = true)
     public PageResponse<NewsArticleResponse> published(int page, int size) {
@@ -142,9 +144,9 @@ public class NewsService {
         return sources.findAll().stream().map(this::toSource).toList();
     }
 
+    @Transactional
     public int crawl() {
-        // ponytail: endpoint is wired; add a real RSS parser when sources exist and ingestion is next.
-        return 0;
+        return crawlService.crawl();
     }
 
     @Transactional
@@ -237,6 +239,19 @@ public class NewsService {
         );
     }
 
+    @Transactional
+    public void deleteSource(Long id) {
+        sources.deleteById(id);
+    }
+
+    @Transactional
+    public NewsSourceResponse toggleSource(Long id) {
+        NewsSource source = sources.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Source not found"));
+        source.setActive(!source.isActive());
+        return toSource(sources.save(source));
+    }
+
     private NewsSourceResponse toSource(NewsSource source) {
         return new NewsSourceResponse(source.getId(), source.getName(), source.getFeedUrl(), source.isActive());
     }
@@ -252,4 +267,5 @@ public class NewsService {
                 .replaceAll("[^a-z0-9]+", "-")
                 .replaceAll("(^-|-$)", "");
     }
+
 }

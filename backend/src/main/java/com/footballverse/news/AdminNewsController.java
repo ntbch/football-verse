@@ -88,6 +88,17 @@ public class AdminNewsController {
         return ApiResponse.ok(newsService.createSource(request));
     }
 
+    @DeleteMapping("/sources/{id}")
+    public ApiResponse<Map<String, Boolean>> deleteSource(@PathVariable Long id) {
+        newsService.deleteSource(id);
+        return ApiResponse.ok(Map.of("deleted", true));
+    }
+
+    @PatchMapping("/sources/{id}/toggle")
+    public ApiResponse<NewsSourceResponse> toggleSource(@PathVariable Long id) {
+        return ApiResponse.ok(newsService.toggleSource(id));
+    }
+
     @PostMapping("/crawl")
     public ApiResponse<Map<String, Integer>> crawl() {
         return ApiResponse.ok(Map.of("saved", newsService.crawl()));
