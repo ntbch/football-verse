@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --fv-ink: #10140f;
+  --fv-grass: #b6ff3b;
+  --fv-clay: #b45f35;
+  --fv-paper: #f4f1e8;
+  --fv-line: #d8d0bc;
+  --fv-night: #19231b;
+  --fv-muted: #6d715f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background:
+    linear-gradient(90deg, rgba(16, 20, 15, 0.04) 1px, transparent 1px),
+    var(--fv-paper);
+  background-size: 28px 28px;
+  color: var(--fv-ink);
+  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+}
+
+h1,
+h2,
+h3,
+.display-face {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+a {
+  text-underline-offset: 4px;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.touchline {
+  border-left: 8px solid var(--fv-grass);
+}
+
+.panel {
+  border: 1px solid var(--fv-line);
+  background: rgba(255, 252, 242, 0.86);
+}
+
+.btn {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--fv-ink);
+  background: var(--fv-ink);
+  color: var(--fv-paper);
+  padding: 0 14px;
+  font-weight: 700;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--fv-ink);
+}
+
+.input {
+  min-height: 42px;
+  width: 100%;
+  border: 1px solid var(--fv-line);
+  background: #fffaf0;
+  padding: 8px 10px;
+}
+
+.input:focus,
+.btn:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--fv-grass);
+  outline-offset: 2px;
+}
