@@ -34,7 +34,10 @@ export default function NewsPage() {
           >
             <span className="display-face text-4xl font-black text-[var(--fv-clay)]">{String(page * (news.data?.size ?? 20) + index + 1).padStart(2, "0")}</span>
             <span>
-              <span className="text-xs font-bold uppercase text-[var(--fv-muted)]">{article.category ?? "Uncategorized"}</span>
+              <span suppressHydrationWarning className="text-xs font-bold uppercase text-[var(--fv-muted)]">
+                {article.category ?? "Uncategorized"}
+                {article.publishedAt ? ` · ${new Date(article.publishedAt).toLocaleDateString("vi-VN")}` : ""}
+              </span>
               <span className="mt-1 block text-2xl font-black">{article.title}</span>
               <span className="mt-2 block text-sm text-[var(--fv-muted)]">{article.summary ?? "Open the article for the full dispatch."}</span>
             </span>

@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface ForumReportRepository extends JpaRepository<ForumReport, Long> {
     List<ForumReport> findByStatusOrderByCreatedAtDesc(ForumReportStatus status);
+
+    long countByStatus(ForumReportStatus status);
 }

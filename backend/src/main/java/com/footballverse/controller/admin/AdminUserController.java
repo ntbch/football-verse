@@ -1,7 +1,8 @@
-package com.footballverse.user.admin;
+package com.footballverse.controller.admin;
 
 import com.footballverse.common.response.ApiResponse;
 import com.footballverse.user.admin.AdminUserResponse;
+import com.footballverse.user.admin.AdminUserService;
 import com.footballverse.user.admin.dto.UpdateUserStatusRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

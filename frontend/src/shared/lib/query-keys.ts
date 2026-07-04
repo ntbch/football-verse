@@ -21,9 +21,15 @@ export const qk = {
     newsSources: () => ["news-sources"] as const,
     forumCategories: () => ["forum-categories"] as const,
     reports: () => ["admin-reports"] as const,
+    dashboardStats: () => ["admin-dashboard-stats"] as const,
+    userGrowth: () => ["admin-user-growth"] as const,
   },
   user: {
     profile: () => ["profile"] as const,
     notifications: () => ["notifications"] as const,
+  },
+  moderator: {
+    stats: () => ["moderator-stats"] as const,
+    reports: () => ["moderator-reports"] as const,
   },
 } as const;

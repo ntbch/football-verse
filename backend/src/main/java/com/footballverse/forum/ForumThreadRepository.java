@@ -10,4 +10,6 @@ public interface ForumThreadRepository extends JpaRepository<ForumThread, Long> 
     Page<ForumThread> findByCategorySlugAndHiddenFalseOrderByPinnedDescCreatedAtDesc(String slug, Pageable pageable);
 
     Optional<ForumThread> findBySlugAndHiddenFalse(String slug);
+
+    long countByHiddenTrue();
 }

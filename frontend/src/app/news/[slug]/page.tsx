@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import { PublicShell } from "@/shared/components/public-shell";
 import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
+import { useAuthStore } from "@/shared/lib/auth-store";
 import {
   useNewsArticle,
   useNewsComments,
@@ -15,6 +16,8 @@ import {
 export default function NewsDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const [content, setContent] = useState("");
+  const auth = useAuthStore((state) => state.auth);
+  const isAdminOrMod = auth?.roles.includes("ADMIN") || auth?.roles.includes("MODERATOR");
 
   const article = useNewsArticle(slug);
   const comments = useNewsComments(slug);
@@ -30,7 +33,10 @@ export default function NewsDetailPage() {
       {article.data ? (
         <article className="panel touchline mx-auto max-w-6xl p-5 md:p-8 lg:p-10">
           <header className="border-b border-[var(--fv-line)] pb-6">
-            <p className="text-sm font-black uppercase tracking-[0.18em] text-[var(--fv-clay)]">{article.data.category ?? "News"}</p>
+            <p suppressHydrationWarning className="text-sm font-black uppercase tracking-[0.18em] text-[var(--fv-clay)]">
+              {article.data.category ?? "News"}
+              {article.data.publishedAt ? ` · ${new Date(article.data.publishedAt).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}` : ""}
+            </p>
             <h1 className="display-face mt-3 max-w-5xl text-4xl font-black leading-[0.96] tracking-tight md:text-5xl lg:text-6xl">
               {article.data.title}
             </h1>
@@ -46,8 +52,8 @@ export default function NewsDetailPage() {
             ))}
           </div>
           <div className="mt-6 flex gap-3">
-            <button className="btn btn-secondary" disabled={like.isPending} onClick={() => { if (article.data?.id) like.mutate(article.data.id); }}>Like {article.data.likes}</button>
-            <button className="btn btn-secondary" disabled={bookmark.isPending} onClick={() => { if (article.data?.id) bookmark.mutate(article.data.id); }}>Bookmark {article.data.bookmarks}</button>
+            <button className="btn btn-secondary" disabled={like.isPending || isAdminOrMod} onClick={() => { if (article.data?.id) like.mutate(article.data.id); }}>Like {article.data.likes}</button>
+            <button className="btn btn-secondary" disabled={bookmark.isPending || isAdminOrMod} onClick={() => { if (article.data?.id) bookmark.mutate(article.data.id); }}>Bookmark {article.data.bookmarks}</button>
           </div>
           <div className="article-body mt-8" dangerouslySetInnerHTML={{ __html: article.data.content }} />
         </article>
@@ -58,21 +64,29 @@ export default function NewsDetailPage() {
         {comments.isLoading ? <LoadingBlock label="Loading comments" /> : null}
         {comments.error ? <ErrorBlock message="Could not load comments." /> : null}
         {comment.error ? <ErrorBlock message="Could not post comment." /> : null}
-        <form
-          className="mt-4 grid gap-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (content.trim() && article.data?.id) comment.mutate(
-              { articleId: article.data.id, content },
-              { onSuccess: () => setContent("") }
-            );
-          }}
-        >
-          <textarea className="input min-h-28" value={content} onChange={(event) => setContent(event.target.value)} placeholder="Add a comment" />
-          <button className="btn w-fit" disabled={comment.isPending || !content.trim() || !article.data?.id}>
-            {comment.isPending ? "Posting..." : "Post comment"}
-          </button>
-        </form>
+        
+        {isAdminOrMod ? (
+          <div className="mt-4 p-4 border border-amber-500/30 bg-amber-500/10 text-amber-500 text-sm font-semibold rounded">
+            Administrative accounts (Admin/Moderator) are read-only on the public feed and cannot post comments, likes, or bookmarks.
+          </div>
+        ) : (
+          <form
+            className="mt-4 grid gap-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (content.trim() && article.data?.id) comment.mutate(
+                { articleId: article.data.id, content },
+                { onSuccess: () => setContent("") }
+              );
+            }}
+          >
+            <textarea className="input min-h-28" value={content} onChange={(event) => setContent(event.target.value)} placeholder="Add a comment" />
+            <button className="btn w-fit" disabled={comment.isPending || !content.trim() || !article.data?.id}>
+              {comment.isPending ? "Posting..." : "Post comment"}
+            </button>
+          </form>
+        )}
+
         <div className="mt-5 grid gap-3">
           {comments.data?.length === 0 ? <p>No comments yet.</p> : null}
           {comments.data?.map((item) => (

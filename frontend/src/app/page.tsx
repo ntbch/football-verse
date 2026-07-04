@@ -26,13 +26,22 @@ export default function HomePage() {
   });
 
   useEffect(() => {
-    if (ready && auth?.roles.includes("ADMIN")) {
-      router.replace("/admin");
+    if (ready) {
+      if (auth?.roles.includes("ADMIN")) {
+        router.replace("/admin");
+      } else if (auth?.roles.includes("MODERATOR")) {
+        router.replace("/moderator");
+      }
     }
   }, [auth, ready, router]);
 
-  if (ready && auth?.roles.includes("ADMIN")) {
-    return <LoadingBlock label="Opening admin dashboard" />;
+  if (ready) {
+    if (auth?.roles.includes("ADMIN")) {
+      return <LoadingBlock label="Opening admin dashboard" />;
+    }
+    if (auth?.roles.includes("MODERATOR")) {
+      return <LoadingBlock label="Opening moderator dashboard" />;
+    }
   }
 
   return (
@@ -81,7 +90,10 @@ export default function HomePage() {
             {news.data?.content.map((article) => (
               <Link className="border-t border-[var(--fv-line)] pt-3 hover:underline" href={`/news/${article.slug}`} key={article.id}>
                 <p className="font-bold">{article.title}</p>
-                <p className="text-sm text-[var(--fv-muted)]">{article.category ?? "Uncategorized"}</p>
+                <p suppressHydrationWarning className="text-sm text-[var(--fv-muted)]">
+                  {article.category ?? "Uncategorized"}
+                  {article.publishedAt ? ` · ${new Date(article.publishedAt).toLocaleDateString("vi-VN")}` : ""}
+                </p>
               </Link>
             ))}
           </div>

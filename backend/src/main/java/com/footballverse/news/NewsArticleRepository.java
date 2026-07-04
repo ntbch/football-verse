@@ -13,6 +13,8 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
 
     Page<NewsArticle> findByStatusNot(ArticleStatus status, Pageable pageable);
 
+    long countByStatus(ArticleStatus status);
+
     Optional<NewsArticle> findBySlugAndStatus(String slug, ArticleStatus status);
 
     Optional<NewsArticle> findByIdAndStatus(Long id, ArticleStatus status);

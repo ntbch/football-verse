@@ -1,8 +1,10 @@
-package com.footballverse.news;
+package com.footballverse.controller.admin;
 
 import com.footballverse.common.response.ApiResponse;
 import com.footballverse.common.pagination.PageResponse;
 import com.footballverse.crawl.CrawlService;
+import com.footballverse.news.NewsArticleService;
+import com.footballverse.news.NewsSourceService;
 import com.footballverse.news.dto.ArticleStatusRequest;
 import com.footballverse.news.dto.NewsArticleRequest;
 import com.footballverse.news.dto.NewsArticleResponse;

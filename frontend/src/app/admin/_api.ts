@@ -145,3 +145,15 @@ export const useHideForumTarget = () => {
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.admin.reports() })
   });
 };
+
+export const useAdminDashboardStats = () =>
+  useQuery({
+    queryKey: qk.admin.dashboardStats(),
+    queryFn: () => data<Record<string, number>>(http.get("/admin/dashboard/stats"))
+  });
+
+export const useAdminUserGrowth = () =>
+  useQuery({
+    queryKey: qk.admin.userGrowth(),
+    queryFn: () => data<Array<{ date: string; count: number }>>(http.get("/admin/dashboard/user-growth"))
+  });

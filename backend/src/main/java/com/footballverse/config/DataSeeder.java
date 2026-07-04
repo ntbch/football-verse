@@ -44,6 +44,12 @@ public class DataSeeder implements CommandLineRunner {
     @Value("${app.seed.admin-password}")
     private String adminPassword;
 
+    @Value("${app.seed.moderator-email}")
+    private String moderatorEmail;
+
+    @Value("${app.seed.moderator-password}")
+    private String moderatorPassword;
+
     @Value("${app.seed.news-sources:}")
     private String newsSourceSeeds;
 
@@ -60,6 +66,7 @@ public class DataSeeder implements CommandLineRunner {
             return;
         }
         UserAccount admin = seedAdmin();
+        seedModerator();
         seedNewsCategories();
         seedArticle(admin);
         seedForumCategories();
@@ -74,6 +81,17 @@ public class DataSeeder implements CommandLineRunner {
         admin.setRoles(Set.of(UserRole.ADMIN));
         UserAccount saved = users.save(admin);
         profiles.save(new UserProfile(saved, "Admin"));
+        return saved;
+    }
+
+    private UserAccount seedModerator() {
+        if (users.existsByEmail(moderatorEmail)) {
+            return users.findByEmail(moderatorEmail).orElseThrow();
+        }
+        UserAccount moderator = new UserAccount(moderatorEmail, "moderator", passwordEncoder.encode(moderatorPassword));
+        moderator.setRoles(Set.of(UserRole.MODERATOR));
+        UserAccount saved = users.save(moderator);
+        profiles.save(new UserProfile(saved, "Moderator"));
         return saved;
     }
 

@@ -1,6 +1,7 @@
-package com.footballverse.forum;
+package com.footballverse.controller.admin;
 
 import com.footballverse.common.response.ApiResponse;
+import com.footballverse.forum.ForumService;
 import com.footballverse.forum.dto.ForumCategoryRequest;
 import com.footballverse.forum.dto.ForumCategoryResponse;
 import com.footballverse.forum.dto.PostResponse;

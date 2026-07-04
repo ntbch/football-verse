@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface ForumPostRepository extends JpaRepository<ForumPost, Long> {
     List<ForumPost> findByThreadIdAndHiddenFalseOrderByCreatedAtAsc(Long threadId);
+
+    long countByHiddenTrue();
 }

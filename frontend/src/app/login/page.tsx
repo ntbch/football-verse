@@ -35,7 +35,13 @@ export default function LoginPage() {
     try {
       const auth = await data<AuthResponse>(http.post("/auth/login", parsed.data));
       setAuth(auth);
-      router.push(auth.roles.includes("ADMIN") ? "/admin" : "/profile");
+      if (auth.roles.includes("ADMIN")) {
+        router.push("/admin");
+      } else if (auth.roles.includes("MODERATOR")) {
+        router.push("/moderator");
+      } else {
+        router.push("/profile");
+      }
     } catch (error) {
       setError(apiErrorMessage(error, "Login failed."));
     }

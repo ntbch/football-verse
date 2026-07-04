@@ -1,10 +1,10 @@
 # Phase 1 Tasks
 
-1. Admin News CMS minimum complete
+1. [x] Admin News CMS minimum complete
    - Admin can list non-deleted articles across draft, published, and archived states.
    - Admin can create, edit, publish, archive, and soft-delete articles.
    - Admin UI uses `/api/v1/admin/news/*`, not public news APIs.
-2. RSS crawler minimum complete
+2. [x] RSS crawler minimum complete
    - Parse active RSS sources.
    - Deduplicate by source URL or content hash.
    - Save crawled items as published articles.
