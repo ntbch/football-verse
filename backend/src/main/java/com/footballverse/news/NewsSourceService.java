@@ -22,7 +22,11 @@ public class NewsSourceService {
     }
 
     public NewsSourceResponse createSource(NewsSourceRequest request) {
-        NewsSource source = sources.save(new NewsSource(request.name(), request.feedUrl()));
+        NewsSource source = new NewsSource(request.name(), request.feedUrl());
+        // ponytail: fallback RSS when type is null (backward compat with admin UI sans type)
+        if (request.sourceType() != null) source.setSourceType(request.sourceType());
+        source.setCssSelector(request.cssSelector());
+        source = sources.save(source);
         return toSource(source);
     }
 
@@ -39,6 +43,6 @@ public class NewsSourceService {
     }
 
     private NewsSourceResponse toSource(NewsSource source) {
-        return new NewsSourceResponse(source.getId(), source.getName(), source.getFeedUrl(), source.isActive());
+        return new NewsSourceResponse(source.getId(), source.getName(), source.getFeedUrl(), source.isActive(), source.getSourceType(), source.getCssSelector());
     }
 }

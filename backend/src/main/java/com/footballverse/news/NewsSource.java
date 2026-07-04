@@ -3,6 +3,8 @@ package com.footballverse.news;
 import com.footballverse.common.AuditableEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -26,11 +28,18 @@ public class NewsSource extends AuditableEntity {
     @Column(nullable = false, unique = true, length = 120)
     private String name;
 
-    @Column(name = "feed_url", nullable = false, unique = true)
+    @Column(name = "feed_url", unique = true)
     private String feedUrl;
 
     @Column(nullable = false)
     private boolean active = true;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source_type", nullable = false, length = 12)
+    private NewsSourceType sourceType = NewsSourceType.RSS;
+
+    @Column(name = "css_selector", length = 255)
+    private String cssSelector;
 
     @Column(name = "last_crawled_at")
     private Instant lastCrawledAt;

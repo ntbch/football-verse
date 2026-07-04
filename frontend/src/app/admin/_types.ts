@@ -17,9 +17,13 @@ export type ForumReport = {
   status: "OPEN" | "RESOLVED";
 };
 
+export type NewsSourceSourceType = "RSS" | "SITEMAP" | "HOMEPAGE";
+
 export type NewsSource = {
   id: number;
   name: string;
   feedUrl: string;
   active: boolean;
+  sourceType: NewsSourceSourceType;
+  cssSelector: string | null;
 };

@@ -49,8 +49,8 @@ export const useCreateNewsCategory = () => {
 export const useCreateNewsSource = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ name, feedUrl }: { name: string; feedUrl: string }) =>
-      data<NewsSource>(http.post("/admin/news/sources", { name, feedUrl })),
+    mutationFn: ({ name, feedUrl, sourceType, cssSelector }: { name: string; feedUrl?: string; sourceType?: string; cssSelector?: string }) =>
+      data<NewsSource>(http.post("/admin/news/sources", { name, feedUrl, sourceType, cssSelector })),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.admin.newsSources() })
   });
 };

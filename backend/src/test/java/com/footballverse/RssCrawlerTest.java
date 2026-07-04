@@ -1,7 +1,8 @@
 package com.footballverse;
 
+import com.footballverse.crawl.ArticleLinkExtractor;
+import com.footballverse.crawl.CrawlHttpClient;
 import com.footballverse.crawl.CrawlService;
-import com.footballverse.crawl.FeedFetcher;
 import com.footballverse.crawl.HtmlContentScraper;
 import com.footballverse.forum.ForumService;
 import com.footballverse.news.ArticleStatus;
@@ -29,7 +30,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
-@TestPropertySource(properties = "app.crawl.startup-enabled=false")
+@TestPropertySource(properties = {
+    "app.crawl.startup-enabled=false",
+    "spring.flyway.baseline-on-migrate=true",
+    "spring.flyway.baseline-version=1",
+    "spring.flyway.validate-on-migrate=false",
+    "spring.jpa.hibernate.ddl-auto=create-drop"
+})
 @Transactional
 public class RssCrawlerTest {
 
@@ -58,10 +65,13 @@ public class RssCrawlerTest {
     private ForumService forumService;
 
     @MockBean
-    private FeedFetcher mockFeedFetcher;
+    private CrawlHttpClient mockHttpClient;
 
     @MockBean
     private HtmlContentScraper mockHtmlScraper;
+
+    @MockBean
+    private ArticleLinkExtractor mockLinkExtractor;
 
     private NewsSource activeSource;
 
@@ -69,6 +79,8 @@ public class RssCrawlerTest {
     public void setup() {
         // Mock html scraper to return the fallback description by default
         when(mockHtmlScraper.scrape(anyString(), anyString())).thenAnswer(invocation -> invocation.getArgument(1));
+        // Link extractor unused in RSS test path; any call returns empty
+        when(mockLinkExtractor.extractLinks(any(), any())).thenReturn(List.of());
 
         sourceRepository.findAll().forEach(source -> {
             if (!FEED_URL.equals(source.getFeedUrl())) {
@@ -91,8 +103,8 @@ public class RssCrawlerTest {
     }
 
     private void stubFeed(String content) {
-        when(mockFeedFetcher.fetch(FEED_URL))
-                .thenReturn(new FeedFetcher.FetchResult(content.getBytes(StandardCharsets.UTF_8), false));
+        when(mockHttpClient.fetchBytes(FEED_URL, true))
+                .thenReturn(content.getBytes(StandardCharsets.UTF_8));
     }
 
     @Test

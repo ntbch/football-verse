@@ -21,13 +21,13 @@ public class RssScheduler {
     // ponytail: single global cron; per-source cronExpression is YAGNI until >50 sources.
     @Scheduled(cron = "${app.crawl.cron:0 0 * * * *}")
     public void scheduleCrawl() {
-        log.info("Scheduled RSS crawl job started.");
+        log.info("Scheduled crawl job started.");
         try {
             CrawlService.CrawlResult result = crawlService.crawl();
-            log.info("Scheduled RSS crawl completed. Saved {}, repaired {}, skipped {}, failed {}.",
+            log.info("Scheduled crawl completed. Saved {}, repaired {}, skipped {}, failed {}.",
                     result.saved(), result.repaired(), result.skipped(), result.failed());
         } catch (Exception e) {
-            log.error("Scheduled RSS crawl failed", e);
+            log.error("Scheduled crawl failed", e);
         }
     }
 
@@ -35,13 +35,13 @@ public class RssScheduler {
     @EventListener(ApplicationReadyEvent.class)
     public void crawlOnStartup() {
         if (!startupEnabled) return;
-        log.info("Application ready. Running initial RSS crawl in background...");
+        log.info("Application ready. Running initial crawl in background...");
         try {
             CrawlService.CrawlResult result = crawlService.crawl();
-            log.info("Initial RSS crawl completed. Saved {}, repaired {}, skipped {}, failed {}.",
+            log.info("Initial crawl completed. Saved {}, repaired {}, skipped {}, failed {}.",
                     result.saved(), result.repaired(), result.skipped(), result.failed());
         } catch (Exception e) {
-            log.error("Initial RSS crawl failed", e);
+            log.error("Initial crawl failed", e);
         }
     }
 }

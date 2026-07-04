@@ -63,14 +63,32 @@ public class HtmlContentScraper {
             } else if (host.contains("bbci.co.uk") || host.contains("bbc.com")) {
                 Element detail = doc.selectFirst("article, .story-body__inner");
                 if (detail != null) best = better(best, cleanAndFormatHtml(detail));
-            } else if (host.contains("bongda24h.vn")) {
-                Element detail = doc.selectFirst(".details-content, #ArticleContent, article");
+            } else if (host.contains("skysports")) {
+                Element detail = doc.selectFirst("article, .article-body, [class*='article-body'], [class*='article__body']");
                 if (detail != null) best = better(best, cleanAndFormatHtml(detail));
-            } else if (host.contains("thethao247.vn")) {
-                Element detail = doc.selectFirst(".content-detail, #article-content, article");
+            } else if (host.contains("90min")) {
+                Element detail = doc.selectFirst("article, .article-body, .post-content");
                 if (detail != null) best = better(best, cleanAndFormatHtml(detail));
-            } else if (host.contains("yeuthethao")) {
-                Element detail = doc.selectFirst(".entry-content, .post-content, article");
+            } else if (host.contains("football365")) {
+                Element detail = doc.selectFirst("article, .entry-content, .post-content");
+                if (detail != null) best = better(best, cleanAndFormatHtml(detail));
+            } else if (host.contains("theathletic")) {
+                Element detail = doc.selectFirst("article, [data-testid='article-body'], .article-content");
+                if (detail != null) best = better(best, cleanAndFormatHtml(detail));
+            } else if (host.contains("theguardian")) {
+                Element detail = doc.selectFirst("article, [itemprop='articleBody'], .content__article-body");
+                if (detail != null) best = better(best, cleanAndFormatHtml(detail));
+            } else if (host.contains("mirror.co.uk")) {
+                Element detail = doc.selectFirst("article, .article-body, .story-content, .article-content-inner");
+                if (detail != null) best = better(best, cleanAndFormatHtml(detail));
+            } else if (host.contains("dailymail")) {
+                Element detail = doc.selectFirst("article, .mol-article-body, .article-body, .article-text");
+                if (detail != null) best = better(best, cleanAndFormatHtml(detail));
+            } else if (host.contains("independent")) {
+                Element detail = doc.selectFirst("article, .article-body, .story-body, .content-text");
+                if (detail != null) best = better(best, cleanAndFormatHtml(detail));
+            } else if (host.contains("eurosport")) {
+                Element detail = doc.selectFirst("article, .article-content, .article-body, .post-content");
                 if (detail != null) best = better(best, cleanAndFormatHtml(detail));
             }
         }
@@ -424,7 +442,7 @@ public class HtmlContentScraper {
                 || lower.contains("vimeo.com");
     }
 
-    private String escapeAttr(String value) {
+    static String escapeAttr(String value) {
         if (value == null) return "";
         return value
                 .replace("&", "&amp;")
