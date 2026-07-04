@@ -1,6 +1,6 @@
 package com.footballverse.config;
 
-import com.footballverse.common.security.JwtAuthenticationFilter;
+import com.footballverse.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

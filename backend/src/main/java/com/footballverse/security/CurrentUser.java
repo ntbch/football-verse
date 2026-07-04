@@ -1,4 +1,4 @@
-package com.footballverse.common.security;
+package com.footballverse.security;
 
 import com.footballverse.common.exception.ResourceNotFoundException;
 import com.footballverse.user.UserAccount;

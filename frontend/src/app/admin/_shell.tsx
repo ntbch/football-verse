@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuthStore } from "@/shared/lib/auth-store";
+import { LoadingBlock } from "@/shared/components/state-blocks";
 
 const nav = [
   { href: "/admin", label: "Dashboard" },
@@ -26,6 +27,14 @@ export const AdminShell = ({ children }: { children: React.ReactNode }) => {
       router.replace("/login");
     }
   }, [auth, ready, router]);
+
+  if (!ready) {
+    return <LoadingBlock label="Checking access" />;
+  }
+
+  if (!auth?.roles.includes("ADMIN")) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-[var(--fv-night)] text-[var(--fv-paper)] md:grid md:grid-cols-[250px_1fr]">

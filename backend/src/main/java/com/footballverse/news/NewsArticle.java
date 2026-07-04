@@ -46,7 +46,6 @@ public class NewsArticle extends AuditableEntity {
     @Column(length = 500)
     private String summary;
 
-    @Lob
     @Column(nullable = false, columnDefinition = "text")
     private String content;
 

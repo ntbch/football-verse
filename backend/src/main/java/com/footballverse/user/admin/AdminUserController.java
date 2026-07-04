@@ -1,9 +1,8 @@
-package com.footballverse.admin;
+package com.footballverse.user.admin;
 
-import com.footballverse.admin.dto.AdminUserResponse;
-import com.footballverse.admin.dto.UpdateUserStatusRequest;
 import com.footballverse.common.response.ApiResponse;
-import com.footballverse.user.UserService;
+import com.footballverse.user.admin.AdminUserResponse;
+import com.footballverse.user.admin.dto.UpdateUserStatusRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,15 +18,15 @@ import java.util.List;
 @RequestMapping("/admin/users")
 @RequiredArgsConstructor
 public class AdminUserController {
-    private final UserService userService;
+    private final AdminUserService adminUserService;
 
     @GetMapping
     public ApiResponse<List<AdminUserResponse>> users() {
-        return ApiResponse.ok(userService.adminUsers());
+        return ApiResponse.ok(adminUserService.adminUsers());
     }
 
     @PatchMapping("/{id}/status")
     public ApiResponse<AdminUserResponse> status(@PathVariable Long id, @Valid @RequestBody UpdateUserStatusRequest request) {
-        return ApiResponse.ok(userService.updateStatus(id, request));
+        return ApiResponse.ok(adminUserService.updateStatus(id, request));
     }
 }

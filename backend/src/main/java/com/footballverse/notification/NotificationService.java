@@ -1,7 +1,7 @@
 package com.footballverse.notification;
 
 import com.footballverse.common.exception.ResourceNotFoundException;
-import com.footballverse.common.security.CurrentUser;
+import com.footballverse.security.CurrentUser;
 import com.footballverse.notification.dto.NotificationResponse;
 import com.footballverse.user.UserAccount;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ public class NotificationService {
 
     @Transactional
     public NotificationResponse read(Long id) {
-        Notification notification = notifications.findById(id)
+        Notification notification = notifications.findByIdAndUser(id, currentUser.get())
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
         notification.setReadAt(Instant.now());
         return toResponse(notification);

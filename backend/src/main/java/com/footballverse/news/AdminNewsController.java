@@ -2,6 +2,7 @@ package com.footballverse.news;
 
 import com.footballverse.common.response.ApiResponse;
 import com.footballverse.common.pagination.PageResponse;
+import com.footballverse.crawl.CrawlService;
 import com.footballverse.news.dto.ArticleStatusRequest;
 import com.footballverse.news.dto.NewsArticleRequest;
 import com.footballverse.news.dto.NewsArticleResponse;
@@ -29,29 +30,31 @@ import java.util.Map;
 @RequestMapping("/admin/news")
 @RequiredArgsConstructor
 public class AdminNewsController {
-    private final NewsService newsService;
+    private final NewsArticleService articleService;
+    private final NewsSourceService sourceService;
+    private final CrawlService crawlService;
 
     @GetMapping
     public ApiResponse<PageResponse<NewsArticleResponse>> articles(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return ApiResponse.ok(newsService.adminArticles(page, size));
+        return ApiResponse.ok(articleService.adminArticles(page, size));
     }
 
     @PostMapping
     public ApiResponse<NewsArticleResponse> create(@Valid @RequestBody NewsArticleRequest request) {
-        return ApiResponse.ok(newsService.createArticle(request));
+        return ApiResponse.ok(articleService.createArticle(request));
     }
 
     @GetMapping("/{id}")
     public ApiResponse<NewsArticleResponse> detail(@PathVariable Long id) {
-        return ApiResponse.ok(newsService.adminDetail(id));
+        return ApiResponse.ok(articleService.adminDetail(id));
     }
 
     @PutMapping("/{id}")
     public ApiResponse<NewsArticleResponse> update(@PathVariable Long id, @Valid @RequestBody NewsArticleRequest request) {
-        return ApiResponse.ok(newsService.updateArticle(id, request));
+        return ApiResponse.ok(articleService.updateArticle(id, request));
     }
 
     @PatchMapping("/{id}/status")
@@ -59,48 +62,48 @@ public class AdminNewsController {
             @PathVariable Long id,
             @Valid @RequestBody ArticleStatusRequest request
     ) {
-        return ApiResponse.ok(newsService.updateStatus(id, request.status()));
+        return ApiResponse.ok(articleService.updateStatus(id, request.status()));
     }
 
     @DeleteMapping("/{id}")
     public ApiResponse<Map<String, Boolean>> delete(@PathVariable Long id) {
-        newsService.deleteArticle(id);
+        articleService.deleteArticle(id);
         return ApiResponse.ok(Map.of("deleted", true));
     }
 
     @GetMapping("/categories")
     public ApiResponse<List<NewsCategoryResponse>> categories() {
-        return ApiResponse.ok(newsService.categories());
+        return ApiResponse.ok(articleService.categories());
     }
 
     @PostMapping("/categories")
     public ApiResponse<NewsCategoryResponse> createCategory(@Valid @RequestBody NewsCategoryRequest request) {
-        return ApiResponse.ok(newsService.createCategory(request));
+        return ApiResponse.ok(articleService.createCategory(request));
     }
 
     @GetMapping("/sources")
     public ApiResponse<List<NewsSourceResponse>> sources() {
-        return ApiResponse.ok(newsService.sources());
+        return ApiResponse.ok(sourceService.sources());
     }
 
     @PostMapping("/sources")
     public ApiResponse<NewsSourceResponse> createSource(@Valid @RequestBody NewsSourceRequest request) {
-        return ApiResponse.ok(newsService.createSource(request));
+        return ApiResponse.ok(sourceService.createSource(request));
     }
 
     @DeleteMapping("/sources/{id}")
     public ApiResponse<Map<String, Boolean>> deleteSource(@PathVariable Long id) {
-        newsService.deleteSource(id);
+        sourceService.deleteSource(id);
         return ApiResponse.ok(Map.of("deleted", true));
     }
 
     @PatchMapping("/sources/{id}/toggle")
     public ApiResponse<NewsSourceResponse> toggleSource(@PathVariable Long id) {
-        return ApiResponse.ok(newsService.toggleSource(id));
+        return ApiResponse.ok(sourceService.toggleSource(id));
     }
 
     @PostMapping("/crawl")
-    public ApiResponse<Map<String, Integer>> crawl() {
-        return ApiResponse.ok(Map.of("saved", newsService.crawl()));
+    public ApiResponse<CrawlService.CrawlResult> crawl() {
+        return ApiResponse.ok(crawlService.crawl(true));
     }
 }

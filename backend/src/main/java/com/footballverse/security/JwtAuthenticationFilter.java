@@ -1,4 +1,4 @@
-package com.footballverse.common.security;
+package com.footballverse.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

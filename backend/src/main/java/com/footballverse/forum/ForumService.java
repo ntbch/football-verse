@@ -3,7 +3,7 @@ package com.footballverse.forum;
 import com.footballverse.common.exception.BadRequestException;
 import com.footballverse.common.exception.ResourceNotFoundException;
 import com.footballverse.common.pagination.PageResponse;
-import com.footballverse.common.security.CurrentUser;
+import com.footballverse.security.CurrentUser;
 import com.footballverse.common.text.RichTextSanitizer;
 import com.footballverse.forum.dto.ForumCategoryRequest;
 import com.footballverse.forum.dto.ForumCategoryResponse;
@@ -106,6 +106,7 @@ public class ForumService {
 
     @Transactional
     public ReportResponse report(ReportRequest request) {
+        validateReportTarget(request.targetType(), request.targetId());
         ForumReport report = new ForumReport();
         report.setReporter(currentUser.get());
         report.setTargetType(request.targetType());
@@ -144,15 +145,45 @@ public class ForumService {
     }
 
     @Transactional
+    public PostResponse hidePost(Long id, boolean hidden) {
+        ForumPost post = posts.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
+        post.setHidden(hidden);
+        return toPost(post);
+    }
+
+    @Transactional
     public ReportResponse resolveReport(Long id) {
         ForumReport report = reports.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Report not found"));
         report.setStatus(ForumReportStatus.RESOLVED);
+        notifications.create(report.getReporter(), NotificationType.REPORT_RESOLVED, "Your report was resolved", reportLink(report));
         return toReport(report);
     }
 
     private ForumThread threadById(Long id) {
         return threads.findById(id).orElseThrow(() -> new ResourceNotFoundException("Thread not found"));
+    }
+
+    private void validateReportTarget(ForumReportTarget targetType, Long targetId) {
+        boolean exists = switch (targetType) {
+            case THREAD -> threads.existsById(targetId);
+            case POST -> posts.existsById(targetId);
+        };
+        if (!exists) {
+            throw new ResourceNotFoundException(targetType == ForumReportTarget.THREAD ? "Thread not found" : "Post not found");
+        }
+    }
+
+    private String reportLink(ForumReport report) {
+        return switch (report.getTargetType()) {
+            case THREAD -> threads.findById(report.getTargetId())
+                    .map(thread -> "/forum/threads/" + thread.getSlug())
+                    .orElse("/profile");
+            case POST -> posts.findById(report.getTargetId())
+                    .map(post -> "/forum/threads/" + post.getThread().getSlug())
+                    .orElse("/profile");
+        };
     }
 
     private ForumCategoryResponse toCategory(ForumCategory category) {

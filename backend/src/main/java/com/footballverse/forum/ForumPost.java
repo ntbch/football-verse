@@ -37,7 +37,6 @@ public class ForumPost extends AuditableEntity {
     @JoinColumn(name = "author_id", nullable = false)
     private UserAccount author;
 
-    @Lob
     @Column(nullable = false, columnDefinition = "text")
     private String content;
 

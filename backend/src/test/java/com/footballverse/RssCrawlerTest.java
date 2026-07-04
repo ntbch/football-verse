@@ -1,21 +1,21 @@
 package com.footballverse;
 
+import com.footballverse.crawl.CrawlService;
+import com.footballverse.crawl.FeedFetcher;
+import com.footballverse.crawl.HtmlContentScraper;
 import com.footballverse.news.ArticleStatus;
-import com.footballverse.news.CrawlService;
 import com.footballverse.news.NewsArticle;
 import com.footballverse.news.NewsArticleRepository;
 import com.footballverse.news.NewsSource;
 import com.footballverse.news.NewsSourceRepository;
-import com.footballverse.news.NewsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 import org.springframework.boot.test.mock.mockito.MockBean;
-import com.footballverse.news.HtmlContentScraper;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -25,12 +25,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
+@TestPropertySource(properties = "app.crawl.startup-enabled=false")
 @Transactional
 public class RssCrawlerTest {
 
     static {
         System.setProperty("net.bytebuddy.experimental", "true");
     }
+
+    private static final String FEED_URL = "http://localhost:8080/mock-rss";
 
     @Autowired
     private NewsSourceRepository sourceRepository;
@@ -39,35 +42,36 @@ public class RssCrawlerTest {
     private NewsArticleRepository articleRepository;
 
     @Autowired
-    private NewsService newsService;
-
-    @Autowired
     private CrawlService crawlService;
+
+    @MockBean
+    private FeedFetcher mockFeedFetcher;
 
     @MockBean
     private HtmlContentScraper mockHtmlScraper;
 
-    private RestTemplate mockRestTemplate;
     private NewsSource activeSource;
 
     @BeforeEach
     public void setup() {
-        mockRestTemplate = mock(RestTemplate.class);
-        crawlService.setRestTemplate(mockRestTemplate);
-
-        // Mock default behavior for html scraper to return the fallback description
+        // Mock html scraper to return the fallback description by default
         when(mockHtmlScraper.scrape(anyString(), anyString())).thenAnswer(invocation -> invocation.getArgument(1));
 
         // Retrieve or create the test source dynamically
-        activeSource = sourceRepository.findByFeedUrl("http://localhost:8080/mock-rss")
+        activeSource = sourceRepository.findByFeedUrl(FEED_URL)
                 .orElseGet(() -> {
-                    NewsSource src = new NewsSource("Test RSS Feed", "http://localhost:8080/mock-rss");
+                    NewsSource src = new NewsSource("Test RSS Feed", FEED_URL);
                     src.setActive(true);
                     return sourceRepository.save(src);
                 });
         activeSource.setActive(true);
         activeSource.setLastCrawledAt(null);
         activeSource = sourceRepository.saveAndFlush(activeSource);
+    }
+
+    private void stubFeed(String content) {
+        when(mockFeedFetcher.fetch(FEED_URL))
+                .thenReturn(new FeedFetcher.FetchResult(content.getBytes(StandardCharsets.UTF_8), false));
     }
 
     @Test
@@ -94,12 +98,10 @@ public class RssCrawlerTest {
                 </channel>
                 </rss>
                 """;
+        stubFeed(rssContent);
 
-        when(mockRestTemplate.getForObject("http://localhost:8080/mock-rss", byte[].class))
-                .thenReturn(rssContent.getBytes(StandardCharsets.UTF_8));
-
-        int savedCount = newsService.crawl();
-        assertThat(savedCount).isEqualTo(2);
+        CrawlService.CrawlResult result = crawlService.crawl();
+        assertThat(result.saved()).isEqualTo(2);
 
         List<NewsArticle> savedArticles = articleRepository.findAll().stream()
                 .filter(a -> a.getSourceUrl() != null && a.getSourceUrl().startsWith("http://localhost:8080"))
@@ -133,12 +135,10 @@ public class RssCrawlerTest {
                     </entry>
                 </feed>
                 """;
+        stubFeed(atomContent);
 
-        when(mockRestTemplate.getForObject("http://localhost:8080/mock-rss", byte[].class))
-                .thenReturn(atomContent.getBytes(StandardCharsets.UTF_8));
-
-        int savedCount = newsService.crawl();
-        assertThat(savedCount).isEqualTo(1);
+        CrawlService.CrawlResult result = crawlService.crawl();
+        assertThat(result.saved()).isEqualTo(1);
 
         List<NewsArticle> savedArticles = articleRepository.findAll().stream()
                 .filter(a -> a.getSourceUrl() != null && a.getSourceUrl().startsWith("http://localhost:8080"))
@@ -163,12 +163,10 @@ public class RssCrawlerTest {
                 </channel>
                 </rss>
                 """;
+        stubFeed(rssContent);
 
-        when(mockRestTemplate.getForObject("http://localhost:8080/mock-rss", byte[].class))
-                .thenReturn(rssContent.getBytes(StandardCharsets.UTF_8));
-
-        int savedCount = newsService.crawl();
-        assertThat(savedCount).isEqualTo(1);
+        CrawlService.CrawlResult result = crawlService.crawl();
+        assertThat(result.saved()).isEqualTo(1);
 
         List<NewsArticle> savedArticles = articleRepository.findAll().stream()
                 .filter(a -> a.getSourceUrl() != null && a.getSourceUrl().equals("http://localhost:8080/news/vietnamese-football"))
@@ -196,12 +194,11 @@ public class RssCrawlerTest {
                 </channel>
                 </rss>
                 """;
+        stubFeed(rssContent);
 
-        when(mockRestTemplate.getForObject("http://localhost:8080/mock-rss", byte[].class))
-                .thenReturn(rssContent.getBytes(StandardCharsets.UTF_8));
-
-        int savedCount = newsService.crawl();
-        assertThat(savedCount).isEqualTo(1); // NBA article should be skipped!
+        CrawlService.CrawlResult result = crawlService.crawl();
+        assertThat(result.saved()).isEqualTo(1); // NBA article should be skipped!
+        assertThat(result.skipped()).isGreaterThanOrEqualTo(1);
 
         List<NewsArticle> savedArticles = articleRepository.findAll().stream()
                 .filter(a -> a.getSourceUrl() != null && a.getSourceUrl().startsWith("http://localhost:8080/news/"))
@@ -225,20 +222,19 @@ public class RssCrawlerTest {
                 </channel>
                 </rss>
                 """;
-
-        when(mockRestTemplate.getForObject("http://localhost:8080/mock-rss", byte[].class))
-                .thenReturn(feedContent.getBytes(StandardCharsets.UTF_8));
+        stubFeed(feedContent);
 
         // First crawl
-        int count1 = newsService.crawl();
-        assertThat(count1).isEqualTo(1);
+        CrawlService.CrawlResult first = crawlService.crawl();
+        assertThat(first.saved()).isEqualTo(1);
 
         // Second crawl (same content, same URL) - lock cooldown bypassed by manual clock resetting
         activeSource.setLastCrawledAt(null);
         sourceRepository.saveAndFlush(activeSource);
 
-        int count2 = newsService.crawl();
-        assertThat(count2).isEqualTo(0); // Deduplicated!
+        CrawlService.CrawlResult second = crawlService.crawl();
+        assertThat(second.saved()).isEqualTo(0); // Deduplicated!
+        assertThat(second.skipped()).isGreaterThanOrEqualTo(1);
     }
 
     @Test
@@ -255,17 +251,16 @@ public class RssCrawlerTest {
                 </channel>
                 </rss>
                 """;
-
-        when(mockRestTemplate.getForObject("http://localhost:8080/mock-rss", byte[].class))
-                .thenReturn(rssContent.getBytes(StandardCharsets.UTF_8));
+        stubFeed(rssContent);
 
         // Manually set lastCrawledAt to now so lock cannot be acquired (cooldown is 1 hour)
         activeSource.setLastCrawledAt(Instant.now());
         sourceRepository.saveAndFlush(activeSource);
 
         // Crawl
-        int savedCount = newsService.crawl();
-        assertThat(savedCount).isEqualTo(0); // Skipped because of lock cooldown!
+        CrawlService.CrawlResult result = crawlService.crawl();
+        assertThat(result.saved()).isEqualTo(0); // Skipped because of lock cooldown!
+        assertThat(result.skipped()).isGreaterThanOrEqualTo(1);
     }
 
     @Test
@@ -282,22 +277,93 @@ public class RssCrawlerTest {
                 </channel>
                 </rss>
                 """;
+        stubFeed(rssContent);
 
-        when(mockRestTemplate.getForObject("http://localhost:8080/mock-rss", byte[].class))
-                .thenReturn(rssContent.getBytes(StandardCharsets.UTF_8));
-        
         // Stub the scraper to return full scraped HTML body
         when(mockHtmlScraper.scrape(eq("http://localhost:8080/news/full-article"), eq("This is only the short description.")))
                 .thenReturn("<p>First full paragraph.</p><p>Second full paragraph.</p>");
 
-        int savedCount = newsService.crawl();
-        assertThat(savedCount).isEqualTo(1);
+        CrawlService.CrawlResult result = crawlService.crawl();
+        assertThat(result.saved()).isEqualTo(1);
 
         List<NewsArticle> savedArticles = articleRepository.findAll().stream()
                 .filter(a -> a.getSourceUrl() != null && a.getSourceUrl().equals("http://localhost:8080/news/full-article"))
                 .toList();
         assertThat(savedArticles).hasSize(1);
         assertThat(savedArticles.get(0).getSummary()).isEqualTo("This is only the short description.");
-        assertThat(savedArticles.get(0).getContent()).isEqualTo("<p>First full paragraph.</p><p>Second full paragraph.</p>");
+        // sanitizer normalizes <p>...</p> — Jsoup.clean with relaxed whitelist keeps p tags
+        assertThat(savedArticles.get(0).getContent()).contains("First full paragraph").contains("Second full paragraph");
+    }
+
+    @Test
+    public void testCrawlPersistsRssMediaInArticleContent() {
+        String rssContent = """
+                <?xml version="1.0" encoding="UTF-8" ?>
+                <rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+                <channel>
+                    <item>
+                        <title>Match highlights video</title>
+                        <link>http://localhost:8080/news/match-highlights-video</link>
+                        <description>Football highlights from the match.</description>
+                        <media:thumbnail url="https://cdn.example.com/highlights.jpg" />
+                        <media:content medium="video" type="video/mp4" url="https://cdn.example.com/highlights.mp4" />
+                    </item>
+                </channel>
+                </rss>
+                """;
+        stubFeed(rssContent);
+        when(mockHtmlScraper.scrape(eq("http://localhost:8080/news/match-highlights-video"), anyString()))
+                .thenReturn("<p>Full football highlights report.</p>");
+
+        CrawlService.CrawlResult result = crawlService.crawl();
+
+        NewsArticle article = articleRepository.findBySourceUrl("http://localhost:8080/news/match-highlights-video")
+                .orElseThrow();
+        assertThat(result.saved()).isEqualTo(1);
+        assertThat(article.getContent()).contains("<video");
+        assertThat(article.getContent()).contains("src=\"https://cdn.example.com/highlights.mp4\"");
+        assertThat(article.getContent()).contains("poster=\"https://cdn.example.com/highlights.jpg\"");
+    }
+
+    @Test
+    public void testCrawlRepairsExistingShortRssContent() {
+        String link = "http://localhost:8080/news/repair-existing";
+        NewsArticle existing = new NewsArticle();
+        existing.setTitle("Repair Existing Article");
+        existing.setSlug("repair-existing-article");
+        existing.setSummary("<a href=\"" + link + "\"><img src=\"thumb.jpg\" /></a> Clean summary");
+        existing.setContent("Clean summary");
+        existing.setSource(activeSource);
+        existing.setSourceUrl(link);
+        existing.setContentHash("old-hash");
+        existing.setStatus(ArticleStatus.PUBLISHED);
+        existing.setPublishedAt(Instant.now());
+        articleRepository.saveAndFlush(existing);
+        activeSource.setLastCrawledAt(Instant.now());
+        sourceRepository.saveAndFlush(activeSource);
+
+        String rssContent = """
+                <?xml version="1.0" encoding="UTF-8" ?>
+                <rss version="2.0">
+                <channel>
+                    <item>
+                        <title>Repair Existing Article</title>
+                        <link>http://localhost:8080/news/repair-existing</link>
+                        <description><![CDATA[<a href="http://localhost:8080/news/repair-existing"><img src="thumb.jpg" /></a> Clean summary]]></description>
+                    </item>
+                </channel>
+                </rss>
+                """;
+        stubFeed(rssContent);
+        when(mockHtmlScraper.scrape(eq(link), eq("Clean summary")))
+                .thenReturn("<p>Full repaired article paragraph with enough detail.</p><p>Second repaired paragraph.</p>");
+
+        CrawlService.CrawlResult result = crawlService.crawl(true);
+
+        NewsArticle repaired = articleRepository.findBySourceUrl(link).orElseThrow();
+        assertThat(result.saved()).isEqualTo(0);
+        assertThat(result.repaired()).isEqualTo(1);
+        assertThat(repaired.getSummary()).isEqualTo("Clean summary");
+        assertThat(repaired.getContent()).contains("Full repaired article paragraph");
     }
 }

@@ -1,4 +1,4 @@
-package com.footballverse.admin.dto;
+package com.footballverse.user.admin.dto;
 
 import com.footballverse.user.UserStatus;
 import jakarta.validation.constraints.NotNull;

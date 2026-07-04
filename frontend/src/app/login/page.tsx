@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { data, http } from "@/shared/lib/api-client";
+import { apiErrorMessage, data, http } from "@/shared/lib/api-client";
 import { useAuthStore } from "@/shared/lib/auth-store";
 import { PublicShell } from "@/shared/components/public-shell";
 import type { AuthResponse } from "@/shared/lib/types";
@@ -36,8 +36,8 @@ export default function LoginPage() {
       const auth = await data<AuthResponse>(http.post("/auth/login", parsed.data));
       setAuth(auth);
       router.push(auth.roles.includes("ADMIN") ? "/admin" : "/profile");
-    } catch {
-      setError("Login failed.");
+    } catch (error) {
+      setError(apiErrorMessage(error, "Login failed."));
     }
   };
 

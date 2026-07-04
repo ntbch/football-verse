@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useAuthStore } from "@/shared/lib/auth-store";
+import { http } from "@/shared/lib/api-client";
 
 const nav = [
   { href: "/", label: "Home" },
@@ -13,6 +14,13 @@ const nav = [
 export const PublicShell = ({ children }: { children: React.ReactNode }) => {
   const auth = useAuthStore((state) => state.auth);
   const logout = useAuthStore((state) => state.logout);
+  const handleLogout = async () => {
+    const refreshToken = auth?.refreshToken;
+    logout();
+    if (refreshToken) {
+      await http.post("/auth/logout", { refreshToken }).catch(() => undefined);
+    }
+  };
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-4 py-5 md:px-8">
@@ -26,9 +34,8 @@ export const PublicShell = ({ children }: { children: React.ReactNode }) => {
               {item.label}
             </Link>
           ))}
-          {auth?.roles.includes("ADMIN") ? <Link href="/admin">Admin</Link> : null}
           {auth ? (
-            <button className="btn btn-secondary" onClick={logout}>
+            <button className="btn btn-secondary" onClick={handleLogout}>
               Logout {auth.username}
             </button>
           ) : (

@@ -3,6 +3,7 @@ package com.footballverse.forum;
 import com.footballverse.common.response.ApiResponse;
 import com.footballverse.forum.dto.ForumCategoryRequest;
 import com.footballverse.forum.dto.ForumCategoryResponse;
+import com.footballverse.forum.dto.PostResponse;
 import com.footballverse.forum.dto.ReportResponse;
 import com.footballverse.forum.dto.ThreadResponse;
 import jakarta.validation.Valid;
@@ -52,5 +53,10 @@ public class AdminForumController {
     @PatchMapping("/threads/{id}/hide")
     public ApiResponse<ThreadResponse> hide(@PathVariable Long id, @RequestParam boolean value) {
         return ApiResponse.ok(forumService.hideThread(id, value));
+    }
+
+    @PatchMapping("/posts/{id}/hide")
+    public ApiResponse<PostResponse> hidePost(@PathVariable Long id, @RequestParam boolean value) {
+        return ApiResponse.ok(forumService.hidePost(id, value));
     }
 }

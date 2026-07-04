@@ -1,17 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { data, http } from "@/shared/lib/api-client";
 import { PublicShell } from "@/shared/components/public-shell";
-import { LoadingBlock } from "@/shared/components/state-blocks";
-import type { ForumCategory } from "@/shared/lib/types";
+import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
+import { useForumCategories } from "./_api";
 
 export default function ForumPage() {
-  const categories = useQuery({
-    queryKey: ["forum-categories"],
-    queryFn: () => data<ForumCategory[]>(http.get("/forum/categories"))
-  });
+  const categories = useForumCategories();
 
   return (
     <PublicShell>
@@ -22,6 +17,8 @@ export default function ForumPage() {
 
       <section className="mt-5 grid gap-4 md:grid-cols-3">
         {categories.isLoading ? <LoadingBlock /> : null}
+        {categories.error ? <ErrorBlock message="Could not load forum rooms." /> : null}
+        {categories.data?.length === 0 ? <div className="panel p-5">No forum rooms yet.</div> : null}
         {categories.data?.map((category) => (
           <Link className="panel p-5 hover:border-[var(--fv-ink)]" href={`/forum/categories/${category.slug}`} key={category.id}>
             <span className="display-face text-3xl font-black">{category.name}</span>

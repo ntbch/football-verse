@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { data, http } from "@/shared/lib/api-client";
-import type { NewsArticle, NewsCategory } from "@/shared/lib/types";
+import { apiErrorMessage, data, http } from "@/shared/lib/api-client";
+import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
+import type { NewsArticle, NewsCategory } from "@/app/news/_types";
 
 const schema = z.object({
   title: z.string().min(3),
@@ -23,6 +24,7 @@ export default function AdminEditArticlePage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const articleId = Number(params.id);
+  const [error, setError] = useState<string | null>(null);
   const article = useQuery({
     queryKey: ["admin-article", articleId],
     queryFn: () => data<NewsArticle>(http.get(`/admin/news/${articleId}`)),
@@ -47,13 +49,22 @@ export default function AdminEditArticlePage() {
   }, [article.data, categories.data, reset]);
 
   const submit = async (values: ArticleForm) => {
-    const parsed = schema.parse(values);
-    await data<NewsArticle>(http.put(`/admin/news/${articleId}`, {
-      ...parsed,
-      categoryId: parsed.categoryId || null,
-      tags: parsed.tags ? parsed.tags.split(",").map((tag) => tag.trim()).filter(Boolean) : []
-    }));
-    router.push("/admin/news");
+    setError(null);
+    const parsed = schema.safeParse(values);
+    if (!parsed.success) {
+      setError("Title and content are required.");
+      return;
+    }
+    try {
+      await data<NewsArticle>(http.put(`/admin/news/${articleId}`, {
+        ...parsed.data,
+        categoryId: parsed.data.categoryId || null,
+        tags: parsed.data.tags ? parsed.data.tags.split(",").map((tag) => tag.trim()).filter(Boolean) : []
+      }));
+      router.push("/admin/news");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Could not save article."));
+    }
   };
 
   return (
@@ -63,6 +74,10 @@ export default function AdminEditArticlePage() {
         {article.data?.status === "PUBLISHED" ? <a className="btn" href={`/news/${article.data.slug}`}>View</a> : null}
       </div>
       <form className="mt-5 grid max-w-3xl gap-4" onSubmit={handleSubmit(submit)}>
+        {article.isLoading ? <LoadingBlock label="Loading article" /> : null}
+        {article.error ? <ErrorBlock message="Article not found." /> : null}
+        {categories.error ? <ErrorBlock message="Could not load categories." /> : null}
+        {error ? <ErrorBlock message={error} /> : null}
         <label className="grid gap-1 font-bold">
           Title
           <input className="input text-[var(--fv-ink)]" {...register("title")} />
@@ -96,7 +111,9 @@ export default function AdminEditArticlePage() {
             </select>
           </label>
         </div>
-        <button className="btn w-fit bg-[var(--fv-grass)] text-[var(--fv-ink)]" disabled={formState.isSubmitting}>Save</button>
+        <button className="btn w-fit bg-[var(--fv-grass)] text-[var(--fv-ink)]" disabled={formState.isSubmitting || article.isLoading}>
+          {formState.isSubmitting ? "Saving..." : "Save"}
+        </button>
       </form>
     </div>
   );

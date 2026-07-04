@@ -1,4 +1,4 @@
-package com.footballverse.admin.dto;
+package com.footballverse.user.admin;
 
 import com.footballverse.user.UserRole;
 import com.footballverse.user.UserStatus;

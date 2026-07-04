@@ -13,6 +13,30 @@ type AuthState = {
 
 const key = "football-verse-auth";
 
+export const storedAuth = () => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  const raw = window.localStorage.getItem(key);
+  if (!raw) {
+    return null;
+  }
+  try {
+    return JSON.parse(raw) as AuthResponse;
+  } catch {
+    window.localStorage.removeItem(key);
+    return null;
+  }
+};
+
+export const persistAuth = (auth: AuthResponse) => {
+  window.localStorage.setItem(key, JSON.stringify(auth));
+};
+
+export const clearAuth = () => {
+  window.localStorage.removeItem(key);
+};
+
 export const useAuthStore = create<AuthState>((set) => ({
   auth: null,
   ready: false,
@@ -20,23 +44,18 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (typeof window === "undefined") {
       return;
     }
-    const raw = window.localStorage.getItem(key);
-    set({ auth: raw ? (JSON.parse(raw) as AuthResponse) : null, ready: true });
+    set({ auth: storedAuth(), ready: true });
   },
   setAuth: (auth) => {
-    window.localStorage.setItem(key, JSON.stringify(auth));
+    persistAuth(auth);
     set({ auth });
   },
   logout: () => {
-    window.localStorage.removeItem(key);
+    clearAuth();
     set({ auth: null });
   }
 }));
 
 export const authToken = () => {
-  if (typeof window === "undefined") {
-    return null;
-  }
-  const raw = window.localStorage.getItem(key);
-  return raw ? (JSON.parse(raw) as AuthResponse).accessToken : null;
+  return storedAuth()?.accessToken ?? null;
 };

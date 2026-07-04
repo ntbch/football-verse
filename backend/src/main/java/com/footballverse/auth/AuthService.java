@@ -6,8 +6,8 @@ import com.footballverse.auth.dto.LoginRequest;
 import com.footballverse.auth.dto.RefreshTokenRequest;
 import com.footballverse.auth.dto.RegisterRequest;
 import com.footballverse.common.exception.BadRequestException;
-import com.footballverse.common.security.CurrentUser;
-import com.footballverse.common.security.JwtService;
+import com.footballverse.security.CurrentUser;
+import com.footballverse.security.JwtService;
 import com.footballverse.user.UserAccount;
 import com.footballverse.user.UserAccountRepository;
 import com.footballverse.user.UserProfile;
@@ -70,6 +70,7 @@ public class AuthService {
         if (!refreshToken.isActive()) {
             throw new BadRequestException("Invalid refresh token");
         }
+        refreshToken.setRevokedAt(Instant.now());
         return tokens(refreshToken.getUser());
     }
 

@@ -9,7 +9,6 @@ import com.footballverse.news.dto.NewsCategoryResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,43 +23,44 @@ import java.util.Map;
 @RequestMapping("/news")
 @RequiredArgsConstructor
 public class NewsController {
-    private final NewsService newsService;
+    private final NewsArticleService articleService;
+    private final NewsCommentService commentService;
 
     @GetMapping
     public ApiResponse<PageResponse<NewsArticleResponse>> list(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return ApiResponse.ok(newsService.published(page, size));
+        return ApiResponse.ok(articleService.published(page, size));
     }
 
     @GetMapping("/{slug}")
     public ApiResponse<NewsArticleResponse> detail(@PathVariable String slug) {
-        return ApiResponse.ok(newsService.detail(slug));
+        return ApiResponse.ok(articleService.detail(slug));
     }
 
     @GetMapping("/{slug}/comments")
     public ApiResponse<List<CommentResponse>> comments(@PathVariable String slug) {
-        return ApiResponse.ok(newsService.comments(slug));
+        return ApiResponse.ok(commentService.comments(slug));
     }
 
     @GetMapping("/categories")
     public ApiResponse<List<NewsCategoryResponse>> categories() {
-        return ApiResponse.ok(newsService.categories());
+        return ApiResponse.ok(articleService.categories());
     }
 
     @PostMapping("/{id}/like")
     public ApiResponse<Map<String, Boolean>> like(@PathVariable Long id) {
-        return ApiResponse.ok(Map.of("liked", newsService.like(id)));
+        return ApiResponse.ok(Map.of("liked", commentService.like(id)));
     }
 
     @PostMapping("/{id}/bookmark")
     public ApiResponse<Map<String, Boolean>> bookmark(@PathVariable Long id) {
-        return ApiResponse.ok(Map.of("bookmarked", newsService.bookmark(id)));
+        return ApiResponse.ok(Map.of("bookmarked", commentService.bookmark(id)));
     }
 
     @PostMapping("/{id}/comments")
     public ApiResponse<CommentResponse> comment(@PathVariable Long id, @Valid @RequestBody CommentRequest request) {
-        return ApiResponse.ok(newsService.comment(id, request));
+        return ApiResponse.ok(commentService.comment(id, request));
     }
 }

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { data, http } from "@/shared/lib/api-client";
+import { apiErrorMessage, data, http } from "@/shared/lib/api-client";
 import { useAuthStore } from "@/shared/lib/auth-store";
 import { PublicShell } from "@/shared/components/public-shell";
 import type { AuthResponse } from "@/shared/lib/types";
@@ -34,8 +34,8 @@ export default function RegisterPage() {
       const auth = await data<AuthResponse>(http.post("/auth/register", parsed.data));
       setAuth(auth);
       router.push("/profile");
-    } catch {
-      setError("Register failed.");
+    } catch (error) {
+      setError(apiErrorMessage(error, "Register failed."));
     }
   };
 

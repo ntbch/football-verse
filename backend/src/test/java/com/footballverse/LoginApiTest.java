@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {
+    "app.crawl.startup-enabled=false",
     "logging.level.org.springframework.security=TRACE",
     "logging.level.org.springframework.web=TRACE"
 })

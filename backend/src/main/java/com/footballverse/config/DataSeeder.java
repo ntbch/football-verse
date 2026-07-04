@@ -44,6 +44,15 @@ public class DataSeeder implements CommandLineRunner {
     @Value("${app.seed.admin-password}")
     private String adminPassword;
 
+    @Value("${app.seed.news-sources:}")
+    private String newsSourceSeeds;
+
+    @Value("${app.seed.news-categories:}")
+    private String newsCategorySeeds;
+
+    @Value("${app.seed.forum-categories:}")
+    private String forumCategorySeeds;
+
     @Override
     @Transactional
     public void run(String... args) {
@@ -51,19 +60,10 @@ public class DataSeeder implements CommandLineRunner {
             return;
         }
         UserAccount admin = seedAdmin();
-        seedNewsCategory("Transfers", "transfers");
-        seedNewsCategory("Matchday", "matchday");
+        seedNewsCategories();
         seedArticle(admin);
-        seedForumCategory("Premier League", "premier-league");
-        seedForumCategory("Transfers", "transfers");
-        seedForumCategory("General Football", "general-football");
-        seedNewsSource("ESPN Soccer", "https://www.espn.com/espn/rss/soccer/news");
-        seedNewsSource("BBC Sport Football", "https://feeds.bbci.co.uk/sport/football/rss.xml");
-        seedNewsSource("Thể thao 247", "https://thethao247.vn/bong-da.rss");
-        seedNewsSource("Bóng đá 24h", "https://bongda24h.vn/RSS/1.rss");
-        seedNewsSource("Goal.com", "https://www.goal.com/feeds/en/news");
-        seedNewsSource("Transfermarkt", "https://www.transfermarkt.co.uk/rss/news");
-        seedNewsSource("Tribuna.com", "https://tribuna.com/rss/news");
+        seedForumCategories();
+        seedNewsSources();
     }
 
     private UserAccount seedAdmin() {
@@ -96,7 +96,8 @@ public class DataSeeder implements CommandLineRunner {
         article.setTitle("Opening whistle: Football Verse newsroom is live");
         article.setSlug("opening-whistle");
         article.setSummary("A first seeded story so the Phase 1 news page is not empty.");
-        article.setContent("<p>Football Verse now has public news, forum rooms, login, registration, and an admin control room wired to the Spring API.</p>");
+        article.setContent(
+                "<p>Football Verse now has public news, forum rooms, login, registration, and an admin control room wired to the Spring API.</p>");
         article.setStatus(ArticleStatus.PUBLISHED);
         article.setCategory(category);
         article.setAuthor(admin);
@@ -108,5 +109,32 @@ public class DataSeeder implements CommandLineRunner {
         if (!newsSources.existsByFeedUrl(feedUrl)) {
             newsSources.save(new NewsSource(name, feedUrl));
         }
+    }
+
+    private void seedNewsSources() {
+        forEachSeed(newsSourceSeeds, this::seedNewsSource);
+    }
+
+    private void seedNewsCategories() {
+        forEachSeed(newsCategorySeeds, this::seedNewsCategory);
+    }
+
+    private void seedForumCategories() {
+        forEachSeed(forumCategorySeeds, this::seedForumCategory);
+    }
+
+    private void forEachSeed(String seeds, SeedConsumer consumer) {
+        if (seeds == null || seeds.isBlank()) return;
+        for (String seed : seeds.split(";")) {
+            String[] parts = seed.split("=", 2);
+            if (parts.length == 2 && !parts[0].isBlank() && !parts[1].isBlank()) {
+                consumer.accept(parts[0].trim(), parts[1].trim());
+            }
+        }
+    }
+
+    @FunctionalInterface
+    private interface SeedConsumer {
+        void accept(String name, String value);
     }
 }

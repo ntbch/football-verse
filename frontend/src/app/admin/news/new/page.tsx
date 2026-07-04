@@ -1,11 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { data, http } from "@/shared/lib/api-client";
-import type { NewsArticle, NewsCategory } from "@/shared/lib/types";
+import { apiErrorMessage, data, http } from "@/shared/lib/api-client";
+import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
+import type { NewsArticle, NewsCategory } from "@/app/news/_types";
 
 const schema = z.object({
   title: z.string().min(3),
@@ -20,23 +22,36 @@ type ArticleForm = z.infer<typeof schema>;
 
 export default function AdminNewArticlePage() {
   const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
   const categories = useQuery({ queryKey: ["news-categories"], queryFn: () => data<NewsCategory[]>(http.get("/admin/news/categories")) });
   const { register, handleSubmit, formState } = useForm<ArticleForm>({ defaultValues: { status: "PUBLISHED" } });
 
   const submit = async (values: ArticleForm) => {
-    const parsed = schema.parse(values);
-    const article = await data<NewsArticle>(http.post("/admin/news", {
-      ...parsed,
-      categoryId: parsed.categoryId || null,
-      tags: parsed.tags ? parsed.tags.split(",").map((tag) => tag.trim()).filter(Boolean) : []
-    }));
-    router.push(`/news/${article.slug}`);
+    setError(null);
+    const parsed = schema.safeParse(values);
+    if (!parsed.success) {
+      setError("Title and content are required.");
+      return;
+    }
+    try {
+      const article = await data<NewsArticle>(http.post("/admin/news", {
+        ...parsed.data,
+        categoryId: parsed.data.categoryId || null,
+        tags: parsed.data.tags ? parsed.data.tags.split(",").map((tag) => tag.trim()).filter(Boolean) : []
+      }));
+      router.push(`/news/${article.slug}`);
+    } catch (err) {
+      setError(apiErrorMessage(err, "Could not create article."));
+    }
   };
 
   return (
     <div>
       <h1 className="display-face text-4xl font-black">New article</h1>
       <form className="mt-5 grid max-w-3xl gap-4" onSubmit={handleSubmit(submit)}>
+        {categories.isLoading ? <LoadingBlock label="Loading categories" /> : null}
+        {categories.error ? <ErrorBlock message="Could not load categories." /> : null}
+        {error ? <ErrorBlock message={error} /> : null}
         <label className="grid gap-1 font-bold">
           Title
           <input className="input text-[var(--fv-ink)]" {...register("title")} />
@@ -69,7 +84,9 @@ export default function AdminNewArticlePage() {
             </select>
           </label>
         </div>
-        <button className="btn w-fit bg-[var(--fv-grass)] text-[var(--fv-ink)]" disabled={formState.isSubmitting}>Publish</button>
+        <button className="btn w-fit bg-[var(--fv-grass)] text-[var(--fv-ink)]" disabled={formState.isSubmitting}>
+          {formState.isSubmitting ? "Saving..." : "Publish"}
+        </button>
       </form>
     </div>
   );
