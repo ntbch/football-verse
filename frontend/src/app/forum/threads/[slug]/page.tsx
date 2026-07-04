@@ -5,6 +5,7 @@ import { useState } from "react";
 import { PublicShell } from "@/shared/components/public-shell";
 import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import { useThreadDetail, useReply, useReportThread } from "../../_api";
+import { MentionRenderer } from "@/shared/components/MentionRenderer";
 
 export default function ThreadPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -31,7 +32,9 @@ export default function ThreadPage() {
               {thread.data.posts.map((post) => (
                 <article className="panel p-4" key={post.id}>
                   <p className="font-bold">{post.author}</p>
-                  <p className="mt-2 whitespace-pre-wrap">{post.content}</p>
+                  <p className="mt-2 whitespace-pre-wrap">
+                    <MentionRenderer content={post.content} />
+                  </p>
                 </article>
               ))}
             </div>

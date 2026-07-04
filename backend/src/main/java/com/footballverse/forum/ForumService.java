@@ -16,6 +16,7 @@ import com.footballverse.forum.dto.ThreadRequest;
 import com.footballverse.forum.dto.ThreadResponse;
 import com.footballverse.notification.NotificationService;
 import com.footballverse.notification.NotificationType;
+import com.footballverse.notification.MentionService;
 import com.footballverse.user.UserAccount;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -36,6 +37,7 @@ public class ForumService {
     private final RichTextSanitizer sanitizer;
     private final CurrentUser currentUser;
     private final NotificationService notifications;
+    private final MentionService mentionService;
 
     @Transactional(readOnly = true)
     public List<ForumCategoryResponse> categories() {
@@ -82,6 +84,7 @@ public class ForumService {
         post.setAuthor(user);
         post.setContent(sanitizer.sanitize(request.content()));
         posts.save(post);
+        mentionService.processMentions(user, request.content(), "%s mentioned you in a thread", "/forum/threads/" + saved.getSlug());
         return toThread(saved);
     }
 
@@ -98,6 +101,7 @@ public class ForumService {
         post.setAuthor(user);
         post.setContent(sanitizer.sanitize(request.content()));
         ForumPost saved = posts.save(post);
+        mentionService.processMentions(user, request.content(), "%s mentioned you in a forum post", "/forum/threads/" + thread.getSlug());
         if (!thread.getAuthor().getId().equals(user.getId())) {
             notifications.create(thread.getAuthor(), NotificationType.FORUM_REPLY, user.getUsername() + " replied to your thread", "/forum/threads/" + thread.getSlug());
         }

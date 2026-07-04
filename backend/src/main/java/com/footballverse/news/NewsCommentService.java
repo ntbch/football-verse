@@ -7,6 +7,7 @@ import com.footballverse.news.dto.CommentRequest;
 import com.footballverse.news.dto.CommentResponse;
 import com.footballverse.security.CurrentUser;
 import com.footballverse.user.UserAccount;
+import com.footballverse.notification.MentionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ public class NewsCommentService {
     private final NewsBookmarkRepository bookmarks;
     private final RichTextSanitizer sanitizer;
     private final CurrentUser currentUser;
+    private final MentionService mentionService;
 
     @Transactional(readOnly = true)
     public List<CommentResponse> comments(String slug) {
@@ -45,7 +47,9 @@ public class NewsCommentService {
             }
             comment.setParent(parent);
         }
-        return toComment(comments.save(comment));
+        NewsComment saved = comments.save(comment);
+        mentionService.processMentions(comment.getAuthor(), request.content(), "%s mentioned you in a comment", "/news/" + article.getSlug());
+        return toComment(saved);
     }
 
     public boolean like(Long articleId) {

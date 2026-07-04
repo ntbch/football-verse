@@ -12,6 +12,7 @@ import {
   useBookmarkNews,
   useCreateNewsComment
 } from "../_api";
+import { MentionRenderer } from "@/shared/components/MentionRenderer";
 
 export default function NewsDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -92,7 +93,9 @@ export default function NewsDetailPage() {
           {comments.data?.map((item) => (
             <div className="border-t border-[var(--fv-line)] pt-3" key={item.id}>
               <p className="font-bold">{item.author}</p>
-              <p className="mt-1">{item.content}</p>
+              <p className="mt-1">
+                <MentionRenderer content={item.content} />
+              </p>
             </div>
           ))}
         </div>
