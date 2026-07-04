@@ -92,7 +92,7 @@ export default function HomePage() {
                 <p className="font-bold">{article.title}</p>
                 <p suppressHydrationWarning className="text-sm text-[var(--fv-muted)]">
                   {article.category ?? "Uncategorized"}
-                  {article.publishedAt ? ` · ${new Date(article.publishedAt).toLocaleDateString("vi-VN")}` : ""}
+                  {article.publishedAt ? ` · ${new Date(article.publishedAt).toLocaleDateString("en-US")}` : ""}
                 </p>
               </Link>
             ))}

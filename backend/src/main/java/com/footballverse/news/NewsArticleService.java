@@ -8,6 +8,7 @@ import com.footballverse.news.dto.NewsArticleRequest;
 import com.footballverse.news.dto.NewsArticleResponse;
 import com.footballverse.news.dto.NewsCategoryRequest;
 import com.footballverse.news.dto.NewsCategoryResponse;
+import com.footballverse.news.dto.NewsTagResponse;
 import com.footballverse.security.CurrentUser;
 import com.footballverse.user.UserAccount;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,8 +35,16 @@ public class NewsArticleService {
     private final CurrentUser currentUser;
 
     @Transactional(readOnly = true)
-    public PageResponse<NewsArticleResponse> published(int page, int size) {
-        return PageResponse.from(articles.findByStatus(ArticleStatus.PUBLISHED, PageRequest.of(page, size)).map(this::toArticle));
+    public PageResponse<NewsArticleResponse> published(List<Long> categoryIds, List<Long> tagIds, int page, int size) {
+        boolean hasCategories = categoryIds != null && !categoryIds.isEmpty();
+        boolean hasTags = tagIds != null && !tagIds.isEmpty();
+        return PageResponse.from(articles.filterPublishedArticles(
+                hasCategories,
+                categoryIds,
+                hasTags,
+                tagIds,
+                PageRequest.of(page, size)
+        ).map(this::toArticle));
     }
 
     @Transactional(readOnly = true)
@@ -102,7 +112,15 @@ public class NewsArticleService {
     @Transactional(readOnly = true)
     public List<NewsCategoryResponse> categories() {
         return categories.findAll().stream()
+                .sorted(Comparator.comparing((NewsCategory c) -> "others".equals(c.getSlug())).thenComparing(NewsCategory::getId))
                 .map(c -> new NewsCategoryResponse(c.getId(), c.getName(), c.getSlug()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<NewsTagResponse> tags() {
+        return tags.findAll().stream()
+                .map(t -> new NewsTagResponse(t.getId(), t.getName(), t.getSlug()))
                 .toList();
     }
 

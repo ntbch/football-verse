@@ -3,9 +3,13 @@ package com.footballverse;
 import com.footballverse.crawl.CrawlService;
 import com.footballverse.crawl.FeedFetcher;
 import com.footballverse.crawl.HtmlContentScraper;
+import com.footballverse.forum.ForumService;
 import com.footballverse.news.ArticleStatus;
 import com.footballverse.news.NewsArticle;
 import com.footballverse.news.NewsArticleRepository;
+import com.footballverse.news.NewsArticleService;
+import com.footballverse.news.NewsCategory;
+import com.footballverse.news.NewsCategoryRepository;
 import com.footballverse.news.NewsSource;
 import com.footballverse.news.NewsSourceRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +46,16 @@ public class RssCrawlerTest {
     private NewsArticleRepository articleRepository;
 
     @Autowired
+    private NewsCategoryRepository categoryRepository;
+
+    @Autowired
     private CrawlService crawlService;
+
+    @Autowired
+    private NewsArticleService articleService;
+
+    @Autowired
+    private ForumService forumService;
 
     @MockBean
     private FeedFetcher mockFeedFetcher;
@@ -56,6 +69,14 @@ public class RssCrawlerTest {
     public void setup() {
         // Mock html scraper to return the fallback description by default
         when(mockHtmlScraper.scrape(anyString(), anyString())).thenAnswer(invocation -> invocation.getArgument(1));
+
+        sourceRepository.findAll().forEach(source -> {
+            if (!FEED_URL.equals(source.getFeedUrl())) {
+                source.setActive(false);
+                source.setLastCrawledAt(null);
+                sourceRepository.save(source);
+            }
+        });
 
         // Retrieve or create the test source dynamically
         activeSource = sourceRepository.findByFeedUrl(FEED_URL)
@@ -72,6 +93,12 @@ public class RssCrawlerTest {
     private void stubFeed(String content) {
         when(mockFeedFetcher.fetch(FEED_URL))
                 .thenReturn(new FeedFetcher.FetchResult(content.getBytes(StandardCharsets.UTF_8), false));
+    }
+
+    @Test
+    public void testCategoriesKeepOthersLast() {
+        assertThat(articleService.categories()).last().extracting("slug").isEqualTo("others");
+        assertThat(forumService.categories()).last().extracting("slug").isEqualTo("others");
     }
 
     @Test
@@ -115,9 +142,43 @@ public class RssCrawlerTest {
                 .findFirst().orElseThrow();
         assertThat(haaland.getStatus()).isEqualTo(ArticleStatus.PUBLISHED);
         assertThat(haaland.getSourceUrl()).isEqualTo("http://localhost:8080/news/haaland-hat-trick");
-        assertThat(haaland.getCategory()).isNull();
+        assertThat(haaland.getCategory()).isNotNull();
+        assertThat(haaland.getCategory().getSlug()).isEqualTo("others");
         assertThat(haaland.getAuthor()).isNull();
         assertThat(haaland.getPublishedAt()).isNotNull();
+    }
+
+    @Test
+    public void testCrawlClassifiesArticleIntoFootballCategoryGroup() {
+        categoryRepository.findBySlug("transfer-news")
+                .orElseGet(() -> categoryRepository.save(new NewsCategory("Transfers", "transfer-news")));
+        categoryRepository.findBySlug("league-tournament-news")
+                .orElseGet(() -> categoryRepository.save(new NewsCategory("League News", "league-tournament-news")));
+        categoryRepository.findBySlug("others")
+                .orElseGet(() -> categoryRepository.save(new NewsCategory("Others", "others")));
+
+        String rssContent = """
+                <?xml version="1.0" encoding="UTF-8" ?>
+                <rss version="2.0">
+                <channel>
+                    <item>
+                        <title>Liverpool agree transfer deal for midfielder</title>
+                        <link>http://localhost:8080/news/liverpool-transfer-deal</link>
+                        <description>The club is close to a summer signing after a successful bid.</description>
+                    </item>
+                </channel>
+                </rss>
+                """;
+        stubFeed(rssContent);
+
+        CrawlService.CrawlResult result = crawlService.crawl();
+
+        NewsArticle article = articleRepository.findBySourceUrl("http://localhost:8080/news/liverpool-transfer-deal")
+                .orElseThrow();
+        assertThat(result.saved()).isEqualTo(1);
+        assertThat(article.getCategory()).isNotNull();
+        assertThat(article.getCategory().getName()).isEqualTo("Transfers");
+        assertThat(article.getCategory().getSlug()).isEqualTo("transfer-news");
     }
 
     @Test

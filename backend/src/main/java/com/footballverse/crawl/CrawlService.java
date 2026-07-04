@@ -109,7 +109,7 @@ public class CrawlService {
                     article.setContentHash(contentHash);
                     article.setStatus(ArticleStatus.PUBLISHED);
                     article.setPublishedAt(item.pubDate());
-                    article.setCategory(matchCategory(item.categories()));
+                    article.setCategory(matchCategory(item.categories(), item.title(), description));
 
                     articles.save(article);
                     savedCount++;
@@ -137,15 +137,44 @@ public class CrawlService {
         return prependFeedMedia(item, htmlScraper.scrape(item.link(), description));
     }
 
-    private NewsCategory matchCategory(List<String> categories) {
-        if (categories == null) return null;
-        for (String cat : categories) {
-            if (cat == null || cat.isBlank()) continue;
-            String slug = SlugUtil.slug(cat.trim());
-            var match = categoryRepository.findBySlug(slug);
-            if (match.isPresent()) return match.get();
+    private NewsCategory matchCategory(List<String> categories, String title, String description) {
+        if (categories != null) {
+            for (String cat : categories) {
+                if (cat == null || cat.isBlank()) continue;
+                var match = categoryRepository.findBySlug(SlugUtil.slug(cat.trim()));
+                if (match.isPresent()) return match.get();
+            }
         }
-        return null;
+        return categoryRepository.findBySlug(categorySlug(title, description, categories)).orElse(null);
+    }
+
+    private String categorySlug(String title, String description, List<String> categories) {
+        String text = ((title == null ? "" : title) + " "
+                + (description == null ? "" : description) + " "
+                + (categories == null ? "" : String.join(" ", categories))).toLowerCase();
+        if (containsAny(text, "transfer", "rumour", "rumor", "contract", "signing", "bid", "loan", "release clause")) {
+            return "transfer-news";
+        }
+        if (containsAny(text, "preview", "prediction", "predicted", "line-up", "lineup", "odds", "team news", "before")) {
+            return "match-preview-analysis";
+        }
+        if (containsAny(text, "wife", "girlfriend", "fashion", "car", "lifestyle", "instagram", "training ground", "behind the scenes")) {
+            return "off-the-pitch";
+        }
+        if (containsAny(text, "opinion", "interview", "debate", "controversy", "referee", "var", "fans", "pundit")) {
+            return "expert-fan-opinions";
+        }
+        if (containsAny(text, "tactic", "formation", "analysis", "stats", "xg", "pressing", "heatmap", "football facts")) {
+            return "football-facts-tactical-insights";
+        }
+        return "others";
+    }
+
+    private boolean containsAny(String text, String... keywords) {
+        for (String keyword : keywords) {
+            if (text.contains(keyword)) return true;
+        }
+        return false;
     }
 
     public byte[] fetchFeed(String url) {

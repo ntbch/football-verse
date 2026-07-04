@@ -51,6 +51,15 @@ public class JwtService {
         return subject.toString();
     }
 
+    public Long userId(String token) {
+        Map<String, Object> payload = payload(token);
+        Object uid = payload.get("uid");
+        if (uid == null) {
+            throw new IllegalArgumentException("Missing JWT user id");
+        }
+        return ((Number) uid).longValue();
+    }
+
     public boolean isValid(String token) {
         String[] parts = token.split("\\.");
         if (parts.length != 3) {

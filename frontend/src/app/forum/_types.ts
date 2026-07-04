@@ -13,6 +13,11 @@ export type ForumThread = {
   pinned: boolean;
   locked: boolean;
   createdAt: string;
+  solved: boolean;
+  bestAnswerPostId: number | null;
+  followed: boolean;
+  replyCount: number;
+  lastActivityAt: string;
 };
 
 export type ForumPost = {
@@ -20,6 +25,8 @@ export type ForumPost = {
   author: string;
   content: string;
   createdAt: string;
+  likeCount: number;
+  liked: boolean;
 };
 
 export type ThreadDetail = {

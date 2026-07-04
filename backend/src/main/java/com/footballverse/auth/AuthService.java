@@ -37,7 +37,7 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (users.existsByEmail(request.email())) {
+        if (users.existsByEmail(request.email().toLowerCase())) {
             throw new BadRequestException("Email already exists");
         }
         if (users.existsByUsername(request.username())) {

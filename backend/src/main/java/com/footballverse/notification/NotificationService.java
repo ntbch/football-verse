@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.context.ApplicationEventPublisher;
 import java.time.Instant;
 import java.util.List;
 
@@ -16,10 +17,12 @@ import java.util.List;
 public class NotificationService {
     private final NotificationRepository notifications;
     private final CurrentUser currentUser;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public void create(UserAccount user, NotificationType type, String message, String linkUrl) {
-        notifications.save(new Notification(user, type, message, linkUrl));
+        Notification notification = notifications.save(new Notification(user, type, message, linkUrl));
+        eventPublisher.publishEvent(new NotificationCreatedEvent(this, notification));
     }
 
     @Transactional(readOnly = true)

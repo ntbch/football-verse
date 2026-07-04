@@ -21,4 +21,12 @@ public class CurrentUser {
         return users.findByEmail(authentication.getName())
                 .orElseThrow(() -> new ResourceNotFoundException("Current user not found"));
     }
+
+    public UserAccount getOrNull() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getName() == null || "anonymousUser".equals(authentication.getName())) {
+            return null;
+        }
+        return users.findByEmail(authentication.getName()).orElse(null);
+    }
 }

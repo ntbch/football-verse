@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { data, http } from "@/shared/lib/api-client";
 import { qk } from "@/shared/lib/query-keys";
 import type { NotificationItem, Profile } from "./_types";
+import type { ForumThread } from "@/app/forum/_types";
 
 export const useProfile = (enabled: boolean, onLoaded: (p: Profile) => void) =>
   useQuery({
@@ -24,10 +25,17 @@ export const useNotifications = (enabled: boolean) =>
     enabled
   });
 
+export const useFollowingThreads = (enabled: boolean) =>
+  useQuery({
+    queryKey: qk.user.followingThreads(),
+    queryFn: () => data<ForumThread[]>(http.get("/users/me/following-threads")),
+    enabled
+  });
+
 export const useSaveProfile = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { displayName: string; bio: string }) =>
+    mutationFn: (payload: { displayName: string; bio: string; avatarUrl?: string | null }) =>
       data<Profile>(http.patch("/users/me/profile", payload)),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.user.profile() })
   });

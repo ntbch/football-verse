@@ -107,8 +107,8 @@ public class DataSeeder implements CommandLineRunner {
         if (newsArticles.existsBySlug("opening-whistle")) {
             return;
         }
-        NewsCategory category = newsCategories.findBySlug("matchday")
-                .orElseGet(() -> newsCategories.save(new NewsCategory("Matchday", "matchday")));
+        NewsCategory category = newsCategories.findBySlug("league-tournament-news")
+                .orElseGet(() -> newsCategories.save(new NewsCategory("League News", "league-tournament-news")));
 
         NewsArticle article = new NewsArticle();
         article.setTitle("Opening whistle: Football Verse newsroom is live");

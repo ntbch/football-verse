@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { apiErrorMessage, data, http } from "@/shared/lib/api-client";
+import { apiErrorMessage, data, http, apiBaseUrl } from "@/shared/lib/api-client";
 import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import type { NewsArticle, NewsCategory } from "@/app/news/_types";
 
@@ -60,10 +60,45 @@ export default function AdminNewArticlePage() {
           Summary
           <textarea className="input min-h-20 text-[var(--fv-ink)]" {...register("summary")} />
         </label>
-        <label className="grid gap-1 font-bold">
-          Content
-          <textarea className="input min-h-56 text-[var(--fv-ink)]" {...register("content")} />
-        </label>
+        <div className="grid gap-1 font-bold">
+          <span className="flex items-center justify-between">
+            Content
+            <label className="cursor-pointer text-xs font-bold uppercase text-[var(--fv-clay, #d97706)] hover:underline">
+              Upload image & insert
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const formData = new FormData();
+                  formData.append("file", file);
+                  try {
+                    const res = await data<{ url: string }>(
+                      http.post("/uploads", formData, {
+                        headers: { "Content-Type": "multipart/form-data" }
+                      })
+                    );
+                    const image = `\n<img src="${apiBaseUrl}${res.url}" alt="image" />\n`;
+                    const textEl = document.getElementById("content-editor") as HTMLTextAreaElement;
+                    if (textEl) {
+                      const start = textEl.selectionStart;
+                      const end = textEl.selectionEnd;
+                      const text = textEl.value;
+                      const newVal = text.substring(0, start) + image + text.substring(end);
+                      textEl.value = newVal;
+                      textEl.dispatchEvent(new Event("input", { bubbles: true }));
+                    }
+                  } catch (err) {
+                    alert("Failed to upload image.");
+                  }
+                }}
+              />
+            </label>
+          </span>
+          <textarea id="content-editor" className="input min-h-56 text-[var(--fv-ink)]" {...register("content")} />
+        </div>
         <div className="grid gap-4 md:grid-cols-3">
           <label className="grid gap-1 font-bold">
             Category

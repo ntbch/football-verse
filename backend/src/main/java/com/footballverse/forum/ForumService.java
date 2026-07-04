@@ -18,14 +18,19 @@ import com.footballverse.notification.NotificationService;
 import com.footballverse.notification.NotificationType;
 import com.footballverse.notification.MentionService;
 import com.footballverse.user.UserAccount;
+import com.footballverse.user.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.text.Normalizer;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +39,8 @@ public class ForumService {
     private final ForumThreadRepository threads;
     private final ForumPostRepository posts;
     private final ForumReportRepository reports;
+    private final ForumPostLikeRepository forumPostLikeRepository;
+    private final ForumThreadFollowRepository follows;
     private final RichTextSanitizer sanitizer;
     private final CurrentUser currentUser;
     private final NotificationService notifications;
@@ -41,7 +48,10 @@ public class ForumService {
 
     @Transactional(readOnly = true)
     public List<ForumCategoryResponse> categories() {
-        return categories.findAll().stream().map(this::toCategory).toList();
+        return categories.findAll().stream()
+                .sorted(Comparator.comparing((ForumCategory c) -> "others".equals(c.getSlug())).thenComparing(ForumCategory::getId))
+                .map(this::toCategory)
+                .toList();
     }
 
     @Transactional
@@ -50,11 +60,14 @@ public class ForumService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<ThreadResponse> threads(String categorySlug, int page, int size) {
-        return PageResponse.from(threads.findByCategorySlugAndHiddenFalseOrderByPinnedDescCreatedAtDesc(
-                categorySlug,
-                PageRequest.of(page, size)
-        ).map(this::toThread));
+    public PageResponse<ThreadResponse> threads(String categorySlug, int page, int size, String sort) {
+        var pageable = PageRequest.of(page, size);
+        var result = switch (sort == null ? "latest" : sort) {
+            case "top" -> threads.topThreads(categorySlug, pageable);
+            case "hot" -> threads.hotThreads(categorySlug, pageable);
+            default -> threads.findByCategorySlugAndHiddenFalseOrderByPinnedDescLastActivityAtDesc(categorySlug, pageable);
+        };
+        return PageResponse.from(result.map(this::toThread));
     }
 
     @Transactional(readOnly = true)
@@ -77,6 +90,7 @@ public class ForumService {
         thread.setSlug(slug(request.title()) + "-" + System.currentTimeMillis());
         thread.setCategory(category);
         thread.setAuthor(user);
+        thread.setLastActivityAt(Instant.now());
         ForumThread saved = threads.save(thread);
 
         ForumPost post = new ForumPost();
@@ -84,6 +98,7 @@ public class ForumService {
         post.setAuthor(user);
         post.setContent(sanitizer.sanitize(request.content()));
         posts.save(post);
+        follows.save(new ForumThreadFollow(saved, user));
         mentionService.processMentions(user, request.content(), "%s mentioned you in a thread", "/forum/threads/" + saved.getSlug());
         return toThread(saved);
     }
@@ -101,10 +116,9 @@ public class ForumService {
         post.setAuthor(user);
         post.setContent(sanitizer.sanitize(request.content()));
         ForumPost saved = posts.save(post);
+        thread.setLastActivityAt(Instant.now());
         mentionService.processMentions(user, request.content(), "%s mentioned you in a forum post", "/forum/threads/" + thread.getSlug());
-        if (!thread.getAuthor().getId().equals(user.getId())) {
-            notifications.create(thread.getAuthor(), NotificationType.FORUM_REPLY, user.getUsername() + " replied to your thread", "/forum/threads/" + thread.getSlug());
-        }
+        notifyReplySubscribers(thread, user);
         return toPost(saved);
     }
 
@@ -153,6 +167,10 @@ public class ForumService {
         ForumPost post = posts.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
         post.setHidden(hidden);
+        if (hidden && post.getThread().getBestAnswer() != null && post.getThread().getBestAnswer().getId().equals(post.getId())) {
+            post.getThread().setBestAnswer(null);
+            post.getThread().setSolved(false);
+        }
         return toPost(post);
     }
 
@@ -167,6 +185,81 @@ public class ForumService {
 
     private ForumThread threadById(Long id) {
         return threads.findById(id).orElseThrow(() -> new ResourceNotFoundException("Thread not found"));
+    }
+
+    @Transactional
+    public boolean toggleFollow(Long threadId) {
+        UserAccount user = currentUser.get();
+        ForumThread thread = threadById(threadId);
+        return follows.findByThreadIdAndUserId(threadId, user.getId())
+                .map(follow -> {
+                    follows.delete(follow);
+                    return false;
+                })
+                .orElseGet(() -> {
+                    follows.save(new ForumThreadFollow(thread, user));
+                    return true;
+                });
+    }
+
+    @Transactional(readOnly = true)
+    public List<ThreadResponse> followedThreads() {
+        return follows.findByUserOrderByThreadLastActivityAtDesc(currentUser.get()).stream()
+                .map(ForumThreadFollow::getThread)
+                .filter(thread -> !thread.isHidden())
+                .map(this::toThread)
+                .toList();
+    }
+
+    @Transactional
+    public ThreadResponse markBestAnswer(Long threadId, Long postId) {
+        ForumThread thread = threadById(threadId);
+        UserAccount user = currentUser.get();
+        if (!canManageAnswer(thread, user)) {
+            throw new BadRequestException("Only the thread author or moderators can mark best answer");
+        }
+        ForumPost post = posts.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
+        if (!post.getThread().getId().equals(thread.getId()) || post.isHidden()) {
+            throw new BadRequestException("Best answer must be a visible post in the same thread");
+        }
+        thread.setBestAnswer(post);
+        thread.setSolved(true);
+        return toThread(thread);
+    }
+
+    @Transactional
+    public ThreadResponse clearBestAnswer(Long threadId) {
+        ForumThread thread = threadById(threadId);
+        UserAccount user = currentUser.get();
+        if (!canManageAnswer(thread, user)) {
+            throw new BadRequestException("Only the thread author or moderators can clear best answer");
+        }
+        thread.setBestAnswer(null);
+        thread.setSolved(false);
+        return toThread(thread);
+    }
+
+    private boolean canManageAnswer(ForumThread thread, UserAccount user) {
+        return thread.getAuthor().getId().equals(user.getId())
+                || user.getRoles().contains(UserRole.ADMIN)
+                || user.getRoles().contains(UserRole.MODERATOR);
+    }
+
+    private void notifyReplySubscribers(ForumThread thread, UserAccount replier) {
+        Set<Long> notified = new HashSet<>();
+        String link = "/forum/threads/" + thread.getSlug();
+        String message = replier.getUsername() + " replied to " + thread.getTitle();
+        if (!thread.getAuthor().getId().equals(replier.getId())) {
+            notifications.create(thread.getAuthor(), NotificationType.FORUM_REPLY, message, link);
+            notified.add(thread.getAuthor().getId());
+        }
+        follows.findByThreadId(thread.getId()).forEach(follow -> {
+            UserAccount user = follow.getUser();
+            if (!user.getId().equals(replier.getId()) && notified.add(user.getId())) {
+                notifications.create(user, NotificationType.FORUM_REPLY, message, link);
+            }
+        });
     }
 
     private void validateReportTarget(ForumReportTarget targetType, Long targetId) {
@@ -203,12 +296,48 @@ public class ForumService {
                 thread.getAuthor().getUsername(),
                 thread.isPinned(),
                 thread.isLocked(),
-                thread.getCreatedAt()
+                thread.getCreatedAt(),
+                thread.isSolved(),
+                thread.getBestAnswer() == null ? null : thread.getBestAnswer().getId(),
+                followed(thread),
+                posts.countByThreadIdAndHiddenFalse(thread.getId()),
+                thread.getLastActivityAt()
         );
     }
 
+    private boolean followed(ForumThread thread) {
+        UserAccount current = currentUser.getOrNull();
+        return current != null && follows.existsByThreadIdAndUserId(thread.getId(), current.getId());
+    }
+
+    public boolean toggleLikePost(Long postId) {
+        UserAccount user = currentUser.get();
+        ForumPost post = posts.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
+        return forumPostLikeRepository.findByPostIdAndUserId(postId, user.getId())
+                .map(like -> {
+                    forumPostLikeRepository.delete(like);
+                    return false;
+                })
+                .orElseGet(() -> {
+                    forumPostLikeRepository.save(new ForumPostLike(post, user));
+                    return true;
+                });
+    }
+
     private PostResponse toPost(ForumPost post) {
-        return new PostResponse(post.getId(), post.getAuthor().getUsername(), post.getContent(), post.getCreatedAt());
+        long likeCount = forumPostLikeRepository.countByPostId(post.getId());
+        UserAccount current = currentUser.getOrNull();
+        boolean liked = current != null && forumPostLikeRepository.existsByPostIdAndUserId(post.getId(), current.getId());
+
+        return new PostResponse(
+                post.getId(),
+                post.getAuthor().getUsername(),
+                post.getContent(),
+                post.getCreatedAt(),
+                likeCount,
+                liked
+        );
     }
 
     private ReportResponse toReport(ForumReport report) {

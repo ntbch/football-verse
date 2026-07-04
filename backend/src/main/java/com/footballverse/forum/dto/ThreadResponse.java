@@ -10,6 +10,11 @@ public record ThreadResponse(
         String author,
         boolean pinned,
         boolean locked,
-        Instant createdAt
+        Instant createdAt,
+        boolean solved,
+        Long bestAnswerPostId,
+        boolean followed,
+        long replyCount,
+        Instant lastActivityAt
 ) {
 }

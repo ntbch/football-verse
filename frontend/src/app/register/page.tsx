@@ -10,9 +10,11 @@ import { PublicShell } from "@/shared/components/public-shell";
 import type { AuthResponse } from "@/shared/lib/types";
 
 const schema = z.object({
-  email: z.string().email(),
-  username: z.string().min(3).max(60),
-  password: z.string().min(8)
+  email: z.string().email("Invalid email address format."),
+  username: z.string()
+    .min(3, "Username must be at least 3 characters long.")
+    .max(60, "Username must not exceed 60 characters."),
+  password: z.string().min(8, "Password must be at least 8 characters long.")
 });
 
 type RegisterForm = z.infer<typeof schema>;
@@ -20,22 +22,30 @@ type RegisterForm = z.infer<typeof schema>;
 export default function RegisterPage() {
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
-  const [error, setError] = useState<string | null>(null);
-  const { register, handleSubmit, formState } = useForm<RegisterForm>();
+  const [globalError, setGlobalError] = useState<string | null>(null);
+  const { register, handleSubmit, formState: { errors, isSubmitting }, setError } = useForm<RegisterForm>();
 
   const submit = async (values: RegisterForm) => {
-    setError(null);
+    setGlobalError(null);
     const parsed = schema.safeParse(values);
     if (!parsed.success) {
-      setError("Check email, username, and password.");
+      parsed.error.errors.forEach((err) => {
+        const fieldName = err.path[0];
+        if (fieldName) {
+          setError(fieldName as keyof RegisterForm, {
+            type: "manual",
+            message: err.message
+          });
+        }
+      });
       return;
     }
     try {
       const auth = await data<AuthResponse>(http.post("/auth/register", parsed.data));
       setAuth(auth);
       router.push("/profile");
-    } catch (error) {
-      setError(apiErrorMessage(error, "Register failed."));
+    } catch (err) {
+      setGlobalError(apiErrorMessage(err, "Register failed."));
     }
   };
 
@@ -46,19 +56,22 @@ export default function RegisterPage() {
         <form className="mt-6 grid gap-4" onSubmit={handleSubmit(submit)}>
           <label className="grid gap-1 font-bold">
             Email
-            <input className="input" {...register("email")} />
+            <input className={`input ${errors.email ? "border-red-900" : ""}`} {...register("email")} />
+            {errors.email && <p className="text-sm font-semibold text-red-900">{errors.email.message}</p>}
           </label>
           <label className="grid gap-1 font-bold">
             Username
-            <input className="input" {...register("username")} />
+            <input className={`input ${errors.username ? "border-red-900" : ""}`} {...register("username")} />
+            {errors.username && <p className="text-sm font-semibold text-red-900">{errors.username.message}</p>}
           </label>
           <label className="grid gap-1 font-bold">
             Password
-            <input className="input" type="password" {...register("password")} />
+            <input className={`input ${errors.password ? "border-red-900" : ""}`} type="password" {...register("password")} />
+            {errors.password && <p className="text-sm font-semibold text-red-900">{errors.password.message}</p>}
           </label>
-          {error ? <p className="font-bold text-red-900">{error}</p> : null}
-          <button className="btn" disabled={formState.isSubmitting}>
-            {formState.isSubmitting ? "Creating..." : "Create account"}
+          {globalError ? <p className="font-bold text-red-900">{globalError}</p> : null}
+          <button className="btn" disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Create account"}
           </button>
         </form>
       </section>

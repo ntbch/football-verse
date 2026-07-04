@@ -27,6 +27,7 @@ export const qk = {
   user: {
     profile: () => ["profile"] as const,
     notifications: () => ["notifications"] as const,
+    followingThreads: () => ["following-threads"] as const,
   },
   moderator: {
     stats: () => ["moderator-stats"] as const,

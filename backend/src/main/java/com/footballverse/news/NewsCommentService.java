@@ -22,6 +22,7 @@ public class NewsCommentService {
     private final NewsCommentRepository comments;
     private final NewsLikeRepository likes;
     private final NewsBookmarkRepository bookmarks;
+    private final NewsCommentLikeRepository newsCommentLikeRepository;
     private final RichTextSanitizer sanitizer;
     private final CurrentUser currentUser;
     private final MentionService mentionService;
@@ -68,18 +69,39 @@ public class NewsCommentService {
                 .orElseGet(() -> { bookmarks.save(new NewsBookmark(article, user)); return true; });
     }
 
+    public boolean toggleLikeComment(Long commentId) {
+        UserAccount user = currentUser.get();
+        NewsComment comment = comments.findById(commentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
+        return newsCommentLikeRepository.findByCommentIdAndUserId(commentId, user.getId())
+                .map(like -> {
+                    newsCommentLikeRepository.delete(like);
+                    return false;
+                })
+                .orElseGet(() -> {
+                    newsCommentLikeRepository.save(new NewsCommentLike(comment, user));
+                    return true;
+                });
+    }
+
     private NewsArticle publishedArticle(Long articleId) {
         return articles.findByIdAndStatus(articleId, ArticleStatus.PUBLISHED)
                 .orElseThrow(() -> new ResourceNotFoundException("Article not found"));
     }
 
     private CommentResponse toComment(NewsComment comment) {
+        long likeCount = newsCommentLikeRepository.countByCommentId(comment.getId());
+        UserAccount current = currentUser.getOrNull();
+        boolean liked = current != null && newsCommentLikeRepository.existsByCommentIdAndUserId(comment.getId(), current.getId());
+        
         return new CommentResponse(
                 comment.getId(),
                 comment.getParent() == null ? null : comment.getParent().getId(),
                 comment.getAuthor().getUsername(),
                 comment.getContent(),
-                comment.getCreatedAt()
+                comment.getCreatedAt(),
+                likeCount,
+                liked
         );
     }
 }

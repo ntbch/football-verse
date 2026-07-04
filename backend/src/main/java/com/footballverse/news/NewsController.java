@@ -6,6 +6,7 @@ import com.footballverse.news.dto.CommentRequest;
 import com.footballverse.news.dto.CommentResponse;
 import com.footballverse.news.dto.NewsArticleResponse;
 import com.footballverse.news.dto.NewsCategoryResponse;
+import com.footballverse.news.dto.NewsTagResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,10 +29,12 @@ public class NewsController {
 
     @GetMapping
     public ApiResponse<PageResponse<NewsArticleResponse>> list(
+            @RequestParam(required = false) List<Long> categories,
+            @RequestParam(required = false) List<Long> tags,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return ApiResponse.ok(articleService.published(page, size));
+        return ApiResponse.ok(articleService.published(categories, tags, page, size));
     }
 
     @GetMapping("/{slug}")
@@ -49,6 +52,11 @@ public class NewsController {
         return ApiResponse.ok(articleService.categories());
     }
 
+    @GetMapping("/tags")
+    public ApiResponse<List<NewsTagResponse>> tags() {
+        return ApiResponse.ok(articleService.tags());
+    }
+
     @PostMapping("/{id}/like")
     public ApiResponse<Map<String, Boolean>> like(@PathVariable Long id) {
         return ApiResponse.ok(Map.of("liked", commentService.like(id)));
@@ -57,6 +65,11 @@ public class NewsController {
     @PostMapping("/{id}/bookmark")
     public ApiResponse<Map<String, Boolean>> bookmark(@PathVariable Long id) {
         return ApiResponse.ok(Map.of("bookmarked", commentService.bookmark(id)));
+    }
+
+    @PostMapping("/comments/{id}/like")
+    public ApiResponse<Map<String, Boolean>> likeComment(@PathVariable Long id) {
+        return ApiResponse.ok(Map.of("liked", commentService.toggleLikeComment(id)));
     }
 
     @PostMapping("/{id}/comments")

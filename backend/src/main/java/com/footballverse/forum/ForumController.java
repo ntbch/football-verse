@@ -2,6 +2,7 @@ package com.footballverse.forum;
 
 import com.footballverse.common.pagination.PageResponse;
 import com.footballverse.common.response.ApiResponse;
+import com.footballverse.forum.dto.BestAnswerRequest;
 import com.footballverse.forum.dto.ForumCategoryResponse;
 import com.footballverse.forum.dto.PostResponse;
 import com.footballverse.forum.dto.ReplyRequest;
@@ -12,6 +13,7 @@ import com.footballverse.forum.dto.ThreadRequest;
 import com.footballverse.forum.dto.ThreadResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/forum")
@@ -37,9 +40,10 @@ public class ForumController {
     public ApiResponse<PageResponse<ThreadResponse>> threads(
             @PathVariable String slug,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "latest") String sort
     ) {
-        return ApiResponse.ok(forumService.threads(slug, page, size));
+        return ApiResponse.ok(forumService.threads(slug, page, size, sort));
     }
 
     @PostMapping("/categories/{slug}/threads")
@@ -57,8 +61,28 @@ public class ForumController {
         return ApiResponse.ok(forumService.reply(id, request));
     }
 
+    @PostMapping("/threads/{id}/follow")
+    public ApiResponse<Map<String, Boolean>> follow(@PathVariable Long id) {
+        return ApiResponse.ok(Map.of("followed", forumService.toggleFollow(id)));
+    }
+
+    @PostMapping("/threads/{id}/best-answer")
+    public ApiResponse<ThreadResponse> markBestAnswer(@PathVariable Long id, @Valid @RequestBody BestAnswerRequest request) {
+        return ApiResponse.ok(forumService.markBestAnswer(id, request.postId()));
+    }
+
+    @DeleteMapping("/threads/{id}/best-answer")
+    public ApiResponse<ThreadResponse> clearBestAnswer(@PathVariable Long id) {
+        return ApiResponse.ok(forumService.clearBestAnswer(id));
+    }
+
     @PostMapping("/reports")
     public ApiResponse<ReportResponse> report(@Valid @RequestBody ReportRequest request) {
         return ApiResponse.ok(forumService.report(request));
+    }
+
+    @PostMapping("/posts/{id}/like")
+    public ApiResponse<Map<String, Boolean>> likePost(@PathVariable Long id) {
+        return ApiResponse.ok(Map.of("liked", forumService.toggleLikePost(id)));
     }
 }

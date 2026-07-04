@@ -9,11 +9,15 @@ import { useCategoryThreads, useCreateThread } from "../../_api";
 
 export default function CategoryThreadsPage() {
   const { slug } = useParams<{ slug: string }>();
+  const [page, setPage] = useState(0);
+  const [sort, setSort] = useState("latest");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
-  const threads = useCategoryThreads(slug);
+  const threads = useCategoryThreads(slug, page, sort);
   const createThread = useCreateThread(slug);
+  const totalPages = threads.data?.totalPages ?? 0;
+  const totalThreads = threads.data?.totalElements ?? 0;
 
   return (
     <PublicShell>
@@ -21,6 +25,17 @@ export default function CategoryThreadsPage() {
         <div>
           <div className="panel touchline p-5">
             <h1 className="display-face text-4xl font-black">{slug.replaceAll("-", " ")}</h1>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {["latest", "top", "hot"].map((value) => (
+                <button
+                  className={sort === value ? "btn" : "btn btn-secondary"}
+                  key={value}
+                  onClick={() => { setSort(value); setPage(0); }}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="mt-4 grid gap-3">
             {threads.isLoading ? <LoadingBlock /> : null}
@@ -31,11 +46,31 @@ export default function CategoryThreadsPage() {
                 <div className="flex flex-wrap gap-2 text-xs font-bold uppercase text-[var(--fv-muted)]">
                   {thread.pinned ? <span>PINNED</span> : null}
                   {thread.locked ? <span>LOCKED</span> : null}
+                  {thread.solved ? <span>SOLVED</span> : <span>OPEN</span>}
+                  <span>{thread.replyCount} replies</span>
                   <span>by {thread.author}</span>
                 </div>
                 <h2 className="mt-1 text-xl font-black">{thread.title}</h2>
+                <p suppressHydrationWarning className="mt-2 text-xs font-bold uppercase text-[var(--fv-muted)]">
+                  Last activity {new Date(thread.lastActivityAt).toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" })}
+                </p>
               </Link>
             ))}
+            {totalPages > 1 ? (
+              <nav className="panel flex flex-wrap items-center justify-between gap-3 p-4">
+                <p className="text-sm font-bold uppercase text-[var(--fv-muted)]">
+                  Page {page + 1}/{totalPages} - {totalThreads} threads
+                </p>
+                <div className="flex gap-2">
+                  <button className="btn btn-secondary" disabled={page === 0 || threads.isFetching} onClick={() => setPage((value) => Math.max(0, value - 1))}>
+                    Prev
+                  </button>
+                  <button className="btn btn-secondary" disabled={page + 1 >= totalPages || threads.isFetching} onClick={() => setPage((value) => value + 1)}>
+                    Next
+                  </button>
+                </div>
+              </nav>
+            ) : null}
           </div>
         </div>
 

@@ -18,10 +18,18 @@ export type NewsCategory = {
   slug: string;
 };
 
+export type NewsTag = {
+  id: number;
+  name: string;
+  slug: string;
+};
+
 export type Comment = {
   id: number;
   parentId: number | null;
   author: string;
   content: string;
   createdAt: string;
+  likeCount: number;
+  liked: boolean;
 };
