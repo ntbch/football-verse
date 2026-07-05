@@ -6,6 +6,7 @@ frontend/.next/
 frontend/node_modules/
 
 *.log
+__pycache__/
 .env
 .env.*
 !.env.example

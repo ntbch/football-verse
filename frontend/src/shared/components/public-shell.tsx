@@ -11,6 +11,7 @@ import { qk } from "@/shared/lib/query-keys";
 const nav = [
   { href: "/", label: "Home" },
   { href: "/news", label: "News" },
+  { href: "/matches", label: "Matches" },
   { href: "/forum", label: "Forum" },
   { href: "/profile", label: "Profile" }
 ];

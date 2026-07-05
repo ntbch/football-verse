@@ -84,10 +84,10 @@ public class ArticleLinkExtractor {
         String selector = source.getCssSelector() != null && !source.getCssSelector().isBlank()
                 ? source.getCssSelector() : "a[href]";
 
-        for (org.jsoup.nodes.Element link : doc.select(selector)) {
+        for (Element link : doc.select(selector)) {
             if (!"a".equals(link.tagName())) {
                 // selector could match non-anchor containers → search within
-                for (org.jsoup.nodes.Element a : link.select("a[href]")) {
+                for (Element a : link.select("a[href]")) {
                     String articleUrl = articleUrl(a, host);
                     if (articleUrl != null) {
                         urls.add(articleUrl);
@@ -105,7 +105,7 @@ public class ArticleLinkExtractor {
         return urls.stream().limit(maxLinks).toList();
     }
 
-    private String articleUrl(org.jsoup.nodes.Element a, String host) {
+    private String articleUrl(Element a, String host) {
         String href = a.absUrl("href");
         if (href.isBlank()) return null;
         try {

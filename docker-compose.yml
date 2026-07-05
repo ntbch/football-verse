@@ -10,5 +10,15 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  match-engine:
+    build: ./match-engine
+    environment:
+      FOOTBALL_API_KEY: ${FOOTBALL_API_KEY:-}
+      FOOTBALL_PROVIDER: ${FOOTBALL_PROVIDER:-football-data}
+      FOOTBALL_SEASON: ${FOOTBALL_SEASON:-2026}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    ports:
+      - "8090:8090"
+
 volumes:
   postgres_data:

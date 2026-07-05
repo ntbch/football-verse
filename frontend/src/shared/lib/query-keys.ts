@@ -33,4 +33,10 @@ export const qk = {
     stats: () => ["moderator-stats"] as const,
     reports: () => ["moderator-reports"] as const,
   },
+  predictions: {
+    fixtures: (league: string) => ["predictions", "fixtures", league] as const,
+    mine: (league: string) => ["predictions", "mine", league] as const,
+    stats: () => ["predictions", "stats"] as const,
+    leaderboard: (period: string) => ["predictions", "leaderboard", period] as const,
+  },
 } as const;

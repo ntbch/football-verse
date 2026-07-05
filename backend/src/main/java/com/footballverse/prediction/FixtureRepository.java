@@ -1,0 +1,12 @@
+package com.footballverse.prediction;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface FixtureRepository extends JpaRepository<Fixture, Long> {
+    Optional<Fixture> findByFixtureId(String fixtureId);
+    List<Fixture> findByLeagueSlugAndStatusOrderByKickoffAsc(String leagueSlug, String status);
+    List<Fixture> findByStatusAndScoredFalse(String status);
+}
