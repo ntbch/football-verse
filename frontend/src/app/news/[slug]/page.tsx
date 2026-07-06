@@ -8,8 +8,8 @@ import { PublicShell } from"@/shared/components/page-shell";
 import { qk } from"@/shared/lib/query-keys";
 import { http, data, apiErrorMessage } from"@/shared/lib/api-client";
 import { useAuthStore } from"@/shared/lib/auth-store";
-import { NewsArticleResponse, CommentResponse, PageResponse } from "@/shared/lib/types";
-import { getArticleImage } from "@/shared/lib/images";
+import { NewsArticleResponse, CommentResponse } from "@/shared/lib/types";
+
 import { LoadingBlock, ErrorBlock } from "@/shared/components/state-blocks";
 
 // Main component
@@ -279,45 +279,9 @@ export default function NewsDetailPage() {
     );
   };
 
-  // 2.5 Fetch list of articles for quick navigation
-  const { data: siblingArticlesData } = useQuery({
-    queryKey: qk.news.list(),
-    queryFn: () => data<PageResponse<NewsArticleResponse>>(http.get("/news", { params: { size: 10 } })),
-  });
-  const siblingArticles = siblingArticlesData?.content || [];
 
   return (
     <PublicShell>
-      {/* Sticky horizontal articles bar */}
-      {siblingArticles.length > 0 && (
-        <div className="sticky top-[73px] z-30 w-full bg-[var(--color-background)] border-b border-[var(--color-border)] py-3 px-4 shadow-sm backdrop-blur-md bg-opacity-80">
-          <div className="max-w-4xl mx-auto flex flex-col gap-1.5">
-            <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
-              Quick Nav / Sibling Stories:
-            </span>
-            <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-thin whitespace-nowrap">
-              {siblingArticles.map((art) => (
-                <Link
-                  key={art.id}
-                  href={`/news/${art.slug}`}
-                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-serif font-black transition-all-300 ${
-                    art.slug === slug
-                      ? "bg-[var(--fv-clay)] text-white border-[var(--fv-clay)]"
-                      : "bg-[var(--color-background-surface)] border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-black/5 dark:hover:bg-white/5"
-                  }`}
-                >
-                  <img
-                    src={getArticleImage(art.id, art.content)}
-                    alt=""
-                    className="w-4 h-4 rounded-full object-cover"
-                  />
-                  <span className="max-w-[120px] truncate">{art.title}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full animate-fade-in mt-4">
         {/* Article Breadcrumbs & Meta */}
@@ -361,14 +325,6 @@ export default function NewsDetailPage() {
           </div>
         </div>
 
-        {/* Big Premium Hero Image */}
-        <div className="w-full rounded-2xl overflow-hidden border border-[var(--color-border)] relative h-64 md:h-[400px] shadow-premium">
-          <img
-            src={getArticleImage(article.id, article.content)}
-            alt={article.title}
-            className="w-full h-full object-cover"
-          />
-        </div>
 
         {/* Article Summary */}
         <div className="bg-[var(--fv-paper)] border-l-4 border-[var(--fv-clay)] p-4 rounded-xl text-xs md:text-sm italic text-[var(--color-text-secondary)] leading-relaxed font-serif">

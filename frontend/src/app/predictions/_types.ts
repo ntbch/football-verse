@@ -88,6 +88,12 @@ export type StandingRow = {
   teamLogo: string;
   points: number;
   played: number;
+  wins?: number;
+  draws?: number;
+  losses?: number;
+  goalsFor?: number;
+  goalsAgainst?: number;
+  goalDifference?: number;
 };
 
 export type MatchCentreResponse = {

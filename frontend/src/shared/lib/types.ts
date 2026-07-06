@@ -76,6 +76,7 @@ export type ThreadResponse = {
   likes: number;
   createdAt: string;
   lastPostAt: string;
+  tags?: string[];
 };
 
 export type PostResponse = {
@@ -216,4 +217,10 @@ export type SearchResponse = {
   forum: PageResponse<ThreadResponse>;
 };
 
-
+export type NotificationResponse = {
+  id: number;
+  message: string;
+  type: string;
+  read: boolean;
+  createdAt: string;
+};

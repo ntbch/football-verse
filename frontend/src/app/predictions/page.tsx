@@ -703,7 +703,7 @@ export default function PredictionsPage() {
       {/* Standings Modal Overlay */}
       {showAllStandings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl border border-[var(--fv-line)] shadow-lg max-w-lg w-full overflow-hidden flex flex-col max-h-[85vh]">
+          <div className="bg-white rounded-2xl border border-[var(--fv-line)] shadow-lg max-w-2xl w-full overflow-hidden flex flex-col max-h-[85vh]">
             <div className="px-5 py-4 border-b border-[var(--fv-line)] flex items-center justify-between">
               <h3 className="font-serif font-black text-base m-0">📋 League Standings</h3>
               <button
@@ -713,14 +713,20 @@ export default function PredictionsPage() {
                 ✕
               </button>
             </div>
-            <div className="overflow-y-auto flex-1">
-              <table className="w-full text-xs">
+            <div className="overflow-x-auto flex-1">
+              <table className="w-full text-xs min-w-[550px]">
                 <thead>
                   <tr className="text-[var(--fv-muted)] border-b border-[var(--fv-line)] bg-gray-50/50">
                     <th className="text-left px-5 py-3 font-bold w-10">#</th>
                     <th className="text-left py-3 font-bold">Team</th>
-                    <th className="text-center py-3 font-bold w-12">Played</th>
-                    <th className="text-center py-3 font-bold w-12 font-black">Points</th>
+                    <th className="text-center py-3 font-bold w-10">P</th>
+                    <th className="text-center py-3 font-bold w-10 text-green-600">W</th>
+                    <th className="text-center py-3 font-bold w-10 text-yellow-600">D</th>
+                    <th className="text-center py-3 font-bold w-10 text-red-600">L</th>
+                    <th className="text-center py-3 font-bold w-12">GF</th>
+                    <th className="text-center py-3 font-bold w-12">GA</th>
+                    <th className="text-center py-3 font-bold w-12">GD</th>
+                    <th className="text-center py-3 font-bold w-14 font-black">Pts</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -741,7 +747,15 @@ export default function PredictionsPage() {
                           <span className="truncate">{s.teamName}</span>
                         </div>
                       </td>
-                      <td className="text-center py-2.5 text-[var(--fv-muted)]">{s.played}</td>
+                      <td className="text-center py-2.5 text-[var(--fv-muted)] font-medium">{s.played}</td>
+                      <td className="text-center py-2.5 font-bold text-green-600/90">{s.wins ?? 0}</td>
+                      <td className="text-center py-2.5 font-bold text-yellow-600/90">{s.draws ?? 0}</td>
+                      <td className="text-center py-2.5 font-bold text-red-600/90">{s.losses ?? 0}</td>
+                      <td className="text-center py-2.5 text-[var(--fv-muted)]">{s.goalsFor ?? 0}</td>
+                      <td className="text-center py-2.5 text-[var(--fv-muted)]">{s.goalsAgainst ?? 0}</td>
+                      <td className={`text-center py-2.5 font-bold ${(s.goalDifference ?? 0) > 0 ? "text-green-600" : (s.goalDifference ?? 0) < 0 ? "text-red-600" : "text-[var(--fv-muted)]"}`}>
+                        {(s.goalDifference ?? 0) > 0 ? `+${s.goalDifference}` : s.goalDifference ?? 0}
+                      </td>
                       <td className="text-center py-2.5 font-black text-[var(--fv-clay)]">{s.points}</td>
                     </tr>
                   ))}
