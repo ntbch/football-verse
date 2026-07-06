@@ -289,13 +289,26 @@ public class UserPredictionService {
         List<StandingResponse> standings = new ArrayList<>();
         for (JsonNode row : payload.get("standings")) {
             JsonNode team = row.get("team");
+            int wins = row.has("wins") ? row.get("wins").asInt() : 0;
+            int draws = row.has("draws") ? row.get("draws").asInt() : 0;
+            int losses = row.has("losses") ? row.get("losses").asInt() : 0;
+            int goalsFor = row.has("goalsFor") ? row.get("goalsFor").asInt() : 0;
+            int goalsAgainst = row.has("goalsAgainst") ? row.get("goalsAgainst").asInt() : 0;
+            int goalDifference = row.has("goalDifference") ? row.get("goalDifference").asInt() : 0;
+
             standings.add(new StandingResponse(
                     row.get("rank").asInt(),
                     team != null ? team.get("id").asText() : "",
                     team != null ? team.get("name").asText() : "",
                     team != null && team.has("logo") && !team.get("logo").isNull() ? team.get("logo").asText() : "",
                     row.get("points").asInt(),
-                    row.get("played").asInt()
+                    row.get("played").asInt(),
+                    wins,
+                    draws,
+                    losses,
+                    goalsFor,
+                    goalsAgainst,
+                    goalDifference
             ));
         }
         return standings;

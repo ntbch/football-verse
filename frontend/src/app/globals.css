@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 :root {
+  /* Editorial Football Magazine colors (default light mode variables) */
   --fv-ink: #10140f;
   --fv-grass: #b6ff3b;
   --fv-clay: #b45f35;
@@ -10,6 +11,43 @@
   --fv-line: #d8d0bc;
   --fv-night: #19231b;
   --fv-muted: #6d715f;
+  
+  /* Astryx overrides for neutral default theme */
+  --color-accent: var(--fv-clay);
+  --color-border: var(--fv-line);
+}
+
+.theme-magazine {
+  --color-accent: #B45F35;
+  --color-background-body: #F7F4EC;
+  --color-background-surface: #FFFDF9;
+  --color-text-primary: #10140F;
+  --color-text-secondary: #6D715F;
+  --color-border: #D8D0BC;
+  --radius-container: 12px;
+  --radius-element: 6px;
+}
+
+.theme-sports {
+  --color-accent: #A7FF00;
+  --color-background-body: #0B0E0C;
+  --color-background-surface: #0F1F16;
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #8A9E92;
+  --color-border: #1F2E24;
+  --radius-container: 8px;
+  --radius-element: 4px;
+}
+
+.theme-community {
+  --color-accent: #7C3AED;
+  --color-background-body: #0D0E15;
+  --color-background-surface: #151726;
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #9298B8;
+  --color-border: #272A40;
+  --radius-container: 16px;
+  --radius-element: 8px;
 }
 
 * {
@@ -28,6 +66,9 @@ body {
 h1,
 h2,
 h3,
+h4,
+h5,
+h6,
 .display-face {
   font-family: Georgia, "Times New Roman", serif;
 }
@@ -110,31 +151,6 @@ select {
 .article-body iframe {
   aspect-ratio: 16 / 9;
   height: auto;
-}
-
-.btn {
-  display: inline-flex;
-  min-height: 40px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--fv-ink);
-  background: var(--fv-ink);
-  color: var(--fv-paper);
-  padding: 0 14px;
-  font-weight: 700;
-}
-
-.btn-secondary {
-  background: transparent;
-  color: var(--fv-ink);
-}
-
-.input {
-  min-height: 42px;
-  width: 100%;
-  border: 1px solid var(--fv-line);
-  background: #fffaf0;
-  padding: 8px 10px;
 }
 
 .input:focus,

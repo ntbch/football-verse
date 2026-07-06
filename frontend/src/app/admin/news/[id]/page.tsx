@@ -1,155 +1,285 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { apiErrorMessage, data, http, apiBaseUrl } from "@/shared/lib/api-client";
-import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
-import type { NewsArticle, NewsCategory } from "@/app/news/_types";
+import React, { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { qk } from "@/shared/lib/query-keys";
+import { http, data, apiErrorMessage } from "@/shared/lib/api-client";
+import { NewsCategoryResponse, NewsArticleResponse } from "@/shared/lib/types";
+import { LoadingBlock, ErrorBlock } from "@/shared/components/state-blocks";
+import { useToast } from "@/shared/components/toast";
 
-const schema = z.object({
-  title: z.string().min(3),
-  summary: z.string().optional(),
-  content: z.string().min(3),
-  categoryId: z.coerce.number().optional(),
-  tags: z.string().optional(),
-  status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"])
-});
-
-type ArticleForm = z.infer<typeof schema>;
-
-export default function AdminEditArticlePage() {
-  const params = useParams<{ id: string }>();
+export default function EditNewsArticlePage() {
   const router = useRouter();
-  const articleId = Number(params.id);
-  const [error, setError] = useState<string | null>(null);
-  const article = useQuery({
-    queryKey: ["admin-article", articleId],
-    queryFn: () => data<NewsArticle>(http.get(`/admin/news/${articleId}`)),
-    enabled: Number.isFinite(articleId)
+  const params = useParams();
+  const idStr = params.id as string;
+  const id = parseInt(idStr);
+  const toast = useToast();
+
+  const [title, setTitle] = useState("");
+  const [slug, setSlug] = useState("");
+  const [summary, setSummary] = useState("");
+  const [content, setContent] = useState("");
+  const [category, setCategory] = useState("");
+  const [tags, setTags] = useState("");
+  const [status, setStatus] = useState("DRAFT");
+  
+  const [imageUploadLoading, setImageUploadLoading] = useState(false);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+
+  // 1. Fetch Categories
+  const { data: categories = [], isLoading: isCategoriesLoading } = useQuery({
+    queryKey: qk.admin.newsCategories(),
+    queryFn: () => data<NewsCategoryResponse[]>(http.get("/admin/news/categories")),
   });
-  const categories = useQuery({ queryKey: ["news-categories"], queryFn: () => data<NewsCategory[]>(http.get("/admin/news/categories")) });
-  const { register, handleSubmit, reset, formState } = useForm<ArticleForm>();
 
+  // 2. Fetch Article Details for Edit
+  const { data: article, isLoading: isArticleLoading, error: articleError } = useQuery({
+    queryKey: qk.admin.article(id),
+    queryFn: () => data<NewsArticleResponse>(http.get(`/admin/news/${id}`)),
+    enabled: !isNaN(id),
+  });
+
+  // Populate form states once article detail is loaded
   useEffect(() => {
-    if (!article.data) {
-      return;
+    if (article) {
+      setTitle(article.title);
+      setSlug(article.slug);
+      setSummary(article.summary);
+      setContent(article.content);
+      setCategory(article.category || "");
+      setTags(article.tags ? Array.from(article.tags).join(", ") : "");
+      setStatus(article.status);
     }
-    const category = categories.data?.find((item) => item.name === article.data.category);
-    reset({
-      title: article.data.title,
-      summary: article.data.summary ?? "",
-      content: article.data.content,
-      categoryId: category?.id,
-      tags: article.data.tags.join(", "),
-      status: article.data.status === "DELETED" ? "DRAFT" : article.data.status
-    });
-  }, [article.data, categories.data, reset]);
+  }, [article]);
 
-  const submit = async (values: ArticleForm) => {
-    setError(null);
-    const parsed = schema.safeParse(values);
-    if (!parsed.success) {
-      setError("Title and content are required.");
-      return;
-    }
+  // Handle title to slug generation
+  const handleTitleChange = (val: string) => {
+    setTitle(val);
+    setSlug(
+      val
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)+/g, "")
+    );
+  };
+
+  // Image Upload handler
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImageUploadLoading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
     try {
-      await data<NewsArticle>(http.put(`/admin/news/${articleId}`, {
-        ...parsed.data,
-        categoryId: parsed.data.categoryId || null,
-        tags: parsed.data.tags ? parsed.data.tags.split(",").map((tag) => tag.trim()).filter(Boolean) : []
-      }));
-      router.push("/admin/news");
+      const res = await http.post("/uploads", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const url = res.data.data.url;
+      setUploadedImageUrl(url);
+      setContent((prev) => `${prev}\n\n![Image](${url})\n\n`);
+      toast({ body: "Image uploaded successfully!", type: "info" });
     } catch (err) {
-      setError(apiErrorMessage(err, "Could not save article."));
+      toast({ body: "Failed to upload image.", type: "error" });
+    } finally {
+      setImageUploadLoading(false);
     }
   };
 
+  // 3. Update Article Mutation
+  const updateArticleMutation = useMutation({
+    mutationFn: (payload: any) => data<any>(http.put(`/admin/news/${id}`, payload)),
+    onSuccess: () => {
+      toast({
+        body: "Article details saved successfully!",
+        type: "info",
+        autoHideDuration: 4000,
+      });
+      router.push("/admin/news");
+    },
+    onError: (err) => {
+      toast({
+        body: apiErrorMessage(err, "Failed to update article details."),
+        type: "error",
+      });
+    },
+  });
+
+  const handleUpdate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !slug.trim() || !summary.trim() || !content.trim()) {
+      toast({ body: "All core fields are required.", type: "error" });
+      return;
+    }
+
+    const parsedTags = tags
+      .split(",")
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+
+    updateArticleMutation.mutate({
+      title: title.trim(),
+      slug: slug.trim(),
+      summary: summary.trim(),
+      content: content.trim(),
+      category: category || "General",
+      tags: parsedTags,
+      status,
+    });
+  };
+
+  if (isArticleLoading || isCategoriesLoading) {
+    return <LoadingBlock label="Fetching article editor worksheet" />;
+  }
+
+  if (articleError || !article) {
+    return <ErrorBlock message="Article details failed to fetch or article ID is invalid." />;
+  }
+
   return (
-    <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="display-face text-4xl font-black">Edit article</h1>
-        {article.data?.status === "PUBLISHED" ? <a className="btn" href={`/news/${article.data.slug}`}>View</a> : null}
+    <div className="flex flex-col gap-4 w-full text-white">
+      <div className="border-b border-[var(--color-border)] pb-2 flex items-center justify-between">
+        <h3 className="font-serif text-xl md:text-2xl font-black tracking-tight text-white m-0 font-serif font-bold text-xl text-white">
+          Modify Editorial Publication
+        </h3>
+        <button
+  type="button"
+  onClick={() => router.push("/admin/news")}
+  disabled={false || false}
+  className="px-4 py-2 rounded-full text-xs font-bold uppercase border border-[var(--color-border)] text-white hover:bg-white/5 disabled:opacity-50 transition-all-300 shadow-sm active:scale-95"
+>
+  {false ? "Loading..." : "Back to Articles"}
+</button>
       </div>
-      <form className="mt-5 grid max-w-3xl gap-4" onSubmit={handleSubmit(submit)}>
-        {article.isLoading ? <LoadingBlock label="Loading article" /> : null}
-        {article.error ? <ErrorBlock message="Article not found." /> : null}
-        {categories.error ? <ErrorBlock message="Could not load categories." /> : null}
-        {error ? <ErrorBlock message={error} /> : null}
-        <label className="grid gap-1 font-bold">
-          Title
-          <input className="input text-[var(--fv-ink)]" {...register("title")} />
-        </label>
-        <label className="grid gap-1 font-bold">
-          Summary
-          <textarea className="input min-h-20 text-[var(--fv-ink)]" {...register("summary")} />
-        </label>
-        <div className="grid gap-1 font-bold">
-          <span className="flex items-center justify-between">
-            Content
-            <label className="cursor-pointer text-xs font-bold uppercase text-[var(--fv-clay, #d97706)] hover:underline">
-              Upload image & insert
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  const formData = new FormData();
-                  formData.append("file", file);
-                  try {
-                    const res = await data<{ url: string }>(
-                      http.post("/uploads", formData, {
-                        headers: { "Content-Type": "multipart/form-data" }
-                      })
-                    );
-                    const image = `\n<img src="${apiBaseUrl}${res.url}" alt="image" />\n`;
-                    const textEl = document.getElementById("content-editor") as HTMLTextAreaElement;
-                    if (textEl) {
-                      const start = textEl.selectionStart;
-                      const end = textEl.selectionEnd;
-                      const text = textEl.value;
-                      const newVal = text.substring(0, start) + image + text.substring(end);
-                      textEl.value = newVal;
-                      textEl.dispatchEvent(new Event("input", { bubbles: true }));
-                    }
-                  } catch (err) {
-                    alert("Failed to upload image.");
-                  }
-                }}
+
+      <div className="p-5 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-premium bg-[var(--color-background-surface)] border border-[var(--color-border)] w-full">
+        <form onSubmit={handleUpdate} className="w-full">
+          <div className="flex flex-col gap-4 ">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+              <div className="flex flex-col gap-1 w-full text-left">
+  <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">Article Title</label>
+  <input
+    type="text"
+    placeholder="Enter title..."
+    value={title}
+    onChange={(e) => handleTitleChange(e.target.value)}
+    className="w-full px-3 py-2 rounded-lg text-xs border border-[var(--color-border)] bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] font-medium"
+  />
+</div>
+              <div className="flex flex-col gap-1 w-full text-left">
+  <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">Slug URL Path</label>
+  <input
+    type="text"
+    placeholder="auto-generated-from-title"
+    value={slug}
+    onChange={(e) => setSlug(e.target.value)}
+    className="w-full px-3 py-2 rounded-lg text-xs border border-[var(--color-border)] bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] font-medium"
+  />
+</div>
+            </div>
+
+            <div className="flex flex-col gap-1 w-full text-left">
+  <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">Article Summary</label>
+  <input
+    type="text"
+    placeholder="Short paragraph summary/excerpt of the story..."
+    value={summary}
+    onChange={(e) => setSummary(e.target.value)}
+    className="w-full px-3 py-2 rounded-lg text-xs border border-[var(--color-border)] bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] font-medium"
+  />
+</div>
+
+            {/* Custom file upload */}
+            <div className="flex flex-col gap-1 w-full">
+              <label className="text-xs font-bold uppercase text-[var(--color-text-secondary)]">Image Upload Uploader</label>
+              <div className="flex items-center gap-3 bg-[var(--color-background-body)] border border-[var(--color-border)] p-3 rounded">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="text-xs text-gray-300"
+                />
+                {imageUploadLoading && <span className="text-xs animate-pulse text-[var(--color-accent)]">Uploading file...</span>}
+                {uploadedImageUrl && (
+                  <span className="text-[10px] text-green-400 font-bold">Uploaded: {uploadedImageUrl}</span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1 w-full">
+              <label className="text-xs font-bold uppercase text-[var(--color-text-secondary)]">Article Content Body (supports HTML/markdown)</label>
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Write your article stories here..."
+                rows={12}
+                className="w-full bg-[var(--color-background-body)] border border-[var(--color-border)] text-white text-sm rounded p-3 focus:outline-none focus:border-[var(--color-accent)] font-mono"
               />
-            </label>
-          </span>
-          <textarea id="content-editor" className="input min-h-56 text-[var(--fv-ink)]" {...register("content")} />
-        </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          <label className="grid gap-1 font-bold">
-            Category
-            <select className="input text-[var(--fv-ink)]" {...register("categoryId")}>
-              <option value="">None</option>
-              {categories.data?.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-            </select>
-          </label>
-          <label className="grid gap-1 font-bold">
-            Tags
-            <input className="input text-[var(--fv-ink)]" placeholder="transfers, tactics" {...register("tags")} />
-          </label>
-          <label className="grid gap-1 font-bold">
-            Status
-            <select className="input text-[var(--fv-ink)]" {...register("status")}>
-              <option>DRAFT</option>
-              <option>PUBLISHED</option>
-              <option>ARCHIVED</option>
-            </select>
-          </label>
-        </div>
-        <button className="btn w-fit bg-[var(--fv-grass)] text-[var(--fv-ink)]" disabled={formState.isSubmitting || article.isLoading}>
-          {formState.isSubmitting ? "Saving..." : "Save"}
-        </button>
-      </form>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+              <div className="flex flex-col gap-1 ">
+                <label className="text-xs font-bold uppercase text-[var(--color-text-secondary)]">Category</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full bg-[var(--color-background-body)] border border-[var(--color-border)] text-white text-xs rounded p-2 focus:outline-none"
+                >
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1 w-full text-left">
+  <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">Tags (Comma separated)</label>
+  <input
+    type="text"
+    placeholder="e.g. premier-league, transfers, tactical"
+    value={tags}
+    onChange={(e) => setTags(e.target.value)}
+    className="w-full px-3 py-2 rounded-lg text-xs border border-[var(--color-border)] bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] font-medium"
+  />
+</div>
+
+              <div className="flex flex-col gap-1 ">
+                <label className="text-xs font-bold uppercase text-[var(--color-text-secondary)]">Publish Status</label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="w-full bg-[var(--color-background-body)] border border-[var(--color-border)] text-white text-xs rounded p-2 focus:outline-none"
+                >
+                  <option value="DRAFT">DRAFT</option>
+                  <option value="PUBLISHED">PUBLISHED</option>
+                  <option value="ARCHIVED">ARCHIVED</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2 border-t border-[var(--color-border)]">
+              <button
+  type="button"
+  onClick={() => router.push("/admin/news")}
+  disabled={false || false}
+  className="px-4 py-2 rounded-full text-xs font-bold uppercase border border-[var(--color-border)] text-white hover:bg-white/5 disabled:opacity-50 transition-all-300 shadow-sm active:scale-95"
+>
+  {false ? "Loading..." : "Cancel"}
+</button>
+              <button
+  type="button"
+  disabled={false || updateArticleMutation.isPending}
+  className="px-4 py-2 rounded-full text-xs font-bold uppercase bg-[var(--color-accent)] text-black hover:opacity-90 disabled:opacity-50 transition-all-300 shadow-sm active:scale-95"
+>
+  {updateArticleMutation.isPending ? "Loading..." : updateArticleMutation.isPending ? "Saving..." : "Save changes"}
+</button>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

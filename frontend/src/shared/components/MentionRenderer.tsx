@@ -15,7 +15,7 @@ export function MentionRenderer({ content }: MentionRendererProps) {
       {parts.map((part, i) => {
         if (part.startsWith("@")) {
           return (
-            <span key={i} className="font-bold text-[var(--fv-clay, #d97706)] hover:underline">
+            <span key={i} className="font-bold text-[var(--color-accent, #B45F35)] hover:underline cursor-pointer">
               {part}
             </span>
           );

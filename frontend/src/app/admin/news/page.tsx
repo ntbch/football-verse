@@ -1,134 +1,186 @@
 "use client";
 
+import React, { useState } from "react";
 import Link from "next/link";
-import { useState } from "react";
-import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
-import type { NewsArticle, NewsCategory } from "@/app/news/_types";
-import type { NewsSource } from "../_types";
-import {
-  useAdminNews,
-  useAdminNewsCategories,
-  useAdminNewsSources,
-  useCreateNewsCategory,
-  useCreateNewsSource,
-  useToggleNewsSource,
-  useDeleteNewsSource,
-  useCrawlNow,
-  useUpdateNewsStatus,
-  useDeleteNewsArticle
-} from "../_api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { qk } from "@/shared/lib/query-keys";
+import { http, data, apiErrorMessage } from "@/shared/lib/api-client";
+import { LoadingBlock } from "@/shared/components/state-blocks";
+import { NewsArticleResponse, PageResponse } from "@/shared/lib/types";
+import { useToast } from "@/shared/components/toast";
 
 export default function AdminNewsPage() {
-  const [name, setName] = useState("");
-  const [sourceName, setSourceName] = useState("");
-  const [sourceUrl, setSourceUrl] = useState("");
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [page, setPage] = useState(0);
+  const size = 15;
 
-  const news = useAdminNews();
-  const categories = useAdminNewsCategories();
-  const sources = useAdminNewsSources();
+  // 1. Fetch articles page
+  const { data: pageData, isLoading } = useQuery({
+    queryKey: [qk.admin.news()[0], page] as const,
+    queryFn: () => data<PageResponse<NewsArticleResponse>>(http.get("/admin/news", { params: { page, size } })),
+  });
 
-  const createCategory = useCreateNewsCategory();
-  const createSource = useCreateNewsSource();
-  const toggleSource = useToggleNewsSource();
-  const deleteSource = useDeleteNewsSource();
-  const crawlNow = useCrawlNow();
-  const updateStatus = useUpdateNewsStatus();
-  const deleteArticle = useDeleteNewsArticle();
+  const articles = pageData?.content || [];
+  const totalPages = pageData?.totalPages || 0;
+
+  // 2. Delete Mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => data<any>(http.delete(`/admin/news/${id}`)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: qk.admin.news() });
+      toast({
+        body: "Article deleted successfully.",
+        type: "info",
+        autoHideDuration: 3000,
+      });
+    },
+    onError: (err) => {
+      toast({
+        body: apiErrorMessage(err, "Failed to delete article."),
+        type: "error",
+      });
+    },
+  });
+
+  // 3. Status Toggle Mutation
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: string }) =>
+      data<any>(http.patch(`/admin/news/${id}/status`, { status })),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: qk.admin.news() });
+      toast({
+        body: "Article status updated.",
+        type: "info",
+        autoHideDuration: 3000,
+      });
+    },
+    onError: (err) => {
+      toast({
+        body: apiErrorMessage(err, "Failed to update article status."),
+        type: "error",
+      });
+    },
+  });
+
+  const handleDelete = (id: number) => {
+    if (window.confirm("Are you sure you want to delete this article?")) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  const handleStatusChange = (id: number, newStatus: string) => {
+    statusMutation.mutate({ id, status: newStatus });
+  };
+
+  if (isLoading) {
+    return <LoadingBlock label="Fetching article repository" />;
+  }
 
   return (
-    <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="display-face text-4xl font-black">News CMS</h1>
-        <Link className="btn bg-[var(--fv-grass)] text-[var(--fv-ink)]" href="/admin/news/new">New article</Link>
+    <div className="flex flex-col gap-4 w-full">
+      <div className="flex items-center justify-between w-full">
+        <h3 className="font-serif text-xl md:text-2xl font-black tracking-tight text-white m-0 font-serif font-bold text-xl text-white">
+          Editorial Publications CMS
+        </h3>
+        <Link href="/admin/news/new">
+          <button
+  type="button"
+  disabled={false || false}
+  className="px-4 py-2 rounded-full text-xs font-bold uppercase bg-[var(--color-accent)] text-black hover:opacity-90 disabled:opacity-50 transition-all-300 shadow-sm active:scale-95"
+>
+  {false ? "Loading..." : "Write New Article"}
+</button>
+        </Link>
       </div>
-      <section className="mt-5 grid gap-5 md:grid-cols-[1fr_320px]">
-        <div className="border border-white/15">
-          {news.isLoading ? <LoadingBlock /> : null}
-          {news.error ? <ErrorBlock message="Could not load articles." /> : null}
-          {updateStatus.error || deleteArticle.error ? <ErrorBlock message="Could not update article." /> : null}
-          {news.data?.content.map((article: NewsArticle) => (
-            <article className="grid gap-3 border-b border-white/10 p-4 md:grid-cols-[1fr_auto]" key={article.id}>
-              <div>
-                <p className="font-bold">{article.title}</p>
-                <p className="text-xs uppercase opacity-70">{article.status} / {article.category ?? "uncategorized"}</p>
-                {article.summary ? <p className="mt-2 text-sm opacity-80">{article.summary}</p> : null}
-              </div>
-              <div className="flex flex-wrap items-start gap-2">
-                <Link className="btn" href={`/admin/news/${article.id}`}>Edit</Link>
-                {article.status !== "PUBLISHED" ? (
-                  <button className="btn" disabled={updateStatus.isPending} onClick={() => updateStatus.mutate({ id: article.id, status: "PUBLISHED" })}>Publish</button>
-                ) : null}
-                {article.status !== "DRAFT" ? (
-                  <button className="btn" disabled={updateStatus.isPending} onClick={() => updateStatus.mutate({ id: article.id, status: "DRAFT" })}>Draft</button>
-                ) : null}
-                {article.status !== "ARCHIVED" ? (
-                  <button className="btn" disabled={updateStatus.isPending} onClick={() => updateStatus.mutate({ id: article.id, status: "ARCHIVED" })}>Archive</button>
-                ) : null}
-                <button className="btn border-red-300/40 text-red-100" disabled={deleteArticle.isPending} onClick={() => deleteArticle.mutate(article.id)}>Delete</button>
-              </div>
-            </article>
-          ))}
-          {news.data?.content.length === 0 ? <div className="p-4 opacity-70">No articles yet.</div> : null}
-        </div>
-        <aside className="border border-white/15 p-4 flex flex-col gap-6">
-          <div>
-            <h2 className="font-black">Categories</h2>
-            <form className="mt-3 flex gap-2" onSubmit={(event) => { event.preventDefault(); if (name.trim()) createCategory.mutate(name, { onSuccess: () => setName("") }); }}>
-              <input className="input text-[var(--fv-ink)]" value={name} onChange={(event) => setName(event.target.value)} />
-              <button className="btn" disabled={createCategory.isPending || !name.trim()}>{createCategory.isPending ? "Adding..." : "Add"}</button>
-            </form>
-            <div className="mt-4 grid gap-2 text-sm">
-              {categories.isLoading ? <LoadingBlock /> : null}
-              {categories.error ? <ErrorBlock message="Could not load categories." /> : null}
-              {createCategory.error ? <ErrorBlock message="Could not create category." /> : null}
-              {categories.data?.length === 0 ? <span>No categories yet.</span> : null}
-              {categories.data?.map((category: NewsCategory) => <span key={category.id}>{category.name}</span>)}
-            </div>
-          </div>
 
-          <div className="border-t border-white/10 pt-6">
-            <div className="flex items-center justify-between">
-              <h2 className="font-black">Sources</h2>
-              <button 
-                className="btn text-xs py-1 px-2 border-green-300/40 text-green-100" 
-                onClick={() => crawlNow.mutate()}
-                disabled={crawlNow.isPending}
-              >
-                {crawlNow.isPending ? "Crawling..." : "Crawl now"}
-              </button>
-            </div>
-            <form className="mt-3 flex flex-col gap-2" onSubmit={(event) => { event.preventDefault(); if (sourceName.trim() && sourceUrl.trim()) createSource.mutate({ name: sourceName, feedUrl: sourceUrl }, { onSuccess: () => { setSourceName(""); setSourceUrl(""); } }); }}>
-              <input className="input text-[var(--fv-ink)] text-xs placeholder:text-gray-500" placeholder="Name" value={sourceName} onChange={(e) => setSourceName(e.target.value)} />
-              <input className="input text-[var(--fv-ink)] text-xs placeholder:text-gray-500" placeholder="Feed URL" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} />
-              <button className="btn w-full text-xs py-2" disabled={createSource.isPending || !sourceName.trim() || !sourceUrl.trim()}>{createSource.isPending ? "Adding..." : "Add Source"}</button>
-            </form>
-            <div className="mt-4 grid gap-3 text-sm max-h-[300px] overflow-y-auto">
-              {sources.isLoading ? <LoadingBlock /> : null}
-              {sources.error ? <ErrorBlock message="Could not load sources." /> : null}
-              {createSource.error || toggleSource.error || deleteSource.error ? <ErrorBlock message="Could not update source." /> : null}
-              {sources.data?.map((source: NewsSource) => (
-                <div key={source.id} className="flex flex-col gap-1 p-2 border border-white/5 bg-white/5 rounded">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs">{source.name}</span>
-                    <div className="flex gap-2">
-                      <button 
-                        className={`text-xs ${source.active ? 'text-green-300' : 'text-gray-400'}`} 
-                        disabled={toggleSource.isPending}
-                        onClick={() => toggleSource.mutate(source.id)}
+      <div className="bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-xl overflow-hidden">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="border-b border-[var(--color-border)] bg-[var(--color-background-body)] text-[var(--color-text-secondary)] font-bold">
+                <th className="py-3 px-4">Title</th>
+                <th className="py-3 px-4">Category</th>
+                <th className="py-3 px-4">Likes</th>
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4">Published At</th>
+                <th className="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--color-border)]">
+              {articles.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-8 px-4 text-center text-[var(--color-text-secondary)] italic">
+                    No articles found in the repository.
+                  </td>
+                </tr>
+              ) : (
+                articles.map((art) => (
+                  <tr key={art.id} className="hover:bg-[var(--color-background-body)] text-white">
+                    <td className="py-3 px-4 font-bold max-w-xs truncate">{art.title}</td>
+                    <td className="py-3 px-4">{art.category || "General"}</td>
+                    <td className="py-3 px-4">👍 {art.likes}</td>
+                    <td className="py-3 px-4">
+                      <select
+                        value={art.status}
+                        onChange={(e) => handleStatusChange(art.id, e.target.value)}
+                        className="bg-[var(--color-background-body)] border border-[var(--color-border)] text-white text-[10px] font-bold rounded p-1 focus:outline-none"
                       >
-                        {source.active ? "Active" : "Inactive"}
-                      </button>
-                      <button className="text-xs text-red-300" disabled={deleteSource.isPending} onClick={() => deleteSource.mutate(source.id)}>Delete</button>
-                    </div>
-                  </div>
-                  <span className="text-[10px] opacity-60 break-all">{source.feedUrl}</span>
-                </div>
-              ))}
-              {sources.data?.length === 0 ? <div className="text-xs opacity-60">No sources yet.</div> : null}
-            </div>
-          </div>
-        </aside>
-      </section>
+                        <option value="DRAFT">DRAFT</option>
+                        <option value="PUBLISHED">PUBLISHED</option>
+                        <option value="ARCHIVED">ARCHIVED</option>
+                      </select>
+                    </td>
+                    <td className="py-3 px-4">
+                      {art.publishedAt ? new Date(art.publishedAt).toLocaleDateString() : "-"}
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex items-center gap-1.5 inline-flex">
+                        <Link href={`/admin/news/${art.id}`}>
+                          <button className="bg-slate-700 hover:bg-slate-600 text-white text-[9px] font-bold uppercase rounded px-2.5 py-1 transition-colors">
+                            Edit
+                          </button>
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(art.id)}
+                          className="bg-red-800 hover:bg-red-700 text-white text-[9px] font-bold uppercase rounded px-2.5 py-1 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 py-2">
+          <button
+  type="button"
+  onClick={() => setPage((p) => Math.max(0, p - 1))}
+  disabled={page === 0 || false}
+  className="px-4 py-2 rounded-full text-xs font-bold uppercase border border-[var(--color-border)] text-white hover:bg-white/5 disabled:opacity-50 transition-all-300 shadow-sm active:scale-95"
+>
+  {false ? "Loading..." : "Previous"}
+</button>
+          <span className="text-xs font-semibold px-4 py-2 border border-[var(--color-border)] bg-[var(--color-background-surface)] rounded text-gray-300">
+            Page {page + 1} of {totalPages}
+          </span>
+          <button
+  type="button"
+  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+  disabled={page >= totalPages - 1 || false}
+  className="px-4 py-2 rounded-full text-xs font-bold uppercase border border-[var(--color-border)] text-white hover:bg-white/5 disabled:opacity-50 transition-all-300 shadow-sm active:scale-95"
+>
+  {false ? "Loading..." : "Next"}
+</button>
+        </div>
+      )}
     </div>
   );
 }

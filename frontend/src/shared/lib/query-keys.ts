@@ -19,7 +19,6 @@ export const qk = {
     article: (id: number) => ["admin-article", id] as const,
     newsCategories: () => ["news-categories"] as const,
     newsSources: () => ["news-sources"] as const,
-    forumCategories: () => ["forum-categories"] as const,
     reports: () => ["admin-reports"] as const,
     dashboardStats: () => ["admin-dashboard-stats"] as const,
     userGrowth: () => ["admin-user-growth"] as const,
@@ -35,8 +34,8 @@ export const qk = {
   },
   predictions: {
     fixtures: (league: string) => ["predictions", "fixtures", league] as const,
-    mine: (league: string) => ["predictions", "mine", league] as const,
     stats: () => ["predictions", "stats"] as const,
     leaderboard: (period: string) => ["predictions", "leaderboard", period] as const,
+    matchCentre: (league: string, round?: string) => ["predictions", "match-centre", league, round ?? ""] as const,
   },
 } as const;

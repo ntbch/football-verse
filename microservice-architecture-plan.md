@@ -3,11 +3,37 @@
 ## Goal
 Move Football Verse from Spring Boot monolith toward staged microservices for learning, selective scaling, football match prediction, live match data, and mini Football Manager gameplay.
 
+## Language & Service Matrix (Separation of Strengths)
+
+To leverage the best capabilities of each technology stack:
+
+### 1. Java (Spring Boot) - Core business domain & Transact-heavy DB CRUD
+* **Strengths:** Thread safety, strict type system, transactional consistency (ACID), enterprise-grade security.
+* **Responsibilities:**
+  * **User Core:** Authentication, User Profiles, JWT issuing, role/permission management.
+  * **Social/CMS Core:** News CMS storage, Forum categories/threads/replies, nested comments, Likes & Bookmarks databases.
+  * **Audit & Moderation:** Report handling and admin logs.
+
+### 2. Node.js (JavaScript/TypeScript) - High-concurrency I/O & Realtime Gateway
+* **Strengths:** Non-blocking I/O event loop, massive concurrent socket connections, rich browser automation and scraping ecosystem.
+* **Responsibilities:**
+  * **API Gateway & Routing:** Single ingress point routing traffic downstream.
+  * **Realtime & Notifications:** SSE/WebSocket server to push realtime notifications (mentions, likes) and live scores, subscribing to Redis Pub/Sub.
+  * **Scraper & Crawler:** Periodic RSS & web page scraping. Uses `fingerprint-suite` to bypass anti-bot, parses HTML, and imports clean text into the Core DB.
+
+### 3. Python - Data sync, Analytics, Scoring & Game Simulation
+* **Strengths:** Excellent for data manipulation, mathematical models, machine learning, and rapid algorithmic script execution.
+* **Responsibilities:**
+  * **Data Ingestion:** Fetching external football data APIs (fixtures, standings, live stats) and mapping to CSDL.
+  * **Prediction Scoring Engine:** Running probability algorithms and scoring user predictions.
+  * **Football Manager Lite Match Engine:** Running tactical game simulations and generating chronological match event timelines.
+
 ## Recommended Approach
 Use hybrid staged microservices first:
 
 - Keep Spring Boot as core API for auth, users, news, forum, admin, moderator.
 - Add Node.js service for realtime gateway, live updates, leaderboard streams, and API aggregation.
+- Add Node.js crawler service for robust news feed/HTML scraping, anti-bot bypassing (via fingerprint-suite), and raw article processing.
 - Add Python service for match data ingestion, prediction scoring, and game simulation.
 - Keep Next.js as main web app; add separate React app only when game UI grows beyond normal pages.
 - Use Docker Compose + API Gateway first; add Kubernetes/minikube after services run locally.
@@ -57,10 +83,11 @@ Do not copy:
 - [x] Define API Gateway route table -> Verify: `/api/v1/*`, `/realtime/*`, `/matches/*`, `/game/*` have one upstream each.
 - [x] Split databases inside PostgreSQL by service -> Verify: architecture plan lists `core_db`, `match_game_db`, optional Redis for realtime.
 - [ ] Keep Spring Boot core service intact -> Verify: current auth/news/forum/admin/moderator APIs remain unchanged.
-- [ ] Plan Node.js realtime service -> Verify: covers SSE/WebSocket for live score, prediction leaderboard, simulation events.
+- [ ] Plan Node.js realtime & notification service -> Verify: covers SSE/WebSocket for live score, prediction leaderboard, simulation events, and user notifications (likes/mentions) via Redis Pub/Sub.
+- [ ] Plan Node.js crawler service -> Verify: RSS/scraping with fingerprint-suite, pushes raw/clean articles to Spring Boot API.
 - [x] Plan Python match/game service -> Verify: covers third-party football API sync, prediction scoring, mini-manager simulation.
 - [ ] Define cross-service auth -> Verify: JWT user identity passed through gateway; internal service calls documented.
-- [ ] Define event flow -> Verify: match updates and game events publish once, realtime service fans out.
+- [ ] Define event flow -> Verify: match updates, game events, and user notifications publish once, realtime service fans out.
 - [ ] Add local ops plan -> Verify: Docker Compose starts gateway, core, realtime, match-game, PostgreSQL, Redis/logs if used.
 - [ ] Phase X: Verification -> Verify: smoke path documented from login to match list to user prediction to leaderboard update.
 
@@ -75,14 +102,15 @@ Do not copy:
 - [x] Phase 0: contracts and ownership in `docs/ARCHITECTURE.md`.
 - [ ] Phase 1: Python Match/Game service for Premier League fixtures, standings, and prediction table. Spring user-pick APIs pending.
 - [ ] Phase 2: Spring Boot prediction submission, scoring, and leaderboard.
-- [ ] Phase 3: Node Realtime service for live score, leaderboard, and game streams.
+- [ ] Phase 3: Node Realtime & Notification and Crawler services (realtime/notification for live score/leaderboard/game streams, crawler for robust news extraction).
 - [ ] Phase 4: mini Football Manager simulation in Python Match/Game.
 - [ ] Phase 5: move working Compose services to minikube.
 
 ## Decision Log
 - Chose staged hybrid microservices because current app is a working monolith and user wants learning plus selective scaling.
 - Chose Spring Boot core because auth/user/news/forum already exist there.
-- Chose Node.js for realtime because WebSocket/SSE fanout and API aggregation fit its strengths.
+- Chose Node.js for realtime/notification because WebSocket/SSE connection density, event loop concurrency, and API aggregation fit its strengths.
+- Chose Node.js for crawler service because JavaScript scraping ecosystem (cheerio, fingerprint-suite) is superior for bypassing anti-bot measures than Java.
 - Chose Python for match API ingestion, prediction scoring, and simulation because future ML/game logic fits Python better.
 - Chose one PostgreSQL instance with separate databases because local learning stays simple while service ownership is visible.
 - Chose Docker Compose first, Kubernetes/minikube later because ops should not block feature slicing.

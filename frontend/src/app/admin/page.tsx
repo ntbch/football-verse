@@ -1,71 +1,105 @@
 "use client";
 
-import Link from "next/link";
-import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
-import { useAdminDashboardStats, useAdminUserGrowth, useCrawlNow } from "./_api";
-import dynamic from "next/dynamic";
+import React from "react";
+import { useQuery } from "@tanstack/react-query";
+import { qk } from "@/shared/lib/query-keys";
+import { http, data } from "@/shared/lib/api-client";
+import { LoadingBlock } from "@/shared/components/state-blocks";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
-const UserGrowthChart = dynamic(
-  () => import("./_components/UserGrowthChart"),
-  { ssr: false, loading: () => <div className="h-72 w-full animate-pulse bg-white/5" /> }
-);
+type DashboardStats = {
+  totalUsers: number;
+  publishedArticles: number;
+  draftArticles: number;
+  archivedArticles: number;
+  newsSourcesCount: number;
+};
 
-export default function AdminPage() {
-  const stats = useAdminDashboardStats();
-  const growth = useAdminUserGrowth();
-  const crawl = useCrawlNow();
+type UserGrowthEntry = {
+  date: string;
+  count: number;
+};
 
-  const isPending = stats.isLoading || growth.isLoading;
-  const isError = stats.error || growth.error;
+export default function AdminDashboardPage() {
+  // 1. Fetch Stats
+  const { data: stats, isLoading: isStatsLoading } = useQuery({
+    queryKey: qk.admin.dashboardStats(),
+    queryFn: () => data<DashboardStats>(http.get("/admin/dashboard/stats")),
+  });
+
+  // 2. Fetch User Growth
+  const { data: growth = [], isLoading: isGrowthLoading } = useQuery({
+    queryKey: qk.admin.userGrowth(),
+    queryFn: () => data<UserGrowthEntry[]>(http.get("/admin/dashboard/user-growth")),
+  });
+
+  if (isStatsLoading || isGrowthLoading) {
+    return <LoadingBlock label="Fetching dashboard analytics" />;
+  }
 
   return (
-    <div className="grid gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="display-face text-5xl font-black">Control Room</h1>
-          <p className="text-[var(--fv-muted)]">Manage users, crawled content, and system configurations.</p>
+    <div className="flex flex-col gap-6 w-full">
+      <h3 className="font-serif text-xl md:text-2xl font-black tracking-tight text-white m-0 font-serif font-bold text-xl text-white">
+        System Overview
+      </h3>
+
+      {/* Stats Cards Row */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full text-center">
+          <div className="p-5 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-premium bg-[var(--color-background-surface)] border border-[var(--color-border)]">
+            <span className="text-2xl font-black text-[var(--color-accent)]">{stats.totalUsers}</span>
+            <div className="text-[10px] text-[var(--color-text-secondary)] font-bold mt-1 uppercase">TOTAL USERS</div>
+          </div>
+          <div className="p-5 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-premium bg-[var(--color-background-surface)] border border-[var(--color-border)]">
+            <span className="text-2xl font-black text-white">{stats.publishedArticles}</span>
+            <div className="text-[10px] text-[var(--color-text-secondary)] font-bold mt-1 uppercase">PUBLISHED ARTICLES</div>
+          </div>
+          <div className="p-5 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-premium bg-[var(--color-background-surface)] border border-[var(--color-border)]">
+            <span className="text-2xl font-black text-white">{stats.draftArticles}</span>
+            <div className="text-[10px] text-[var(--color-text-secondary)] font-bold mt-1 uppercase">DRAFTS</div>
+          </div>
+          <div className="p-5 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-premium bg-[var(--color-background-surface)] border border-[var(--color-border)]">
+            <span className="text-2xl font-black text-white">{stats.archivedArticles}</span>
+            <div className="text-[10px] text-[var(--color-text-secondary)] font-bold mt-1 uppercase">ARCHIVED</div>
+          </div>
+          <div className="p-5 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-premium bg-[var(--color-background-surface)] border border-[var(--color-border)]">
+            <span className="text-2xl font-black text-white">{stats.newsSourcesCount}</span>
+            <div className="text-[10px] text-[var(--color-text-secondary)] font-bold mt-1 uppercase">RSS SOURCES</div>
+          </div>
         </div>
-        <button
-          className="btn bg-[var(--fv-grass)] text-[var(--fv-ink)] font-bold py-2 px-4 hover:opacity-90"
-          disabled={crawl.isPending}
-          onClick={() => crawl.mutate()}
-        >
-          {crawl.isPending ? "Crawling RSS..." : "Crawl RSS Now"}
-        </button>
+      )}
+
+      {/* Chart Section */}
+      <div className="p-5 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-premium bg-[var(--color-background-surface)] border border-[var(--color-border)] w-full">
+        <div className="flex flex-col gap-4 w-full">
+          <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-accent)]">User Sign-up Activity (Last 7 Days)</span>
+          <div className="h-64 w-full">
+            {growth.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={growth} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#A7FF00" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#A7FF00" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="date" stroke="#8A9E92" fontSize={10} tickLine={false} />
+                  <YAxis stroke="#8A9E92" fontSize={10} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "#0F1F16", border: "1px solid #1F2E24", color: "#FFF" }}
+                    itemStyle={{ color: "#A7FF00" }}
+                  />
+                  <Area type="monotone" dataKey="count" stroke="#A7FF00" strokeWidth={2} fillOpacity={1} fill="url(#colorCount)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-xs text-[var(--color-text-secondary)] italic">
+                No signup activities logged in the last 7 days.
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-
-      {isPending ? <LoadingBlock /> : null}
-      {isError ? <ErrorBlock message="Could not load admin stats." /> : null}
-
-      {stats.data ? (
-        <section className="grid gap-4 md:grid-cols-4">
-          <Link className="border border-white/15 p-5 hover:bg-white/10 bg-white/5" href="/admin/users">
-            <p className="text-4xl font-black">{stats.data.totalUsers}</p>
-            <p className="text-sm uppercase opacity-70">Total Users</p>
-          </Link>
-          <Link className="border border-white/15 p-5 hover:bg-white/10 bg-white/5" href="/admin/news">
-            <p className="text-4xl font-black">{stats.data.publishedArticles}</p>
-            <p className="text-sm uppercase opacity-70">Published Stories</p>
-          </Link>
-          <div className="border border-white/15 p-5 bg-white/5">
-            <p className="text-4xl font-black">{stats.data.draftArticles}</p>
-            <p className="text-sm uppercase opacity-70">Draft Articles</p>
-          </div>
-          <Link className="border border-white/15 p-5 hover:bg-white/10 bg-white/5" href="/admin/news/sources">
-            <p className="text-4xl font-black">{stats.data.newsSourcesCount}</p>
-            <p className="text-sm uppercase opacity-70">RSS Sources</p>
-          </Link>
-        </section>
-      ) : null}
-
-      {growth.data ? (
-        <div className="border border-white/15 p-5 bg-white/5">
-          <h2 className="display-face text-2xl font-black mb-4">User Growth (Last 7 Days)</h2>
-          <div className="h-72 w-full">
-            <UserGrowthChart data={growth.data} />
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }

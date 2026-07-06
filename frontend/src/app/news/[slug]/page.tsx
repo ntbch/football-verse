@@ -1,151 +1,450 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { useState } from "react";
-import { PublicShell } from "@/shared/components/public-shell";
-import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
-import { useAuthStore } from "@/shared/lib/auth-store";
-import {
-  useNewsArticle,
-  useNewsComments,
-  useLikeNews,
-  useBookmarkNews,
-  useCreateNewsComment,
-  useLikeNewsComment
-} from "../_api";
-import type { Comment } from "../_types";
-import { MentionRenderer } from "@/shared/components/MentionRenderer";
+import React, { useState } from"react";
+import Link from"next/link";
+import { useParams, useRouter } from"next/navigation";
+import { useQuery, useMutation, useQueryClient } from"@tanstack/react-query";
+import { PublicShell } from"@/shared/components/page-shell";
+import { qk } from"@/shared/lib/query-keys";
+import { http, data, apiErrorMessage } from"@/shared/lib/api-client";
+import { useAuthStore } from"@/shared/lib/auth-store";
+import { NewsArticleResponse, CommentResponse, PageResponse } from "@/shared/lib/types";
+import { getArticleImage } from "@/shared/lib/images";
+import { LoadingBlock, ErrorBlock } from "@/shared/components/state-blocks";
 
-const articleHtml = (content: string) =>
-  content.replace(/!\[image\]\((https?:\/\/[^\s)"<>]+)\)/g, '<img src="$1" alt="image" />');
-
+// Main component
 export default function NewsDetailPage() {
-  const { slug } = useParams<{ slug: string }>();
-  const [content, setContent] = useState("");
-  const [replyTo, setReplyTo] = useState<number | null>(null);
-  const [replyContent, setReplyContent] = useState("");
+  const params = useParams();
+  const slug = params.slug as string;
   const auth = useAuthStore((state) => state.auth);
-  const isAdminOrMod = auth?.roles.includes("ADMIN") || auth?.roles.includes("MODERATOR");
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const router = useRouter();
 
-  const article = useNewsArticle(slug);
-  const comments = useNewsComments(slug);
+  // Root level comment text state
+  const [commentText, setCommentText] = useState("");
+  // Reply comment states: keeps track of which comment ID is being replied to, and the reply text
+  const [replyTargetId, setReplyTargetId] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState("");
 
-  const like = useLikeNews(slug);
-  const bookmark = useBookmarkNews(slug);
-  const comment = useCreateNewsComment(slug);
-  const commentLike = useLikeNewsComment(slug);
-  const repliesByParent = new Map<number | null, Comment[]>();
-  comments.data?.forEach((item) => {
-    const replies = repliesByParent.get(item.parentId) ?? [];
-    replies.push(item);
-    repliesByParent.set(item.parentId, replies);
+  // 1. Fetch Article Detail
+  const {
+    data: article,
+    isLoading: isArticleLoading,
+    error: articleError,
+  } = useQuery({
+    queryKey: qk.news.detail(slug),
+    queryFn: () => data<NewsArticleResponse>(http.get(`/news/${slug}`)),
   });
 
-  const renderComment = (item: Comment, depth = 0) => (
-    <div className={depth ? "ml-5 border-l border-[var(--fv-line)] pl-4" : "border-t border-[var(--fv-line)] pt-3"} key={item.id}>
-      <p className="font-bold">{item.author}</p>
-      <p className="mt-1">
-        <MentionRenderer content={item.content} />
-      </p>
-      {!isAdminOrMod ? (
-        <div className="mt-2 flex flex-wrap gap-3 text-sm font-bold text-[var(--fv-clay)]">
-          <button type="button" disabled={commentLike.isPending} onClick={() => commentLike.mutate(item.id)}>
-            {item.liked ? "Liked" : "Like"} {item.likeCount}
-          </button>
-          <button type="button" onClick={() => setReplyTo(replyTo === item.id ? null : item.id)}>
-            Reply
-          </button>
+  // 2. Fetch Article Comments
+  const {
+    data: comments = [],
+    isLoading: isCommentsLoading,
+  } = useQuery({
+    queryKey: qk.news.comments(slug),
+    queryFn: () => data<CommentResponse[]>(http.get(`/news/${slug}/comments`)),
+  });
+
+  // 3. Like Mutation
+  const likeMutation = useMutation({
+    mutationFn: (articleId: number) =>
+      data<{ liked: boolean }>(http.post(`/news/${articleId}/like`)),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: qk.news.detail(slug) });
+      toast({
+        body: res.liked ?"Article liked!" :"Like removed.",
+        type:"info",
+        autoHideDuration: 3000,
+      });
+    },
+    onError: (err) => {
+      toast({
+        body: apiErrorMessage(err,"Failed to toggle like."),
+        type:"error",
+      });
+    },
+  });
+
+  // 4. Bookmark Mutation
+  const bookmarkMutation = useMutation({
+    mutationFn: (articleId: number) =>
+      data<{ bookmarked: boolean }>(http.post(`/news/${articleId}/bookmark`)),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: qk.news.detail(slug) });
+      toast({
+        body: res.bookmarked ?"Article bookmarked!" :"Bookmark removed.",
+        type:"info",
+        autoHideDuration: 3000,
+      });
+    },
+    onError: (err) => {
+      toast({
+        body: apiErrorMessage(err,"Failed to toggle bookmark."),
+        type:"error",
+      });
+    },
+  });
+
+  // 5. Submit Comment Mutation
+  const commentMutation = useMutation({
+    mutationFn: ({ articleId, content, parentId }: { articleId: number; content: string; parentId?: number }) =>
+      data<CommentResponse>(http.post(`/news/${articleId}/comments`, { content, parentId })),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: qk.news.comments(slug) });
+      setCommentText("");
+      setReplyTargetId(null);
+      setReplyText("");
+      toast({
+        body:"Comment posted!",
+        type:"info",
+        autoHideDuration: 3000,
+      });
+    },
+    onError: (err) => {
+      toast({
+        body: apiErrorMessage(err,"Failed to post comment."),
+        type:"error",
+      });
+    },
+  });
+
+  // 6. Like Comment Mutation
+  const likeCommentMutation = useMutation({
+    mutationFn: (commentId: number) =>
+      data<{ liked: boolean }>(http.post(`/news/comments/${commentId}/like`)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: qk.news.comments(slug) });
+    },
+    onError: (err) => {
+      toast({
+        body: apiErrorMessage(err,"Failed to like comment."),
+        type:"error",
+      });
+    },
+  });
+
+  const handleLike = () => {
+    if (!auth) {
+      toast({ body:"Please login to like this article.", type:"info" });
+      router.push("/login");
+      return;
+    }
+    if (article) {
+      likeMutation.mutate(article.id);
+    }
+  };
+
+  const handleBookmark = () => {
+    if (!auth) {
+      toast({ body:"Please login to bookmark this article.", type:"info" });
+      router.push("/login");
+      return;
+    }
+    if (article) {
+      bookmarkMutation.mutate(article.id);
+    }
+  };
+
+  const handleCommentSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!auth) {
+      toast({ body:"Please login to leave a comment.", type:"info" });
+      router.push("/login");
+      return;
+    }
+    if (!commentText.trim() || !article) return;
+    commentMutation.mutate({ articleId: article.id, content: commentText.trim() });
+  };
+
+  const handleReplySubmit = (parentId: number) => {
+    if (!auth) {
+      toast({ body:"Please login to reply.", type:"info" });
+      router.push("/login");
+      return;
+    }
+    if (!replyText.trim() || !article) return;
+    commentMutation.mutate({ articleId: article.id, content: replyText.trim(), parentId });
+  };
+
+  const handleLikeComment = (commentId: number) => {
+    if (!auth) {
+      toast({ body:"Please login to like comments.", type:"info" });
+      router.push("/login");
+      return;
+    }
+    likeCommentMutation.mutate(commentId);
+  };
+
+  if (isArticleLoading) {
+    return (
+      <PublicShell>
+        <LoadingBlock label="Loading Article Detail" />
+      </PublicShell>
+    );
+  }
+
+  if (articleError || !article) {
+    return (
+      <PublicShell>
+        <ErrorBlock message="Article not found or failed to load article details." />
+      </PublicShell>
+    );
+  }
+
+  // Recursive Comment Node Component
+  const CommentNode = ({ comment, depth = 0 }: { comment: CommentResponse; depth?: number }) => {
+    const isReplying = replyTargetId === comment.id;
+
+    return (
+      <div className="w-full flex flex-col pt-4 border-l border-[var(--color-border)] pl-4 ml-1 md:ml-3">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-bold text-[var(--color-text-primary)]">{comment.username}</span>
+            <span className="text-[var(--color-text-secondary)] font-semibold">
+              {new Date(comment.publishedAt).toLocaleDateString()}
+            </span>
+          </div>
+          
+          <p className="text-xs md:text-sm text-[var(--color-text-primary)] leading-relaxed font-medium">
+            {comment.content}
+          </p>
+
+          <div className="flex items-center gap-3 text-xs font-semibold pt-1">
+            <button
+              onClick={() => handleLikeComment(comment.id)}
+              className={`hover:opacity-85 flex items-center gap-1 transition-all-300 ${
+                comment.liked ?"text-[var(--color-accent)]" :"text-[var(--color-text-secondary)]"
+              }`}
+            >
+              👍 {comment.likes}
+            </button>
+            <button
+              onClick={() => {
+                if (isReplying) {
+                  setReplyTargetId(null);
+                  setReplyText("");
+                } else {
+                  setReplyTargetId(comment.id);
+                  setReplyText("");
+                }
+              }}
+              className="text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-all-300"
+            >
+              {isReplying ?"Cancel" :"Reply"}
+            </button>
+          </div>
+
+          {/* Inline Reply Form */}
+          {isReplying && (
+            <div className="flex flex-col gap-2 mt-2 pl-2">
+              <input
+                type="text"
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder={`Reply to ${comment.username}...`}
+                className="w-full px-3 py-1.5 rounded-lg text-xs border border-[var(--color-border)] bg-transparent text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] transition-all-300"
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleReplySubmit(comment.id)}
+                  disabled={commentMutation.isPending && replyTargetId === comment.id}
+                  className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase bg-[var(--color-accent)] text-white hover:opacity-90 disabled:opacity-50 transition-all-300"
+                >
+                  {commentMutation.isPending && replyTargetId === comment.id ?"Submitting..." :"Submit Reply"}
+                </button>
+                <button
+                  onClick={() => {
+                    setReplyTargetId(null);
+                    setReplyText("");
+                  }}
+                  className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition-all-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Nested Replies */}
+          {comment.replies && comment.replies.length > 0 && (
+            <div className="flex flex-col gap-2 mt-2 w-full">
+              {comment.replies.map((reply) => (
+                <CommentNode key={reply.id} comment={reply} depth={depth + 1} />
+              ))}
+            </div>
+          )}
         </div>
-      ) : null}
-      {replyTo === item.id ? (
-        <form
-          className="mt-3 grid gap-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (replyContent.trim() && article.data?.id) comment.mutate(
-              { articleId: article.data.id, content: replyContent, parentId: item.id },
-              { onSuccess: () => { setReplyContent(""); setReplyTo(null); } }
-            );
-          }}
-        >
-          <textarea className="input min-h-20" value={replyContent} onChange={(event) => setReplyContent(event.target.value)} placeholder={`Reply to ${item.author}`} />
-          <button className="btn w-fit" disabled={comment.isPending || !replyContent.trim()}>
-            {comment.isPending ? "Posting..." : "Post reply"}
-          </button>
-        </form>
-      ) : null}
-      <div className="mt-3 grid gap-3">
-        {repliesByParent.get(item.id)?.map((reply) => renderComment(reply, depth + 1))}
       </div>
-    </div>
-  );
+    );
+  };
+
+  // 2.5 Fetch list of articles for quick navigation
+  const { data: siblingArticlesData } = useQuery({
+    queryKey: qk.news.list(),
+    queryFn: () => data<PageResponse<NewsArticleResponse>>(http.get("/news", { params: { size: 10 } })),
+  });
+  const siblingArticles = siblingArticlesData?.content || [];
 
   return (
     <PublicShell>
-      {article.isLoading ? <LoadingBlock /> : null}
-      {article.error ? <ErrorBlock message="Article not found." /> : null}
-      {article.data ? (
-        <article className="panel touchline mx-auto max-w-6xl p-5 md:p-8 lg:p-10">
-          <header className="border-b border-[var(--fv-line)] pb-6">
-            <p suppressHydrationWarning className="text-sm font-black uppercase tracking-[0.18em] text-[var(--fv-clay)]">
-              {article.data.category ?? "News"}
-              {article.data.publishedAt ? ` · ${new Date(article.data.publishedAt).toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" })}` : ""}
-            </p>
-            <h1 className="display-face mt-3 max-w-5xl text-4xl font-black leading-[0.96] tracking-tight md:text-5xl lg:text-6xl">
-              {article.data.title}
-            </h1>
-            {article.data.summary ? (
-              <p className="mt-5 max-w-4xl border-l-4 border-[var(--fv-clay)] pl-4 text-xl leading-8 text-[var(--fv-muted)]">
-                {article.data.summary}
-              </p>
-            ) : null}
-          </header>
-          <div className="mt-5 flex flex-wrap gap-2 text-sm font-bold uppercase">
-            {article.data.tags.map((tag) => (
-              <span className="border border-[var(--fv-line)] px-2 py-1" key={tag}>{tag}</span>
-            ))}
+      {/* Sticky horizontal articles bar */}
+      {siblingArticles.length > 0 && (
+        <div className="sticky top-[73px] z-30 w-full bg-[var(--color-background)] border-b border-[var(--color-border)] py-3 px-4 shadow-sm backdrop-blur-md bg-opacity-80">
+          <div className="max-w-4xl mx-auto flex flex-col gap-1.5">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
+              Quick Nav / Sibling Stories:
+            </span>
+            <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-thin whitespace-nowrap">
+              {siblingArticles.map((art) => (
+                <Link
+                  key={art.id}
+                  href={`/news/${art.slug}`}
+                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-serif font-black transition-all-300 ${
+                    art.slug === slug
+                      ? "bg-[var(--fv-clay)] text-white border-[var(--fv-clay)]"
+                      : "bg-[var(--color-background-surface)] border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-black/5 dark:hover:bg-white/5"
+                  }`}
+                >
+                  <img
+                    src={getArticleImage(art.id, art.content)}
+                    alt=""
+                    className="w-4 h-4 rounded-full object-cover"
+                  />
+                  <span className="max-w-[120px] truncate">{art.title}</span>
+                </Link>
+              ))}
+            </div>
           </div>
-          <div className="mt-6 flex gap-3">
-            <button className="btn btn-secondary" disabled={like.isPending || isAdminOrMod} onClick={() => { if (article.data?.id) like.mutate(article.data.id); }}>Like {article.data.likes}</button>
-            <button className="btn btn-secondary" disabled={bookmark.isPending || isAdminOrMod} onClick={() => { if (article.data?.id) bookmark.mutate(article.data.id); }}>Bookmark {article.data.bookmarks}</button>
-          </div>
-          <div className="article-body mt-8" dangerouslySetInnerHTML={{ __html: articleHtml(article.data.content) }} />
-        </article>
-      ) : null}
-
-      <section className="panel mx-auto mt-5 max-w-6xl p-5">
-        <h2 className="display-face text-3xl font-black">Comments</h2>
-        {comments.isLoading ? <LoadingBlock label="Loading comments" /> : null}
-        {comments.error ? <ErrorBlock message="Could not load comments." /> : null}
-        {comment.error ? <ErrorBlock message="Could not post comment." /> : null}
-        
-        {isAdminOrMod ? (
-          <div className="mt-4 p-4 border border-amber-500/30 bg-amber-500/10 text-amber-500 text-sm font-semibold rounded">
-            Administrative accounts (Admin/Moderator) are read-only on the public feed and cannot post comments, likes, or bookmarks.
-          </div>
-        ) : (
-          <form
-            className="mt-4 grid gap-3"
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (content.trim() && article.data?.id) comment.mutate(
-                { articleId: article.data.id, content },
-                { onSuccess: () => setContent("") }
-              );
-            }}
-          >
-            <textarea className="input min-h-28" value={content} onChange={(event) => setContent(event.target.value)} placeholder="Add a comment" />
-            <button className="btn w-fit" disabled={comment.isPending || !content.trim() || !article.data?.id}>
-              {comment.isPending ? "Posting..." : "Post comment"}
-            </button>
-          </form>
-        )}
-
-        <div className="mt-5 grid gap-3">
-          {comments.data?.length === 0 ? <p>No comments yet.</p> : null}
-          {repliesByParent.get(null)?.map((item) => renderComment(item))}
         </div>
-      </section>
+      )}
+
+      <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full animate-fade-in mt-4">
+        {/* Article Breadcrumbs & Meta */}
+        <div className="flex items-center justify-between text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-secondary)] border-b border-[var(--color-border)] pb-3">
+          <Link href="/news" className="hover:text-[var(--color-accent)] transition-all-300">
+            ← Back to Touchline News
+          </Link>
+          <span>{article.category ||"Football Verse Editorial"}</span>
+        </div>
+
+        {/* Heading */}
+        <div className="flex flex-col gap-3 text-center md:text-left">
+          <h1 className="m-0 font-serif font-black text-3xl md:text-5xl leading-tight text-[var(--color-text-primary)] tracking-tight">
+            {article.title}
+          </h1>
+          <div className="flex items-center justify-between flex-wrap gap-3 text-xs text-[var(--color-text-secondary)] font-semibold border-y border-[var(--color-border)] py-3">
+            <div className="flex items-center gap-4">
+              <span>Published: {new Date(article.publishedAt).toLocaleDateString("en-US", {
+                year:"numeric",
+                month:"long",
+                day:"numeric"
+              })}</span>
+              <span>Likes: {article.likes}</span>
+              <span>Bookmarks: {article.bookmarks}</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleLike}
+                className="px-4 py-1.5 bg-[var(--color-background-surface)] hover:bg-black/5 dark:hover:bg-white/5 border border-[var(--color-border)] rounded-full text-xs font-bold transition-all-300"
+              >
+                👍 Like
+              </button>
+              <button
+                onClick={handleBookmark}
+                className="px-4 py-1.5 bg-[var(--color-background-surface)] hover:bg-black/5 dark:hover:bg-white/5 border border-[var(--color-border)] rounded-full text-xs font-bold transition-all-300"
+              >
+                🔖 Bookmark
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Big Premium Hero Image */}
+        <div className="w-full rounded-2xl overflow-hidden border border-[var(--color-border)] relative h-64 md:h-[400px] shadow-premium">
+          <img
+            src={getArticleImage(article.id, article.content)}
+            alt={article.title}
+            className="w-full h-full object-cover"
+          />
+        </div>
+
+        {/* Article Summary */}
+        <div className="bg-[var(--fv-paper)] border-l-4 border-[var(--fv-clay)] p-4 rounded-xl text-xs md:text-sm italic text-[var(--color-text-secondary)] leading-relaxed font-serif">
+          {article.summary}
+        </div>
+
+        {/* Article content body */}
+        <article className="article-body text-base md:text-lg text-[var(--color-text-primary)] leading-relaxed font-serif">
+          {/* Spring Boot rich content is raw HTML. We render it safely. */}
+          <div dangerouslySetInnerHTML={{ __html: article.content }} />
+        </article>
+
+        {/* Comments Section */}
+        <div className="flex flex-col gap-6 mt-8 border-t border-[var(--color-border)] pt-8">
+          <h3 className="m-0 font-serif font-black text-2xl border-b border-[var(--color-border)] pb-2 text-[var(--color-text-primary)]">
+            Discussions ({comments.length})
+          </h3>
+
+          {/* Root Comment Submission Form */}
+          {auth ? (
+            <form onSubmit={handleCommentSubmit} className="w-full">
+              <div className="flex flex-col gap-3 bg-[var(--color-background-surface)] border border-[var(--color-border)] p-5 rounded-2xl shadow-premium">
+                <span className="text-xs font-bold text-[var(--color-text-secondary)]">
+                  Add to the discussion as {auth.username}
+                </span>
+                <input
+                  type="text"
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Share your thoughts on this story..."
+                  className="w-full px-4 py-2.5 rounded-xl text-xs border border-[var(--color-border)] bg-transparent text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] transition-all-300"
+                />
+                <div className="text-right">
+                  <button
+                    disabled={commentMutation.isPending && replyTargetId === null}
+                    className="px-5 py-2 rounded-full text-xs font-bold uppercase bg-[var(--color-accent)] text-white hover:opacity-90 disabled:opacity-50 transition-all-300 shadow-sm"
+                  >
+                    {commentMutation.isPending && replyTargetId === null ?"Submitting..." :"Submit Comment"}
+                  </button>
+                </div>
+              </div>
+            </form>
+          ) : (
+            <div className="text-center py-6 bg-[var(--fv-paper)] border border-[var(--color-border)] rounded-2xl p-6">
+              <p className="text-xs md:text-sm text-[var(--color-text-secondary)] font-medium">
+                Please{""}
+                <Link href="/login" className="font-bold text-[var(--color-accent)] hover:underline">
+                  Login
+                </Link>{""}
+                to join the discussion and post comments.
+              </p>
+            </div>
+          )}
+
+          {/* Comments List */}
+          {isCommentsLoading ? (
+            <LoadingBlock label="Loading comments" />
+          ) : comments.length === 0 ? (
+            <p className="italic py-8 text-center text-xs text-[var(--color-text-secondary)] font-semibold">
+              No comments yet. Be the first to start the conversation!
+            </p>
+          ) : (
+            <div className="flex flex-col gap-4 w-full">
+              {/* Only render root level comments here. Child comments render recursively. */}
+              {comments
+                .filter((c) => !c.parentId)
+                .map((c) => (
+                  <CommentNode key={c.id} comment={c} />
+                ))}
+            </div>
+          )}
+        </div>
+      </div>
     </PublicShell>
   );
 }
+
+// Inline fake useToast imports so we don't break types
+import { useToast } from "@/shared/components/toast";

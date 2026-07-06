@@ -1,21 +1,26 @@
-import type { Metadata } from "next";
-import { AppProviders } from "@/shared/components/app-providers";
+import React from "react";
 import "./globals.css";
+import { AppProviders } from "@/shared/components/app-providers";
+import { ToastProvider } from "@/shared/components/toast";
 
-export const metadata: Metadata = {
-  title: "Football Verse",
-  description: "Football news and community"
+export const metadata = {
+  title: "Football-Verse",
+  description: "Stories, Culture, and Community for Football Fans",
 };
 
 export default function RootLayout({
-  children
-}: Readonly<{
+  children,
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
       <body>
-        <AppProviders>{children}</AppProviders>
+        <AppProviders>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </AppProviders>
       </body>
     </html>
   );

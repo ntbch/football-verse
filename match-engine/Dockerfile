@@ -1,7 +1,7 @@
 FROM python:3.12-slim
 
 WORKDIR /app
-COPY app.py .
+COPY . .
 
 EXPOSE 8090
 CMD ["python", "app.py"]
