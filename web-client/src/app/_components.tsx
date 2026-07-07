@@ -180,6 +180,7 @@ export function EditorsPickWidget({ articles, getImage }: EditorsPickWidgetProps
                 <img
                   src={getImage(art.id, art.content)}
                   alt={art.title}
+                  loading="lazy"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src =
                       "https://images.unsplash.com/photo-1579952365116-61317f0501cd?q=80&w=800&auto=format&fit=crop";

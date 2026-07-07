@@ -88,6 +88,8 @@ export default function HomePage() {
               <img
                 src={getArticleImage(hero.id, hero.content)}
                 alt={hero.title}
+                loading="eager"
+                fetchPriority="high"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src =
                     "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=800&auto=format&fit=crop";
@@ -122,6 +124,7 @@ export default function HomePage() {
                   <img
                     src={getArticleImage(art.id, art.content)}
                     alt={art.title}
+                    loading="eager"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src =
                         "https://images.unsplash.com/photo-1540747737956-3787293a9fc1?q=80&w=800&auto=format&fit=crop";
@@ -185,6 +188,7 @@ export default function HomePage() {
                         <img
                           src={getArticleImage(art.id, art.content)}
                           alt={art.title}
+                          loading="lazy"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src =
                               "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=800&auto=format&fit=crop";

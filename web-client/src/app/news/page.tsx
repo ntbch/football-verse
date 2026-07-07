@@ -192,7 +192,7 @@ export default function NewsListingPage() {
               <div className="flex flex-col gap-8">
                 {/* Vertical grid layout for news articles */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
-                  {articles.map((art) => (
+                  {articles.map((art, idx) => (
                     <div
                       key={art.id}
                       className="group flex flex-col h-full overflow-hidden card"
@@ -202,6 +202,8 @@ export default function NewsListingPage() {
                         <img
                           src={getArticleImage(art.id, art.content)}
                           alt={art.title}
+                          loading={idx < 6 ? "eager" : "lazy"}
+                          fetchPriority={idx < 3 ? "high" : "auto"}
                           className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
                         />
                         <div className="absolute top-2 left-2 bg-[var(--color-accent)] text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
