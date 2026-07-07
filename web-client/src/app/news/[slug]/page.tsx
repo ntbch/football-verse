@@ -22,6 +22,25 @@ function preprocessArticleContent(html: string, coverImageUrl?: string): string 
     const videos = doc.querySelectorAll("video");
     videos.forEach((video) => {
       const src = video.getAttribute("src");
+      const videoId = video.getAttribute("id");
+
+      // Sky Sports / Brightcove: empty <video id="id_{uuid}"> — convert to iframe embed
+      if (!src && videoId && videoId.startsWith("id_")) {
+        const uuid = videoId.substring(3); // strip "id_"
+        const iframe = doc.createElement("iframe");
+        iframe.setAttribute(
+          "src",
+          `https://players.brightcove.net/6057984924001/DESF5xFjJ_default/index.html?videoId=ref:${uuid}`
+        );
+        iframe.setAttribute("width", "100%");
+        iframe.setAttribute("height", "400");
+        iframe.setAttribute("allowfullscreen", "true");
+        iframe.setAttribute("allow", "autoplay; fullscreen; picture-in-picture");
+        iframe.setAttribute("style", "border:0;border-radius:12px;display:block;margin:1.5rem 0;");
+        video.parentNode?.replaceChild(iframe, video);
+        return;
+      }
+
       if (src) {
         const isDirect = src.toLowerCase().endsWith(".mp4")
           || src.toLowerCase().endsWith(".webm")
