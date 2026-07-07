@@ -70,7 +70,10 @@ export default function RssCrawlerPage() {
     mutationFn: (id: number) => data<RssSource>(http.patch(`/admin/news/sources/${id}/toggle`)),
     onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: qk.admin.newsSources() });
-      toast({ body: `${updated.name} crawler is now ${updated.active ? "enabled" : "disabled"}.`, type: "info" });
+      toast({
+        body: `${updated.name} crawler is now ${updated.active ? "enabled" : "disabled"}.`,
+        type: "info",
+      });
     },
     onError: (err) => {
       toast({ body: apiErrorMessage(err, "Failed to toggle source."), type: "error" });
@@ -109,77 +112,81 @@ export default function RssCrawlerPage() {
 
   return (
     <div className="flex flex-col gap-4 w-full text-white">
-      <div className="flex items-center justify-between w-full border-b border-[var(--color-border)] pb-2">
-        <h3 className="font-serif text-xl md:text-2xl font-black tracking-tight text-white m-0 font-serif font-bold text-xl text-white">
+      <div className="flex items-center justify-between w-full border-b border-[var(--color-border)] pb-2 flex-wrap gap-2">
+        <h3 className="font-serif-title text-xl md:text-2xl font-black tracking-tight text-white m-0">
           RSS Crawler Feeds
         </h3>
-        
-        <div className="flex items-center gap-2 ">
+
+        <div className="flex items-center gap-2">
           <button
-  type="button"
-  onClick={() => crawlMutation.mutate()}
-  disabled={false || crawlMutation.isPending}
-  className="px-4 py-2 rounded-full text-xs font-bold uppercase bg-[var(--color-accent)] text-black hover:opacity-90 disabled:opacity-50 transition-all-300 shadow-sm active:scale-95"
->
-  {crawlMutation.isPending ? "Loading..." : crawlMutation.isPending ? "Crawling Feeds..." : "Run Crawler Now"}
-</button>
+            type="button"
+            onClick={() => crawlMutation.mutate()}
+            disabled={crawlMutation.isPending}
+            className="btn btn-primary !rounded-full !px-4 !py-2 !text-xs"
+          >
+            {crawlMutation.isPending ? "Crawling Feeds..." : "Run Crawler Now"}
+          </button>
           <button
-  type="button"
-  onClick={() => setShowAddForm(!showAddForm)}
-  disabled={false || false}
-  className="px-4 py-2 rounded-full text-xs font-bold uppercase border border-[var(--color-border)] text-white hover:bg-white/5 disabled:opacity-50 transition-all-300 shadow-sm active:scale-95"
->
-  {false ? "Loading..." : "Add Crawler Source"}
-</button>
+            type="button"
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="btn btn-secondary !rounded-full !px-4 !py-2 !text-xs"
+          >
+            Add Crawler Source
+          </button>
         </div>
       </div>
 
       {/* Add Form Card */}
       {showAddForm && (
-        <div className="p-5 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-premium bg-[var(--color-background-surface)] border border-[var(--color-border)] w-full">
+        <div className="card p-5 w-full">
           <form onSubmit={handleCreateSource} className="w-full">
-            <div className="flex flex-col gap-3 ">
-              <span className="text-xs font-bold uppercase text-[var(--color-accent)]">Register RSS feed</span>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+            <div className="flex flex-col gap-3">
+              <span className="text-xs font-bold uppercase text-[var(--color-accent)] text-left">
+                Register RSS feed
+              </span>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
                 <div className="flex flex-col gap-1 w-full text-left">
-  <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">Source Name</label>
-  <input
-    type="text"
-    placeholder="e.g. BBC Sport"
-    value={newName}
-    onChange={(e) => setNewName(e.target.value)}
-    className="w-full px-3 py-2 rounded-lg text-xs border border-[var(--color-border)] bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] font-medium"
-  />
-</div>
+                  <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">
+                    Source Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. BBC Sport"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    className="input"
+                  />
+                </div>
                 <div className="flex flex-col gap-1 w-full text-left">
-  <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">RSS Feed URL</label>
-  <input
-    type="text"
-    placeholder="e.g. http://feeds.bbci.co.uk/sport/football/rss.xml"
-    value={newUrl}
-    onChange={(e) => setNewUrl(e.target.value)}
-    className="w-full px-3 py-2 rounded-lg text-xs border border-[var(--color-border)] bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] font-medium"
-  />
-</div>
+                  <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">
+                    RSS Feed URL
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. http://feeds.bbci.co.uk/sport/football/rss.xml"
+                    value={newUrl}
+                    onChange={(e) => setNewUrl(e.target.value)}
+                    className="input"
+                  />
+                </div>
               </div>
 
-              <div className="flex items-center gap-3 pt-2">
+              <div className="flex items-center gap-3 pt-2 justify-end">
                 <button
-  type="button"
-  onClick={() => setShowAddForm(false)}
-  disabled={false || false}
-  className="px-4 py-2 rounded-full text-xs font-bold uppercase border border-[var(--color-border)] text-white hover:bg-white/5 disabled:opacity-50 transition-all-300 shadow-sm active:scale-95"
->
-  {false ? "Loading..." : "Cancel"}
-</button>
+                  type="button"
+                  onClick={() => setShowAddForm(false)}
+                  className="btn btn-secondary !px-4 !py-2 !text-xs"
+                >
+                  Cancel
+                </button>
                 <button
-  type="button"
-  disabled={false || createSourceMutation.isPending}
-  className="px-4 py-2 rounded-full text-xs font-bold uppercase bg-[var(--color-accent)] text-black hover:opacity-90 disabled:opacity-50 transition-all-300 shadow-sm active:scale-95"
->
-  {createSourceMutation.isPending ? "Loading..." : createSourceMutation.isPending ? "Adding..." : "Add feed"}
-</button>
+                  type="submit"
+                  disabled={createSourceMutation.isPending}
+                  className="btn btn-primary !px-4 !py-2 !text-xs"
+                >
+                  {createSourceMutation.isPending ? "Adding..." : "Add feed"}
+                </button>
               </div>
             </div>
           </form>
@@ -187,7 +194,7 @@ export default function RssCrawlerPage() {
       )}
 
       {/* List of Sources */}
-      <div className="bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-xl overflow-hidden">
+      <div className="card overflow-hidden">
         <div className="overflow-x-auto w-full">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
@@ -224,11 +231,13 @@ export default function RssCrawlerPage() {
                       </span>
                     </td>
                     <td className="py-3 px-4 text-right">
-                      <div className="flex items-center gap-1.5 inline-flex">
+                      <div className="flex items-center gap-1.5 justify-end">
                         <button
                           onClick={() => toggleSourceMutation.mutate(source.id)}
-                          className={`text-[9px] font-bold uppercase rounded px-2.5 py-1 transition-colors ${
-                            source.active ? "bg-slate-700 hover:bg-slate-600 text-white" : "bg-green-800 hover:bg-green-700 text-white"
+                          className={`btn btn-sm text-[9px] font-bold uppercase rounded px-2.5 py-1 transition-colors ${
+                            source.active
+                              ? "!bg-slate-700 hover:!bg-slate-600 !text-white"
+                              : "!bg-green-800 hover:!bg-green-700 !text-white"
                           }`}
                         >
                           {source.active ? "Disable" : "Enable"}
@@ -239,7 +248,7 @@ export default function RssCrawlerPage() {
                               deleteSourceMutation.mutate(source.id);
                             }
                           }}
-                          className="bg-red-800 hover:bg-red-700 text-white text-[9px] font-bold uppercase rounded px-2.5 py-1 transition-colors"
+                          className="btn btn-sm !bg-red-800 hover:!bg-red-700 !text-white text-[9px] font-bold uppercase rounded px-2.5 py-1 transition-colors"
                         >
                           Delete
                         </button>

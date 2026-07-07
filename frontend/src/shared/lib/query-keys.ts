@@ -1,7 +1,3 @@
-// ponytail: central query-key registry. Keys MUST match pre-refactor literals exactly —
-// changing a key here breaks cache invalidation across the app. Collapse into per-feature
-// if this grows beyond 15 keys.
-
 export const qk = {
   news: {
     list: () => ["news"] as const,

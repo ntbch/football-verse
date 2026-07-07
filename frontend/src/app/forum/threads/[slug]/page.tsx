@@ -8,7 +8,7 @@ import { PublicShell } from "@/shared/components/page-shell";
 import { qk } from "@/shared/lib/query-keys";
 import { http, data, apiErrorMessage } from "@/shared/lib/api-client";
 import { useAuthStore } from "@/shared/lib/auth-store";
-import { ThreadDetailResponse, PostResponse } from "@/shared/lib/types";
+import type { ThreadDetailResponse, PostResponse } from "@/shared/lib/types";
 import { LoadingBlock, ErrorBlock } from "@/shared/components/state-blocks";
 import { MentionRenderer } from "@/shared/components/MentionRenderer";
 import { useToast } from "@/shared/components/toast";
@@ -26,7 +26,7 @@ export default function ThreadDetailPage() {
   const [reportReason, setReportReason] = useState("");
   const [showReportModal, setShowReportModal] = useState(false);
 
-  // 1. Fetch thread details (includes posts page)
+  // 1. Fetch thread details
   const { data: detail, isLoading, error } = useQuery({
     queryKey: qk.forum.thread(slug),
     queryFn: () => data<ThreadDetailResponse>(http.get(`/forum/threads/${slug}`)),
@@ -87,7 +87,7 @@ export default function ThreadDetailPage() {
     },
   });
 
-  // 6. Moderation mutations (Pin, Lock, Hide)
+  // 6. Moderation mutations
   const pinMutation = useMutation({
     mutationFn: ({ id, value }: { id: number; value: boolean }) =>
       data<any>(http.patch(`/moderator/forum/threads/${id}/pin`, null, { params: { value } })),
@@ -178,11 +178,13 @@ export default function ThreadDetailPage() {
 
   return (
     <PublicShell>
-      <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto animate-fade-in">
-
+      <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto animate-fade-in mt-4">
         {/* Breadcrumb Navigation */}
         <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3 text-xs">
-          <Link href={`/forum/categories/${thread.categorySlug}`} className="text-[var(--fv-clay)] font-bold hover:underline transition-colors">
+          <Link
+            href={`/forum`}
+            className="text-[var(--color-accent)] font-bold hover:underline transition-colors"
+          >
             ← Category: {thread.categoryName}
           </Link>
           <div className="flex items-center gap-3 text-[var(--color-text-secondary)] font-semibold">
@@ -193,7 +195,7 @@ export default function ThreadDetailPage() {
 
         {/* Thread Title & Meta */}
         <div className="flex flex-col gap-3">
-          <h1 className="m-0 font-serif font-black text-2xl md:text-3xl text-[var(--color-text-primary)] tracking-tight">
+          <h1 className="m-0 font-serif-title font-black text-2xl md:text-3xl text-[var(--color-text-primary)] tracking-tight">
             {thread.title}
           </h1>
 
@@ -211,22 +213,26 @@ export default function ThreadDetailPage() {
             </div>
           )}
 
-          {/* Moderation Controls (Visible to Mod/Admin) */}
+          {/* Moderation Controls */}
           {isModOrAdmin() && (
             <div className="flex items-center gap-2 bg-white border border-[var(--color-border)] p-3 rounded-xl text-[10px] font-bold uppercase shadow-sm">
               <span className="text-[var(--color-text-secondary)] self-center px-2">Mod Ops:</span>
               <button
                 onClick={() => pinMutation.mutate({ id: thread.id, value: !thread.pinned })}
-                className={`px-3 py-1 rounded-full transition-colors duration-200 ${
-                  thread.pinned ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-[var(--color-text-secondary)] hover:bg-gray-200"
+                className={`px-3 py-1 rounded-full transition-colors ${
+                  thread.pinned
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-gray-100 text-[var(--color-text-secondary)] hover:bg-gray-200"
                 }`}
               >
                 {thread.pinned ? "Unpin" : "Pin"}
               </button>
               <button
                 onClick={() => lockMutation.mutate({ id: thread.id, value: !thread.locked })}
-                className={`px-3 py-1 rounded-full transition-colors duration-200 ${
-                  thread.locked ? "bg-red-50 text-red-600" : "bg-gray-100 text-[var(--color-text-secondary)] hover:bg-gray-200"
+                className={`px-3 py-1 rounded-full transition-colors ${
+                  thread.locked
+                    ? "bg-red-50 text-red-600"
+                    : "bg-gray-100 text-[var(--color-text-secondary)] hover:bg-gray-200"
                 }`}
               >
                 {thread.locked ? "Unlock" : "Lock"}
@@ -252,14 +258,20 @@ export default function ThreadDetailPage() {
                   {/* Post Author & Meta */}
                   <div className="flex items-center justify-between text-xs text-[var(--color-text-secondary)] border-b border-[var(--color-border)] pb-2 font-semibold">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-[var(--color-text-primary)]">@{post.authorUsername}</span>
+                      <span className="font-bold text-[var(--color-text-primary)]">
+                        @{post.authorUsername}
+                      </span>
                       <span>·</span>
                       <span>{new Date(post.createdAt).toLocaleDateString()}</span>
                       {index === 0 && (
-                        <span className="bg-gray-200 text-[var(--color-text-primary)] text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase">OP</span>
+                        <span className="bg-gray-200 text-[var(--color-text-primary)] text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase">
+                          OP
+                        </span>
                       )}
                       {isBestAnswer && (
-                        <span className="bg-green-100 text-green-700 text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase">Best Answer</span>
+                        <span className="bg-green-100 text-green-700 text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase">
+                          Best Answer
+                        </span>
                       )}
                     </div>
 
@@ -269,15 +281,20 @@ export default function ThreadDetailPage() {
                           setReportPostId(post.id);
                           setShowReportModal(true);
                         }}
-                        className="text-[var(--color-text-secondary)] hover:text-red-500 font-bold transition-colors"
+                        className="text-[var(--color-text-secondary)] hover:text-red-500 font-bold transition-all active:scale-[0.98] flex items-center gap-1"
                       >
-                        ⚠️ Report
+                        <svg className="w-3.5 h-3.5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span>Report</span>
                       </button>
 
                       {isModOrAdmin() && (
                         <button
-                          onClick={() => hidePostMutation.mutate({ id: post.id, value: !post.hidden })}
-                          className="text-[var(--color-text-secondary)] hover:text-orange-500 font-bold ml-2 transition-colors"
+                          onClick={() =>
+                            hidePostMutation.mutate({ id: post.id, value: !post.hidden })
+                          }
+                          className="text-[var(--color-text-secondary)] hover:text-orange-500 font-bold ml-2 transition-all active:scale-[0.98]"
                         >
                           {post.hidden ? "Unhide" : "Hide"}
                         </button>
@@ -300,11 +317,14 @@ export default function ThreadDetailPage() {
                   <div className="flex items-center justify-between pt-2 border-t border-[var(--color-border)] mt-1">
                     <button
                       onClick={() => likePostMutation.mutate(post.id)}
-                      className={`text-xs font-semibold hover:opacity-85 flex items-center gap-1.5 transition-colors ${
-                        post.liked ? "text-[var(--fv-clay)]" : "text-[var(--color-text-secondary)]"
+                      className={`text-xs font-semibold hover:opacity-85 flex items-center gap-1.5 transition-all active:scale-[0.98] ${
+                        post.liked ? "text-[var(--color-accent)]" : "text-[var(--color-text-secondary)]"
                       }`}
                     >
-                      👍 {post.likes}
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
+                      </svg>
+                      <span>{post.likes}</span>
                     </button>
 
                     {/* Best Answer Marking */}
@@ -312,14 +332,16 @@ export default function ThreadDetailPage() {
                       isBestAnswer ? (
                         <button
                           onClick={() => clearBestAnswerMutation.mutate(thread.id)}
-                          className="text-xs font-bold text-red-500 hover:underline transition-colors"
+                          className="text-xs font-bold text-red-500 hover:underline transition-all active:scale-[0.98]"
                         >
                           Unmark Best Answer
                         </button>
                       ) : (
                         <button
-                          onClick={() => bestAnswerMutation.mutate({ threadId: thread.id, postId: post.id })}
-                          className="text-xs font-bold text-green-600 hover:underline transition-colors"
+                          onClick={() =>
+                            bestAnswerMutation.mutate({ threadId: thread.id, postId: post.id })
+                          }
+                          className="text-xs font-bold text-green-600 hover:underline transition-all active:scale-[0.98]"
                         >
                           Mark as Best Answer
                         </button>
@@ -334,14 +356,18 @@ export default function ThreadDetailPage() {
 
         {/* Reply Submission Box */}
         <div className="flex flex-col gap-4 mt-4 border-t border-[var(--color-border)] pt-6">
-          <h3 className="m-0 font-serif font-black text-xl text-[var(--color-text-primary)]">
+          <h3 className="m-0 font-serif-title font-black text-xl text-[var(--color-text-primary)]">
             Post a Reply
           </h3>
 
           {thread.locked ? (
-            <div className="bg-red-50 border border-red-200 text-center rounded-2xl p-4">
-              <p className="text-red-600 font-bold text-sm">
-                🔒 This discussion thread has been locked. New replies are disabled.
+            <div className="bg-red-50 border border-red-200 text-center rounded-2xl p-4 flex items-center justify-center gap-2">
+              <svg className="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7 11V7a5 5 0 0110 0v4" />
+              </svg>
+              <p className="text-red-600 font-bold text-sm m-0">
+                This discussion thread has been locked. New replies are disabled.
               </p>
             </div>
           ) : auth ? (
@@ -352,12 +378,12 @@ export default function ThreadDetailPage() {
                   onChange={(e) => setReplyText(e.target.value)}
                   placeholder="Share your views or reply to this post... (Use @username to mention others)"
                   rows={4}
-                  className="w-full bg-gray-50 border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[var(--fv-clay)]/30 font-medium"
+                  className="w-full bg-gray-50 border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 font-medium"
                 />
                 <div className="text-right">
                   <button
                     disabled={replyMutation.isPending}
-                    className="px-5 py-2.5 rounded-full text-xs font-bold uppercase bg-[var(--fv-clay)] text-white hover:opacity-90 disabled:opacity-50 transition-all duration-200 shadow-sm"
+                    className="btn btn-primary !px-5 !py-2.5 !text-xs"
                   >
                     {replyMutation.isPending ? "Posting..." : "Submit Reply"}
                   </button>
@@ -368,7 +394,10 @@ export default function ThreadDetailPage() {
             <div className="text-center py-6 bg-white border border-[var(--color-border)] rounded-2xl p-6 shadow-sm">
               <p className="text-xs md:text-sm text-[var(--color-text-secondary)] font-medium">
                 Please{" "}
-                <Link href="/login" className="font-bold text-[var(--fv-clay)] hover:underline">
+                <Link
+                  href="/login"
+                  className="font-bold text-[var(--color-accent)] hover:underline"
+                >
                   Login
                 </Link>{" "}
                 to reply to discussions.
@@ -382,7 +411,7 @@ export default function ThreadDetailPage() {
           <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
             <div className="w-full max-w-md bg-white border border-[var(--color-border)] rounded-2xl shadow-lg overflow-hidden">
               <div className="px-6 py-4 border-b border-[var(--color-border)] bg-gray-50/50">
-                <h3 className="m-0 font-serif font-black text-base text-[var(--color-text-primary)]">
+                <h3 className="m-0 font-serif-title font-black text-base text-[var(--color-text-primary)]">
                   Report Inappropriate Content
                 </h3>
               </div>
@@ -390,13 +419,15 @@ export default function ThreadDetailPage() {
               <form onSubmit={handleReportSubmit} className="p-6">
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">Reason for reporting</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
+                      Reason for reporting
+                    </label>
                     <input
                       type="text"
                       placeholder="e.g. Hate speech, toxicity, advertising, off-topic"
                       value={reportReason}
                       onChange={(e) => setReportReason(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl text-xs border border-[var(--color-border)] bg-white text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--fv-clay)]/30"
+                      className="input"
                     />
                   </div>
 
@@ -408,14 +439,14 @@ export default function ThreadDetailPage() {
                         setReportReason("");
                         setReportPostId(null);
                       }}
-                      className="px-4 py-2 rounded-full text-xs font-bold uppercase border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-gray-50 transition-colors"
+                      className="btn btn-secondary !px-4 !py-2 !text-xs"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={reportMutation.isPending}
-                      className="px-5 py-2 rounded-full text-xs font-bold uppercase bg-[var(--fv-clay)] text-white hover:opacity-90 disabled:opacity-50 transition-all duration-200 shadow-sm"
+                      className="btn btn-primary !px-5 !py-2 !text-xs"
                     >
                       {reportMutation.isPending ? "Reporting..." : "Submit Report"}
                     </button>
@@ -425,7 +456,6 @@ export default function ThreadDetailPage() {
             </div>
           </div>
         )}
-
       </div>
     </PublicShell>
   );

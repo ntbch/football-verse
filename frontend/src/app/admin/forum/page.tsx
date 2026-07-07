@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { qk } from "@/shared/lib/query-keys";
 import { http, data, apiErrorMessage } from "@/shared/lib/api-client";
-import { ForumCategoryResponse } from "@/shared/lib/types";
+import type { ForumCategoryResponse } from "@/shared/lib/types";
 import { LoadingBlock } from "@/shared/components/state-blocks";
 import { useToast } from "@/shared/components/toast";
 
@@ -69,77 +69,83 @@ export default function AdminForumPage() {
 
   return (
     <div className="flex flex-col gap-4 w-full text-white">
-      <div className="flex items-center justify-between w-full border-b border-[var(--color-border)] pb-2">
-        <h3 className="font-serif text-xl md:text-2xl font-black tracking-tight text-white m-0 font-serif font-bold text-xl text-white">
+      <div className="flex items-center justify-between w-full border-b border-[var(--color-border)] pb-2 flex-wrap gap-2">
+        <h3 className="font-serif-title text-xl md:text-2xl font-black tracking-tight text-white m-0">
           Forum Categories
         </h3>
         <button
-  type="button"
-  onClick={() => setShowAddForm(!showAddForm)}
-  disabled={false || false}
-  className="px-4 py-2 rounded-full text-xs font-bold uppercase bg-[var(--color-accent)] text-black hover:opacity-90 disabled:opacity-50 transition-all-300 shadow-sm active:scale-95"
->
-  {false ? "Loading..." : "Create Forum Category"}
-</button>
+          type="button"
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="btn btn-primary !rounded-full !px-4 !py-2 !text-xs"
+        >
+          Create Forum Category
+        </button>
       </div>
 
       {/* Add Form Card */}
       {showAddForm && (
-        <div className="p-5 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-premium bg-[var(--color-background-surface)] border border-[var(--color-border)] w-full">
+        <div className="card p-5 w-full">
           <form onSubmit={handleCreateCategory} className="w-full">
-            <div className="flex flex-col gap-3 ">
-              <span className="text-xs font-bold uppercase text-[var(--color-accent)]">Create category</span>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+            <div className="flex flex-col gap-3">
+              <span className="text-xs font-bold uppercase text-[var(--color-accent)] text-left">
+                Create category
+              </span>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
                 <div className="flex flex-col gap-1 w-full text-left">
-  <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">Category Name</label>
-  <input
-    type="text"
-    placeholder="e.g. Champions League"
-    value={newName}
-    onChange={(e) => handleNameChange(e.target.value)}
-    className="w-full px-3 py-2 rounded-lg text-xs border border-[var(--color-border)] bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] font-medium"
-  />
-</div>
+                  <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">
+                    Category Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Champions League"
+                    value={newName}
+                    onChange={(e) => handleNameChange(e.target.value)}
+                    className="input"
+                  />
+                </div>
                 <div className="flex flex-col gap-1 w-full text-left">
-  <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">Category Slug</label>
-  <input
-    type="text"
-    placeholder="e.g. champions-league"
-    value={newSlug}
-    onChange={(e) => setNewSlug(e.target.value)}
-    className="w-full px-3 py-2 rounded-lg text-xs border border-[var(--color-border)] bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] font-medium"
-  />
-</div>
+                  <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">
+                    Category Slug
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. champions-league"
+                    value={newSlug}
+                    onChange={(e) => setNewSlug(e.target.value)}
+                    className="input"
+                  />
+                </div>
               </div>
 
               <div className="flex flex-col gap-1 w-full text-left">
-  <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">Description</label>
-  <input
-    type="text"
-    placeholder="Description of category threads..."
-    value={newDescription}
-    onChange={(e) => setNewDescription(e.target.value)}
-    className="w-full px-3 py-2 rounded-lg text-xs border border-[var(--color-border)] bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] font-medium"
-  />
-</div>
+                <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">
+                  Description
+                </label>
+                <input
+                  type="text"
+                  placeholder="Description of category threads..."
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  className="input"
+                />
+              </div>
 
-              <div className="flex items-center gap-3 pt-2">
+              <div className="flex items-center gap-3 pt-2 justify-end">
                 <button
-  type="button"
-  onClick={() => setShowAddForm(false)}
-  disabled={false || false}
-  className="px-4 py-2 rounded-full text-xs font-bold uppercase border border-[var(--color-border)] text-white hover:bg-white/5 disabled:opacity-50 transition-all-300 shadow-sm active:scale-95"
->
-  {false ? "Loading..." : "Cancel"}
-</button>
+                  type="button"
+                  onClick={() => setShowAddForm(false)}
+                  className="btn btn-secondary !px-4 !py-2 !text-xs"
+                >
+                  Cancel
+                </button>
                 <button
-  type="button"
-  disabled={false || createCategoryMutation.isPending}
-  className="px-4 py-2 rounded-full text-xs font-bold uppercase bg-[var(--color-accent)] text-black hover:opacity-90 disabled:opacity-50 transition-all-300 shadow-sm active:scale-95"
->
-  {createCategoryMutation.isPending ? "Loading..." : createCategoryMutation.isPending ? "Creating..." : "Save category"}
-</button>
+                  type="submit"
+                  disabled={createCategoryMutation.isPending}
+                  className="btn btn-primary !px-4 !py-2 !text-xs"
+                >
+                  {createCategoryMutation.isPending ? "Creating..." : "Save category"}
+                </button>
               </div>
             </div>
           </form>
@@ -147,7 +153,7 @@ export default function AdminForumPage() {
       )}
 
       {/* List of categories */}
-      <div className="bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-xl overflow-hidden">
+      <div className="card overflow-hidden">
         <div className="overflow-x-auto w-full">
           <table className="w-full text-left border-collapse text-xs">
             <thead>

@@ -44,15 +44,14 @@ public class AdminDashboardController {
     @GetMapping("/user-growth")
     public ApiResponse<List<Map<String, Object>>> getUserGrowth() {
         Instant weekAgo = Instant.now().minus(7, ChronoUnit.DAYS);
-        List<UserAccount> allUsers = userRepository.findAll();
+        List<Object[]> results = userRepository.countUsersCreatedGroupedByDate(weekAgo);
         
-        Map<LocalDate, Long> growth = allUsers.stream()
-                .filter(u -> u.getCreatedAt() != null && u.getCreatedAt().isAfter(weekAgo))
-                .collect(Collectors.groupingBy(
-                        u -> u.getCreatedAt().atZone(ZoneId.systemDefault()).toLocalDate(),
-                        TreeMap::new,
-                        Collectors.counting()
-                ));
+        Map<LocalDate, Long> growth = new TreeMap<>();
+        for (Object[] row : results) {
+            LocalDate date = (LocalDate) row[0];
+            Long count = (Long) row[1];
+            growth.put(date, count);
+        }
 
         // If less than 7 dates are present, fill in missing dates with 0 to make chart rendering smooth
         for (int i = 0; i < 7; i++) {

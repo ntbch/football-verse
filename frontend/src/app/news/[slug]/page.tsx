@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useState } from"react";
-import Link from"next/link";
-import { useParams, useRouter } from"next/navigation";
-import { useQuery, useMutation, useQueryClient } from"@tanstack/react-query";
-import { PublicShell } from"@/shared/components/page-shell";
-import { qk } from"@/shared/lib/query-keys";
-import { http, data, apiErrorMessage } from"@/shared/lib/api-client";
-import { useAuthStore } from"@/shared/lib/auth-store";
-import { NewsArticleResponse, CommentResponse } from "@/shared/lib/types";
-
+import React, { useState } from "react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { PublicShell } from "@/shared/components/page-shell";
+import { qk } from "@/shared/lib/query-keys";
+import { http, data, apiErrorMessage } from "@/shared/lib/api-client";
+import { useAuthStore } from "@/shared/lib/auth-store";
+import { useToast } from "@/shared/components/toast";
+import type { NewsArticleResponse, CommentResponse } from "@/shared/lib/types";
 import { LoadingBlock, ErrorBlock } from "@/shared/components/state-blocks";
 
 // Main component
@@ -23,7 +23,7 @@ export default function NewsDetailPage() {
 
   // Root level comment text state
   const [commentText, setCommentText] = useState("");
-  // Reply comment states: keeps track of which comment ID is being replied to, and the reply text
+  // Reply comment states
   const [replyTargetId, setReplyTargetId] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
 
@@ -38,95 +38,96 @@ export default function NewsDetailPage() {
   });
 
   // 2. Fetch Article Comments
-  const {
-    data: comments = [],
-    isLoading: isCommentsLoading,
-  } = useQuery({
+  const { data: comments = [], isLoading: isCommentsLoading } = useQuery({
     queryKey: qk.news.comments(slug),
     queryFn: () => data<CommentResponse[]>(http.get(`/news/${slug}/comments`)),
   });
 
   // 3. Like Mutation
   const likeMutation = useMutation({
-    mutationFn: (articleId: number) =>
-      data<{ liked: boolean }>(http.post(`/news/${articleId}/like`)),
-    onSuccess: (res) => {
+    mutationFn: (articleId: number) => http.post(`/news/${articleId}/like`),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: qk.news.detail(slug) });
       toast({
-        body: res.liked ?"Article liked!" :"Like removed.",
-        type:"info",
+        body: "Like status toggled!",
+        type: "info",
         autoHideDuration: 3000,
       });
     },
     onError: (err) => {
       toast({
-        body: apiErrorMessage(err,"Failed to toggle like."),
-        type:"error",
+        body: apiErrorMessage(err, "Failed to toggle like."),
+        type: "error",
       });
     },
   });
 
   // 4. Bookmark Mutation
   const bookmarkMutation = useMutation({
-    mutationFn: (articleId: number) =>
-      data<{ bookmarked: boolean }>(http.post(`/news/${articleId}/bookmark`)),
-    onSuccess: (res) => {
+    mutationFn: (articleId: number) => http.post(`/news/${articleId}/bookmark`),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: qk.news.detail(slug) });
       toast({
-        body: res.bookmarked ?"Article bookmarked!" :"Bookmark removed.",
-        type:"info",
+        body: "Bookmark status toggled!",
+        type: "info",
         autoHideDuration: 3000,
       });
     },
     onError: (err) => {
       toast({
-        body: apiErrorMessage(err,"Failed to toggle bookmark."),
-        type:"error",
+        body: apiErrorMessage(err, "Failed to toggle bookmark."),
+        type: "error",
       });
     },
   });
 
   // 5. Submit Comment Mutation
   const commentMutation = useMutation({
-    mutationFn: ({ articleId, content, parentId }: { articleId: number; content: string; parentId?: number }) =>
-      data<CommentResponse>(http.post(`/news/${articleId}/comments`, { content, parentId })),
+    mutationFn: ({
+      articleId,
+      content,
+      parentId,
+    }: {
+      articleId: number;
+      content: string;
+      parentId?: number;
+    }) => data<CommentResponse>(http.post(`/news/${articleId}/comments`, { content, parentId })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: qk.news.comments(slug) });
       setCommentText("");
       setReplyTargetId(null);
       setReplyText("");
       toast({
-        body:"Comment posted!",
-        type:"info",
+        body: "Comment posted!",
+        type: "info",
         autoHideDuration: 3000,
       });
     },
     onError: (err) => {
       toast({
-        body: apiErrorMessage(err,"Failed to post comment."),
-        type:"error",
+        body: apiErrorMessage(err, "Failed to post comment."),
+        type: "error",
       });
     },
   });
 
   // 6. Like Comment Mutation
   const likeCommentMutation = useMutation({
-    mutationFn: (commentId: number) =>
-      data<{ liked: boolean }>(http.post(`/news/comments/${commentId}/like`)),
+    mutationFn: (commentId: number) => http.post(`/news/comments/${commentId}/like`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: qk.news.comments(slug) });
     },
     onError: (err) => {
       toast({
-        body: apiErrorMessage(err,"Failed to like comment."),
-        type:"error",
+        body: apiErrorMessage(err, "Failed to like comment."),
+        type: "error",
       });
     },
   });
 
   const handleLike = () => {
     if (!auth) {
-      toast({ body:"Please login to like this article.", type:"info" });
+      toast({ body: "Please login to like this article.", type: "info" });
       router.push("/login");
       return;
     }
@@ -137,7 +138,7 @@ export default function NewsDetailPage() {
 
   const handleBookmark = () => {
     if (!auth) {
-      toast({ body:"Please login to bookmark this article.", type:"info" });
+      toast({ body: "Please login to bookmark this article.", type: "info" });
       router.push("/login");
       return;
     }
@@ -149,7 +150,7 @@ export default function NewsDetailPage() {
   const handleCommentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth) {
-      toast({ body:"Please login to leave a comment.", type:"info" });
+      toast({ body: "Please login to leave a comment.", type: "info" });
       router.push("/login");
       return;
     }
@@ -159,7 +160,7 @@ export default function NewsDetailPage() {
 
   const handleReplySubmit = (parentId: number) => {
     if (!auth) {
-      toast({ body:"Please login to reply.", type:"info" });
+      toast({ body: "Please login to reply.", type: "info" });
       router.push("/login");
       return;
     }
@@ -169,7 +170,7 @@ export default function NewsDetailPage() {
 
   const handleLikeComment = (commentId: number) => {
     if (!auth) {
-      toast({ body:"Please login to like comments.", type:"info" });
+      toast({ body: "Please login to like comments.", type: "info" });
       router.push("/login");
       return;
     }
@@ -205,7 +206,7 @@ export default function NewsDetailPage() {
               {new Date(comment.publishedAt).toLocaleDateString()}
             </span>
           </div>
-          
+
           <p className="text-xs md:text-sm text-[var(--color-text-primary)] leading-relaxed font-medium">
             {comment.content}
           </p>
@@ -213,11 +214,14 @@ export default function NewsDetailPage() {
           <div className="flex items-center gap-3 text-xs font-semibold pt-1">
             <button
               onClick={() => handleLikeComment(comment.id)}
-              className={`hover:opacity-85 flex items-center gap-1 transition-all-300 ${
-                comment.liked ?"text-[var(--color-accent)]" :"text-[var(--color-text-secondary)]"
+              className={`hover:opacity-85 flex items-center gap-1.5 transition-all active:scale-[0.98] ${
+                comment.liked ? "text-[var(--color-accent)]" : "text-[var(--color-text-secondary)]"
               }`}
             >
-              👍 {comment.likes}
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
+              </svg>
+              <span>{comment.likes}</span>
             </button>
             <button
               onClick={() => {
@@ -229,9 +233,9 @@ export default function NewsDetailPage() {
                   setReplyText("");
                 }
               }}
-              className="text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-all-300"
+              className="text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-all active:scale-[0.98]"
             >
-              {isReplying ?"Cancel" :"Reply"}
+              {isReplying ? "Cancel" : "Reply"}
             </button>
           </div>
 
@@ -243,22 +247,24 @@ export default function NewsDetailPage() {
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
                 placeholder={`Reply to ${comment.username}...`}
-                className="w-full px-3 py-1.5 rounded-lg text-xs border border-[var(--color-border)] bg-transparent text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] transition-all-300"
+                className="w-full px-3 py-1.5 rounded-lg text-xs border border-[var(--color-border)] bg-transparent text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] transition-all"
               />
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleReplySubmit(comment.id)}
                   disabled={commentMutation.isPending && replyTargetId === comment.id}
-                  className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase bg-[var(--color-accent)] text-white hover:opacity-90 disabled:opacity-50 transition-all-300"
+                  className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase bg-[var(--color-accent)] text-white hover:opacity-90 disabled:opacity-50 transition-all active:scale-[0.98]"
                 >
-                  {commentMutation.isPending && replyTargetId === comment.id ?"Submitting..." :"Submit Reply"}
+                  {commentMutation.isPending && replyTargetId === comment.id
+                    ? "Submitting..."
+                    : "Submit Reply"}
                 </button>
                 <button
                   onClick={() => {
                     setReplyTargetId(null);
                     setReplyText("");
                   }}
-                  className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition-all-300"
+                  className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-black/5 transition-all active:scale-[0.98]"
                 >
                   Cancel
                 </button>
@@ -279,31 +285,32 @@ export default function NewsDetailPage() {
     );
   };
 
-
   return (
     <PublicShell>
-
       <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full animate-fade-in mt-4">
         {/* Article Breadcrumbs & Meta */}
         <div className="flex items-center justify-between text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-secondary)] border-b border-[var(--color-border)] pb-3">
-          <Link href="/news" className="hover:text-[var(--color-accent)] transition-all-300">
+          <Link href="/news" className="hover:text-[var(--color-accent)] transition-colors">
             ← Back to Touchline News
           </Link>
-          <span>{article.category ||"Football Verse Editorial"}</span>
+          <span>{article.category || "Football Verse Editorial"}</span>
         </div>
 
         {/* Heading */}
         <div className="flex flex-col gap-3 text-center md:text-left">
-          <h1 className="m-0 font-serif font-black text-3xl md:text-5xl leading-tight text-[var(--color-text-primary)] tracking-tight">
+          <h1 className="m-0 font-serif-title font-black text-3xl md:text-5xl leading-tight text-[var(--color-text-primary)] tracking-tight">
             {article.title}
           </h1>
           <div className="flex items-center justify-between flex-wrap gap-3 text-xs text-[var(--color-text-secondary)] font-semibold border-y border-[var(--color-border)] py-3">
             <div className="flex items-center gap-4">
-              <span>Published: {new Date(article.publishedAt).toLocaleDateString("en-US", {
-                year:"numeric",
-                month:"long",
-                day:"numeric"
-              })}</span>
+              <span>
+                Published:{" "}
+                {new Date(article.publishedAt).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </span>
               <span>Likes: {article.likes}</span>
               <span>Bookmarks: {article.bookmarks}</span>
             </div>
@@ -311,35 +318,39 @@ export default function NewsDetailPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={handleLike}
-                className="px-4 py-1.5 bg-[var(--color-background-surface)] hover:bg-black/5 dark:hover:bg-white/5 border border-[var(--color-border)] rounded-full text-xs font-bold transition-all-300"
+                className="px-4 py-1.5 bg-[var(--color-background-surface)] hover:bg-black/5 border border-[var(--color-border)] rounded-full text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-1.5"
               >
-                👍 Like
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
+                </svg>
+                <span>Like</span>
               </button>
               <button
                 onClick={handleBookmark}
-                className="px-4 py-1.5 bg-[var(--color-background-surface)] hover:bg-black/5 dark:hover:bg-white/5 border border-[var(--color-border)] rounded-full text-xs font-bold transition-all-300"
+                className="px-4 py-1.5 bg-[var(--color-background-surface)] hover:bg-black/5 border border-[var(--color-border)] rounded-full text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-1.5"
               >
-                🔖 Bookmark
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+                <span>Bookmark</span>
               </button>
             </div>
           </div>
         </div>
 
-
         {/* Article Summary */}
-        <div className="bg-[var(--fv-paper)] border-l-4 border-[var(--fv-clay)] p-4 rounded-xl text-xs md:text-sm italic text-[var(--color-text-secondary)] leading-relaxed font-serif">
+        <div className="bg-[var(--color-background-body)] border-l-4 border-[var(--color-accent)] p-4 rounded-xl text-xs md:text-sm italic text-[var(--color-text-secondary)] leading-relaxed font-serif">
           {article.summary}
         </div>
 
         {/* Article content body */}
         <article className="article-body text-base md:text-lg text-[var(--color-text-primary)] leading-relaxed font-serif">
-          {/* Spring Boot rich content is raw HTML. We render it safely. */}
           <div dangerouslySetInnerHTML={{ __html: article.content }} />
         </article>
 
         {/* Comments Section */}
         <div className="flex flex-col gap-6 mt-8 border-t border-[var(--color-border)] pt-8">
-          <h3 className="m-0 font-serif font-black text-2xl border-b border-[var(--color-border)] pb-2 text-[var(--color-text-primary)]">
+          <h3 className="m-0 font-serif-title font-black text-2xl border-b border-[var(--color-border)] pb-2 text-[var(--color-text-primary)]">
             Discussions ({comments.length})
           </h3>
 
@@ -355,25 +366,30 @@ export default function NewsDetailPage() {
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
                   placeholder="Share your thoughts on this story..."
-                  className="w-full px-4 py-2.5 rounded-xl text-xs border border-[var(--color-border)] bg-transparent text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] transition-all-300"
+                  className="w-full px-4 py-2.5 rounded-xl text-xs border border-[var(--color-border)] bg-transparent text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] transition-all"
                 />
                 <div className="text-right">
                   <button
                     disabled={commentMutation.isPending && replyTargetId === null}
-                    className="px-5 py-2 rounded-full text-xs font-bold uppercase bg-[var(--color-accent)] text-white hover:opacity-90 disabled:opacity-50 transition-all-300 shadow-sm"
+                    className="btn btn-primary !rounded-full !px-5 !py-2 !text-xs active:scale-[0.98] transition-all"
                   >
-                    {commentMutation.isPending && replyTargetId === null ?"Submitting..." :"Submit Comment"}
+                    {commentMutation.isPending && replyTargetId === null
+                      ? "Submitting..."
+                      : "Submit Comment"}
                   </button>
                 </div>
               </div>
             </form>
           ) : (
-            <div className="text-center py-6 bg-[var(--fv-paper)] border border-[var(--color-border)] rounded-2xl p-6">
+            <div className="text-center py-6 bg-[var(--color-background-body)] border border-[var(--color-border)] rounded-2xl p-6">
               <p className="text-xs md:text-sm text-[var(--color-text-secondary)] font-medium">
-                Please{""}
-                <Link href="/login" className="font-bold text-[var(--color-accent)] hover:underline">
+                Please{" "}
+                <Link
+                  href="/login"
+                  className="font-bold text-[var(--color-accent)] hover:underline"
+                >
                   Login
-                </Link>{""}
+                </Link>{" "}
                 to join the discussion and post comments.
               </p>
             </div>
@@ -388,7 +404,7 @@ export default function NewsDetailPage() {
             </p>
           ) : (
             <div className="flex flex-col gap-4 w-full">
-              {/* Only render root level comments here. Child comments render recursively. */}
+              {/* Only render root level comments here */}
               {comments
                 .filter((c) => !c.parentId)
                 .map((c) => (
@@ -401,6 +417,3 @@ export default function NewsDetailPage() {
     </PublicShell>
   );
 }
-
-// Inline fake useToast imports so we don't break types
-import { useToast } from "@/shared/components/toast";

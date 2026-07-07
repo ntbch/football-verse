@@ -54,12 +54,12 @@ export default function AdminReportsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 w-full">
-      <h3 className="font-serif text-xl md:text-2xl font-black tracking-tight text-white m-0 font-serif font-bold text-xl text-white">
+    <div className="flex flex-col gap-4 w-full text-white">
+      <h3 className="font-serif-title text-xl md:text-2xl font-black tracking-tight text-white m-0">
         Moderation Reports Log
       </h3>
 
-      <div className="bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-xl overflow-hidden">
+      <div className="card overflow-hidden">
         <div className="overflow-x-auto w-full">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
@@ -103,7 +103,7 @@ export default function AdminReportsPage() {
                       {report.status === "OPEN" && (
                         <button
                           onClick={() => handleResolve(report.id)}
-                          className="bg-green-800 hover:bg-green-700 text-white text-[9px] font-bold uppercase rounded px-2.5 py-1 transition-colors"
+                          className="btn btn-sm !bg-green-800 hover:!bg-green-700 !text-white text-[9px] font-bold uppercase rounded px-2.5 py-1 transition-colors"
                         >
                           Resolve
                         </button>

@@ -1,11 +1,10 @@
 import React from "react";
 import "./globals.css";
 import { AppProviders } from "@/shared/components/app-providers";
-import { ToastProvider } from "@/shared/components/toast";
 
 export const metadata = {
-  title: "Football-Verse",
-  description: "Stories, Culture, and Community for Football Fans",
+  title: "Football Verse",
+  description: "Editorial Football Magazine",
 };
 
 export default function RootLayout({
@@ -15,12 +14,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        <AppProviders>
-          <ToastProvider>
-            {children}
-          </ToastProvider>
-        </AppProviders>
+      <body className="min-h-screen bg-[var(--color-background-body)] text-[var(--color-text-primary)] antialiased">
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );

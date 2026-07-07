@@ -5,6 +5,7 @@ import com.footballverse.common.exception.ResourceNotFoundException;
 import com.footballverse.common.pagination.PageResponse;
 import com.footballverse.security.CurrentUser;
 import com.footballverse.common.text.RichTextSanitizer;
+import com.footballverse.common.text.SlugUtil;
 import com.footballverse.forum.dto.ForumCategoryRequest;
 import com.footballverse.forum.dto.ForumCategoryResponse;
 import com.footballverse.forum.dto.PostResponse;
@@ -56,7 +57,7 @@ public class ForumService {
 
     @Transactional
     public ForumCategoryResponse createCategory(ForumCategoryRequest request) {
-        return toCategory(categories.save(new ForumCategory(request.name(), slug(request.name()))));
+        return toCategory(categories.save(new ForumCategory(request.name(), SlugUtil.slug(request.name()))));
     }
 
     @Transactional(readOnly = true)
@@ -87,7 +88,7 @@ public class ForumService {
                 .orElseThrow(() -> new ResourceNotFoundException("Forum category not found"));
         ForumThread thread = new ForumThread();
         thread.setTitle(request.title());
-        thread.setSlug(slug(request.title()) + "-" + System.currentTimeMillis());
+        thread.setSlug(SlugUtil.uniqueSlug(request.title()));
         thread.setCategory(category);
         thread.setAuthor(user);
         thread.setLastActivityAt(Instant.now());
@@ -349,13 +350,5 @@ public class ForumService {
                 report.getReason(),
                 report.getStatus()
         );
-    }
-
-    private String slug(String value) {
-        return Normalizer.normalize(value, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "")
-                .toLowerCase(Locale.ROOT)
-                .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("(^-|-$)", "");
     }
 }

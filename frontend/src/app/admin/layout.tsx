@@ -46,7 +46,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="flex flex-col gap-6 w-full text-white animate-fade-in">
         {/* Admin Header */}
         <div className="flex flex-col gap-1 border-b border-[var(--color-border)] pb-4">
-          <h2 className="m-0 font-black text-2xl tracking-tight text-[var(--color-accent)]">
+          <h2 className="m-0 font-serif-title font-black text-2xl tracking-tight text-[var(--color-accent)]">
             ADMINISTRATIVE DESK
           </h2>
           <p className="text-[10px] text-[var(--color-text-secondary)] font-semibold">
@@ -58,7 +58,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="py-2 border-b border-[var(--color-border)] overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-3 min-w-max pb-1 text-xs font-bold uppercase tracking-wider">
             {ADMIN_LINKS.map((link) => {
-              const isActive = pathname === link.href || (link.href !== "/admin" && pathname.startsWith(link.href));
+              const isActive =
+                pathname === link.href ||
+                (link.href !== "/admin" && pathname.startsWith(link.href));
               return (
                 <Link
                   key={link.href}

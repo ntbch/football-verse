@@ -2,19 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ════════════════════════════════════════════════
+   DESIGN SYSTEM VARIABLES
+   ════════════════════════════════════════════════ */
+
 :root {
-  /* Editorial Football Magazine colors (default light mode variables) */
-  --fv-ink: #10140f;
-  --fv-grass: #b6ff3b;
-  --fv-clay: #b45f35;
-  --fv-paper: #f4f1e8;
-  --fv-line: #d8d0bc;
-  --fv-night: #19231b;
-  --fv-muted: #6d715f;
-  
-  /* Astryx overrides for neutral default theme */
-  --color-accent: var(--fv-clay);
-  --color-border: var(--fv-line);
+  /* Default: Editorial Football Magazine (Light Mode Warm Cream) */
+  --color-accent: #B45F35;             /* Clay Red Accent */
+  --color-background-body: #F7F4EC;     /* Cream Body Background */
+  --color-background-surface: #FFFDF9;  /* Off-White Paper Surface */
+  --color-text-primary: #10140F;        /* Deep Ink Text */
+  --color-text-secondary: #6D715F;      /* Muted Moss Green */
+  --color-border: #D8D0BC;              /* Warm Stone Border */
+  --radius-container: 16px;
+  --radius-element: 8px;
+  --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --shadow-premium: 0 4px 20px -2px rgba(16, 20, 15, 0.08), 0 2px 8px -1px rgba(16, 20, 15, 0.04);
+  --shadow-inset: inset 0 2px 4px 0 rgba(16, 20, 15, 0.03);
 }
 
 .theme-magazine {
@@ -24,138 +29,137 @@
   --color-text-primary: #10140F;
   --color-text-secondary: #6D715F;
   --color-border: #D8D0BC;
-  --radius-container: 12px;
-  --radius-element: 6px;
-}
-
-.theme-sports {
-  --color-accent: #A7FF00;
-  --color-background-body: #0B0E0C;
-  --color-background-surface: #0F1F16;
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: #8A9E92;
-  --color-border: #1F2E24;
-  --radius-container: 8px;
-  --radius-element: 4px;
-}
-
-.theme-community {
-  --color-accent: #7C3AED;
-  --color-background-body: #0D0E15;
-  --color-background-surface: #151726;
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: #9298B8;
-  --color-border: #272A40;
   --radius-container: 16px;
   --radius-element: 8px;
+  --shadow-premium: 0 4px 20px -2px rgba(16, 20, 15, 0.08), 0 2px 8px -1px rgba(16, 20, 15, 0.04);
 }
 
-* {
-  box-sizing: border-box;
-}
+/* ════════════════════════════════════════════════
+   GLOBAL STYLES & RESET
+   ════════════════════════════════════════════════ */
 
 body {
-  background:
-    linear-gradient(90deg, rgba(16, 20, 15, 0.04) 1px, transparent 1px),
-    var(--fv-paper);
-  background-size: 28px 28px;
-  color: var(--fv-ink);
-  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+  font-family: var(--font-sans);
+  background-color: var(--color-background-body);
+  color: var(--color-text-primary);
+  transition: background-color 0.4s ease, color 0.4s ease;
+  overflow-x: hidden;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-.display-face {
-  font-family: Georgia, "Times New Roman", serif;
+/* Custom Grid Grid Lines for Magazine feel */
+.theme-magazine::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: 
+    linear-gradient(90deg, rgba(16, 20, 15, 0.02) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(16, 20, 15, 0.02) 1px, transparent 1px);
+  background-size: 32px 32px;
+  z-index: 100;
 }
 
-a {
-  text-underline-offset: 4px;
+/* ════════════════════════════════════════════════
+   COMPONENTS & UTILITIES
+   ════════════════════════════════════════════════ */
+
+/* Typography */
+.font-serif-title {
+  font-family: var(--font-serif);
 }
 
-button,
-input,
-textarea,
-select {
-  font: inherit;
+/* Cards & Containers */
+.card {
+  background-color: var(--color-background-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  box-shadow: var(--shadow-premium);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
 }
 
-.touchline {
-  border-left: 8px solid var(--fv-grass);
+.card:hover {
+  transform: translateY(-2px);
 }
 
-.panel {
-  border: 1px solid var(--fv-line);
-  background: rgba(255, 252, 242, 0.86);
-}
-
-.article-body {
-  max-width: none;
-  border-top: 1px solid var(--fv-line);
-  padding-top: 1.5rem;
-  color: #12160f;
-  font-size: 1.125rem;
-  line-height: 1.78;
-}
-
-.article-body > * + * {
-  margin-top: 0.95rem;
-}
-
-.article-body p {
-  display: inline;
-  margin: 0;
-}
-
-.article-body p + p::before {
-  content: " ";
-}
-
-.article-body h2,
-.article-body h3,
-.article-body h4 {
-  margin-top: 2rem;
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 900;
-  line-height: 1.15;
-}
-
-.article-body h2 {
-  font-size: 1.8rem;
-}
-
-.article-body h3,
-.article-body h4 {
-  font-size: 1.45rem;
-}
-
-.article-body img,
-.article-body video,
-.article-body iframe {
-  display: block;
+/* Inputs & Form Fields */
+.input {
   width: 100%;
-  max-width: 100%;
-  margin: 2rem 0;
-  border: 1px solid var(--fv-line);
-  background: #fffaf0;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--radius-element);
+  border: 1px solid var(--color-border);
+  background-color: transparent;
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-inset);
+  transition: border-color 0.2s ease, ring 0.2s ease;
 }
 
-.article-body img {
-  height: auto;
+.input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
 }
 
-.article-body iframe {
-  aspect-ratio: 16 / 9;
-  height: auto;
+/* Reusable Button System */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 9999px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  border: 1px solid transparent;
 }
 
-.input:focus,
-.btn:focus-visible,
-a:focus-visible {
-  outline: 3px solid var(--fv-grass);
-  outline-offset: 2px;
+.btn:active {
+  transform: scale(0.96);
+}
+
+.btn-primary {
+  background-color: var(--color-accent);
+  color: var(--color-background-body);
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.btn-secondary:hover {
+  background-color: rgba(0, 0, 0, 0.03);
+  border-color: var(--color-text-primary);
+}
+
+.theme-sports .btn-secondary:hover,
+.theme-community .btn-secondary:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+  border-color: var(--color-text-primary);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

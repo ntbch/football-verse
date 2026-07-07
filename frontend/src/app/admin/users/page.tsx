@@ -54,12 +54,12 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 w-full">
-      <h3 className="font-serif text-xl md:text-2xl font-black tracking-tight text-white m-0 font-serif font-bold text-xl text-white">
+    <div className="flex flex-col gap-4 w-full text-white">
+      <h3 className="font-serif-title text-xl md:text-2xl font-black tracking-tight text-white m-0">
         User Accounts Management
       </h3>
 
-      <div className="bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-xl overflow-hidden">
+      <div className="card overflow-hidden">
         <div className="overflow-x-auto w-full">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
@@ -103,19 +103,19 @@ export default function AdminUsersPage() {
                           user.status === "ACTIVE"
                             ? "bg-green-950 text-green-300 border border-green-800"
                             : user.status === "MUTED"
-                            ? "bg-yellow-950 text-yellow-300 border border-yellow-800"
-                            : "bg-red-950 text-red-300 border border-red-800"
+                              ? "bg-yellow-950 text-yellow-300 border border-yellow-800"
+                              : "bg-red-950 text-red-300 border border-red-800"
                         }`}
                       >
                         {user.status}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-right">
-                      <div className="flex items-center gap-1.5 inline-flex">
+                      <div className="flex items-center gap-1.5 justify-end">
                         {user.status !== "ACTIVE" && (
                           <button
                             onClick={() => handleStatusToggle(user, "ACTIVE")}
-                            className="bg-green-800 hover:bg-green-700 text-white text-[9px] font-bold uppercase rounded px-2 py-1 transition-colors"
+                            className="btn btn-sm !bg-green-800 hover:!bg-green-700 !text-white text-[9px] font-bold uppercase rounded px-2 py-1 transition-colors"
                           >
                             Activate
                           </button>
@@ -123,7 +123,7 @@ export default function AdminUsersPage() {
                         {user.status !== "MUTED" && (
                           <button
                             onClick={() => handleStatusToggle(user, "MUTED")}
-                            className="bg-yellow-800 hover:bg-yellow-700 text-black text-[9px] font-bold uppercase rounded px-2 py-1 transition-colors"
+                            className="btn btn-sm !bg-yellow-800 hover:!bg-yellow-700 !text-black text-[9px] font-bold uppercase rounded px-2 py-1 transition-colors"
                           >
                             Mute
                           </button>
@@ -131,7 +131,7 @@ export default function AdminUsersPage() {
                         {user.status !== "BANNED" && (
                           <button
                             onClick={() => handleStatusToggle(user, "BANNED")}
-                            className="bg-red-800 hover:bg-red-700 text-white text-[9px] font-bold uppercase rounded px-2 py-1 transition-colors"
+                            className="btn btn-sm !bg-red-800 hover:!bg-red-700 !text-white text-[9px] font-bold uppercase rounded px-2 py-1 transition-colors"
                           >
                             Ban
                           </button>

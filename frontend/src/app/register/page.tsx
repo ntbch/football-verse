@@ -4,9 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
-import { apiErrorMessage, data, http } from "../../shared/lib/api-client";
-import { useAuthStore } from "../../shared/lib/auth-store";
-import type { AuthResponse } from "../../shared/lib/types";
+import { apiErrorMessage, data, http } from "@/shared/lib/api-client";
+import { useAuthStore } from "@/shared/lib/auth-store";
+import type { AuthResponse } from "@/shared/lib/types";
 
 const COVER_IMAGE_URL = "/images/login_banner.png";
 
@@ -24,7 +24,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  
+
   const [errors, setErrors] = useState<{ email?: string; username?: string; password?: string } | null>(null);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -47,9 +47,7 @@ export default function RegisterPage() {
 
     setIsLoading(true);
     try {
-      const auth = await data<AuthResponse>(
-        http.post("/auth/register", parsed.data)
-      );
+      const auth = await data<AuthResponse>(http.post("/auth/register", parsed.data));
       setAuth(auth);
       router.push("/profile");
     } catch (err) {
@@ -60,39 +58,40 @@ export default function RegisterPage() {
   };
 
   return (
-    <div 
-      className="min-h-screen w-full flex items-center justify-center p-4 md:p-8 text-[var(--fv-ink)] font-sans"
+    <div
+      className="min-h-screen w-full flex items-center justify-center p-4 md:p-8 text-[var(--color-text-primary)] font-sans relative"
       style={{
-        background: "linear-gradient(90deg, rgba(16, 20, 15, 0.04) 1px, transparent 1px), var(--fv-paper)",
-        backgroundSize: "28px 28px"
+        background: "linear-gradient(90deg, rgba(16, 20, 15, 0.03) 1px, transparent 1px), var(--color-background-body)",
+        backgroundSize: "28px 28px",
       }}
     >
-      <div className="w-full max-w-6xl bg-white border border-[var(--fv-line)] rounded-3xl overflow-hidden shadow-2xl grid grid-cols-1 md:grid-cols-2 min-h-[650px] transform transition-all duration-300">
-        
+      <div className="w-full max-w-6xl bg-white border border-[var(--color-border)] rounded-3xl overflow-hidden shadow-2xl grid grid-cols-1 md:grid-cols-2 min-h-[650px] transform transition-all duration-300">
         {/* Form Section */}
         <div className="p-8 md:p-14 flex flex-col justify-between h-full bg-[#faf9f6]">
           <div>
             <div className="flex items-center gap-2 mb-8">
-              <span className="w-8 h-8 rounded-full bg-[var(--fv-clay)] flex items-center justify-center text-white font-serif font-black text-sm tracking-wider">
+              <span className="w-8 h-8 rounded-full bg-[var(--color-accent)] flex items-center justify-center text-white font-serif font-black text-sm tracking-wider">
                 F
               </span>
-              <span className="font-serif font-black text-xl tracking-tight text-[var(--fv-ink)]">
+              <span className="font-serif font-black text-xl tracking-tight text-[var(--color-text-primary)]">
                 Football Verse
               </span>
             </div>
 
             <div className="mb-8">
-              <h2 className="font-serif font-black text-4xl text-[var(--fv-ink)] tracking-tight mb-2">
+              <h2 className="font-serif font-black text-4xl text-[var(--color-text-primary)] tracking-tight mb-2">
                 Create Account
               </h2>
-              <p className="text-xs md:text-sm text-[var(--fv-muted)] font-serif italic">
+              <p className="text-xs md:text-sm text-[var(--color-text-secondary)] font-serif italic">
                 Join us to share news, comment, and predict scores
               </p>
             </div>
 
             <form onSubmit={handleRegister} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1 w-full">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--fv-muted)]">Email Address</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
+                  Email Address
+                </label>
                 <input
                   type="email"
                   placeholder="name@domain.com"
@@ -101,17 +100,22 @@ export default function RegisterPage() {
                     setEmail(e.target.value);
                     if (errors?.email) setErrors({ ...errors, email: undefined });
                   }}
-                  className={`w-full px-4 py-3 rounded-xl text-sm border bg-white text-[var(--fv-ink)] placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[var(--fv-clay)] focus:border-[var(--fv-clay)] transition-all-300 font-medium ${
-                    errors?.email ? "border-red-400" : "border-[var(--fv-line)]"
-                  }`}
+                  className={`input ${errors?.email ? "border-red-400 focus:border-red-400 focus:ring-red-400" : ""}`}
                 />
                 {errors?.email && (
-                  <span className="text-[10px] text-red-600 font-bold mt-1">⚠️ {errors.email}</span>
+                  <span className="text-[10px] text-red-600 font-bold mt-1 flex items-center gap-1">
+                    <svg className="w-3 h-3 text-red-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span>{errors.email}</span>
+                  </span>
                 )}
               </div>
 
               <div className="flex flex-col gap-1 w-full">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--fv-muted)]">Username</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
+                  Username
+                </label>
                 <input
                   type="text"
                   placeholder="Username"
@@ -120,17 +124,22 @@ export default function RegisterPage() {
                     setUsername(e.target.value);
                     if (errors?.username) setErrors({ ...errors, username: undefined });
                   }}
-                  className={`w-full px-4 py-3 rounded-xl text-sm border bg-white text-[var(--fv-ink)] placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[var(--fv-clay)] focus:border-[var(--fv-clay)] transition-all-300 font-medium ${
-                    errors?.username ? "border-red-400" : "border-[var(--fv-line)]"
-                  }`}
+                  className={`input ${errors?.username ? "border-red-400 focus:border-red-400 focus:ring-red-400" : ""}`}
                 />
                 {errors?.username && (
-                  <span className="text-[10px] text-red-600 font-bold mt-1">⚠️ {errors.username}</span>
+                  <span className="text-[10px] text-red-600 font-bold mt-1 flex items-center gap-1">
+                    <svg className="w-3 h-3 text-red-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span>{errors.username}</span>
+                  </span>
                 )}
               </div>
 
               <div className="flex flex-col gap-1 w-full">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--fv-muted)]">Password</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
+                  Password
+                </label>
                 <input
                   type="password"
                   placeholder="••••••••"
@@ -139,36 +148,43 @@ export default function RegisterPage() {
                     setPassword(e.target.value);
                     if (errors?.password) setErrors({ ...errors, password: undefined });
                   }}
-                  className={`w-full px-4 py-3 rounded-xl text-sm border bg-white text-[var(--fv-ink)] placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[var(--fv-clay)] focus:border-[var(--fv-clay)] transition-all-300 font-medium ${
-                    errors?.password ? "border-red-400" : "border-[var(--fv-line)]"
-                  }`}
+                  className={`input ${errors?.password ? "border-red-400 focus:border-red-400 focus:ring-red-400" : ""}`}
                 />
                 {errors?.password && (
-                  <span className="text-[10px] text-red-600 font-bold mt-1">⚠️ {errors.password}</span>
+                  <span className="text-[10px] text-red-600 font-bold mt-1 flex items-center gap-1">
+                    <svg className="w-3 h-3 text-red-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span>{errors.password}</span>
+                  </span>
                 )}
               </div>
 
               {globalError && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
-                  <p className="text-xs font-semibold text-red-700">
-                    ⚠️ {globalError}
-                  </p>
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2">
+                  <svg className="w-4 h-4 text-red-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <p className="text-xs font-semibold text-red-700 m-0">{globalError}</p>
                 </div>
               )}
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-[var(--fv-clay)] text-white hover:opacity-95 disabled:opacity-50 transition-all-300 shadow-md shadow-[var(--fv-clay)]/10 hover:shadow-[var(--fv-clay)]/20 active:scale-[0.98] mt-2"
+                className="w-full btn btn-primary !rounded-xl !py-3.5 !text-xs mt-2 active:scale-[0.98] transition-all"
               >
                 {isLoading ? "Creating Account..." : "Create Account"}
               </button>
             </form>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-[var(--fv-line)] flex items-center justify-between text-xs text-[var(--fv-muted)] font-medium">
+          <div className="mt-8 pt-6 border-t border-[var(--color-border)] flex items-center justify-between text-xs text-[var(--color-text-secondary)] font-medium">
             <span>Already have an account?</span>
-            <Link href="/login" className="font-bold text-[var(--fv-clay)] hover:underline transition-all-300">
+            <Link
+              href="/login"
+              className="font-bold text-[var(--color-accent)] hover:underline"
+            >
               Login here
             </Link>
           </div>
@@ -181,9 +197,9 @@ export default function RegisterPage() {
             alt="Football Stadium lights"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[var(--fv-ink)]/90 via-[var(--fv-ink)]/50 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-text-primary)]/90 via-[var(--color-text-primary)]/50 to-transparent"></div>
           <div className="absolute bottom-14 left-14 right-14 z-20">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--fv-grass)] mb-3 inline-block">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-accent)] mb-3 inline-block">
               Arena Predictor
             </span>
             <h3 className="font-serif font-black text-4xl text-white leading-tight mb-4">
@@ -194,15 +210,19 @@ export default function RegisterPage() {
             </p>
           </div>
         </div>
-
       </div>
 
-      <div className="absolute bottom-4 left-0 right-0 text-center text-[10px] text-[var(--fv-muted)] font-medium z-10 pointer-events-none">
+      <div className="absolute bottom-4 left-0 right-0 text-center text-[10px] text-[var(--color-text-secondary)] font-medium z-10 pointer-events-none">
         By registering, you agree to our{" "}
-        <Link href="#" className="hover:underline pointer-events-auto">Terms of Service</Link> and{" "}
-        <Link href="#" className="hover:underline pointer-events-auto">Privacy Policy</Link>.
+        <Link href="#" className="hover:underline pointer-events-auto">
+          Terms of Service
+        </Link>{" "}
+        and{" "}
+        <Link href="#" className="hover:underline pointer-events-auto">
+          Privacy Policy
+        </Link>
+        .
       </div>
-
     </div>
   );
 }

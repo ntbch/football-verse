@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { qk } from "@/shared/lib/query-keys";
 import { http, data, apiErrorMessage } from "@/shared/lib/api-client";
-import { NewsCategoryResponse } from "@/shared/lib/types";
+import type { NewsCategoryResponse } from "@/shared/lib/types";
 import { LoadingBlock } from "@/shared/components/state-blocks";
 import { useToast } from "@/shared/components/toast";
 
@@ -20,7 +20,7 @@ export default function WriteNewsArticlePage() {
   const [category, setCategory] = useState("");
   const [tags, setTags] = useState("");
   const [status, setStatus] = useState("DRAFT");
-  
+
   const [imageUploadLoading, setImageUploadLoading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
 
@@ -62,9 +62,8 @@ export default function WriteNewsArticlePage() {
         headers: { "Content-Type": "multipart/form-data" },
       });
       const url = res.data.data.url;
-      // Convert relative backend path to absolute API URL if needed, or keep it relative
       setUploadedImageUrl(url);
-      
+
       // Inject image markdown helper into the content textarea
       setContent((prev) => `${prev}\n\n![Image](${url})\n\n`);
       toast({ body: "Image uploaded successfully!", type: "info" });
@@ -124,91 +123,104 @@ export default function WriteNewsArticlePage() {
   return (
     <div className="flex flex-col gap-4 w-full text-white">
       <div className="border-b border-[var(--color-border)] pb-2 flex items-center justify-between">
-        <h3 className="font-serif text-xl md:text-2xl font-black tracking-tight text-white m-0 font-serif font-bold text-xl text-white">
+        <h3 className="font-serif-title text-xl md:text-2xl font-black tracking-tight text-white m-0">
           Write Editorial News Publication
         </h3>
         <button
-  type="button"
-  onClick={() => router.push("/admin/news")}
-  disabled={false || false}
-  className="px-4 py-2 rounded-full text-xs font-bold uppercase border border-[var(--color-border)] text-white hover:bg-white/5 disabled:opacity-50 transition-all-300 shadow-sm active:scale-95"
->
-  {false ? "Loading..." : "Back to Articles"}
-</button>
+          type="button"
+          onClick={() => router.push("/admin/news")}
+          className="btn btn-secondary !px-4 !py-2 !text-xs"
+        >
+          Back to Articles
+        </button>
       </div>
 
-      <div className="p-5 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-premium bg-[var(--color-background-surface)] border border-[var(--color-border)] w-full">
+      <div className="card p-5 w-full">
         <form onSubmit={handlePublish} className="w-full">
-          <div className="flex flex-col gap-4 ">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+          <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
               <div className="flex flex-col gap-1 w-full text-left">
-  <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">Article Title</label>
-  <input
-    type="text"
-    placeholder="Enter title..."
-    value={title}
-    onChange={(e) => handleTitleChange(e.target.value)}
-    className="w-full px-3 py-2 rounded-lg text-xs border border-[var(--color-border)] bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] font-medium"
-  />
-</div>
+                <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">
+                  Article Title
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter title..."
+                  value={title}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  className="input"
+                />
+              </div>
               <div className="flex flex-col gap-1 w-full text-left">
-  <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">Slug URL Path</label>
-  <input
-    type="text"
-    placeholder="auto-generated-from-title"
-    value={slug}
-    onChange={(e) => setSlug(e.target.value)}
-    className="w-full px-3 py-2 rounded-lg text-xs border border-[var(--color-border)] bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] font-medium"
-  />
-</div>
+                <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">
+                  Slug URL Path
+                </label>
+                <input
+                  type="text"
+                  placeholder="auto-generated-from-title"
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  className="input"
+                />
+              </div>
             </div>
 
             <div className="flex flex-col gap-1 w-full text-left">
-  <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">Article Summary</label>
-  <input
-    type="text"
-    placeholder="Short paragraph summary/excerpt of the story..."
-    value={summary}
-    onChange={(e) => setSummary(e.target.value)}
-    className="w-full px-3 py-2 rounded-lg text-xs border border-[var(--color-border)] bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] font-medium"
-  />
-</div>
+              <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">
+                Article Summary
+              </label>
+              <input
+                type="text"
+                placeholder="Short paragraph summary/excerpt of the story..."
+                value={summary}
+                onChange={(e) => setSummary(e.target.value)}
+                className="input"
+              />
+            </div>
 
             {/* Custom rich helper bar */}
             <div className="flex flex-col gap-1 w-full">
-              <label className="text-xs font-bold uppercase text-[var(--color-text-secondary)]">Image Upload Uploader</label>
-              <div className="flex items-center gap-3 bg-[var(--color-background-body)] border border-[var(--color-border)] p-3 rounded">
+              <label className="text-xs font-bold uppercase text-[var(--color-text-secondary)] text-left">
+                Image Uploader
+              </label>
+              <div className="flex items-center gap-3 bg-[var(--color-background-body)] border border-[var(--color-border)] p-3 rounded-xl">
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleImageUpload}
                   className="text-xs text-gray-300"
                 />
-                {imageUploadLoading && <span className="text-xs animate-pulse text-[var(--color-accent)]">Uploading file...</span>}
+                {imageUploadLoading && (
+                  <span className="text-xs animate-pulse text-[var(--color-accent)]">Uploading file...</span>
+                )}
                 {uploadedImageUrl && (
                   <span className="text-[10px] text-green-400 font-bold">Uploaded: {uploadedImageUrl}</span>
                 )}
               </div>
             </div>
 
-            <div className="flex flex-col gap-1 w-full">
-              <label className="text-xs font-bold uppercase text-[var(--color-text-secondary)]">Article Content Body (supports HTML/markdown)</label>
+            <div className="flex flex-col gap-1 w-full text-left">
+              <label className="text-xs font-bold uppercase text-[var(--color-text-secondary)]">
+                Article Content Body (supports HTML/markdown)
+              </label>
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Write your article stories here..."
                 rows={12}
-                className="w-full bg-[var(--color-background-body)] border border-[var(--color-border)] text-white text-sm rounded p-3 focus:outline-none focus:border-[var(--color-accent)] font-mono"
+                className="w-full bg-[var(--color-background-body)] border border-[var(--color-border)] text-white text-sm rounded-xl p-3 focus:outline-none focus:border-[var(--color-accent)] font-mono"
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
-              <div className="flex flex-col gap-1 ">
-                <label className="text-xs font-bold uppercase text-[var(--color-text-secondary)]">Category</label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full text-left">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold uppercase text-[var(--color-text-secondary)]">
+                  Category
+                </label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full bg-[var(--color-background-body)] border border-[var(--color-border)] text-white text-xs rounded p-2 focus:outline-none"
+                  className="w-full bg-[var(--color-background-body)] border border-[var(--color-border)] text-white text-xs rounded-xl p-2.5 focus:outline-none"
                 >
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.name}>
@@ -219,22 +231,26 @@ export default function WriteNewsArticlePage() {
               </div>
 
               <div className="flex flex-col gap-1 w-full text-left">
-  <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">Tags (Comma separated)</label>
-  <input
-    type="text"
-    placeholder="e.g. premier-league, transfers, tactical"
-    value={tags}
-    onChange={(e) => setTags(e.target.value)}
-    className="w-full px-3 py-2 rounded-lg text-xs border border-[var(--color-border)] bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] font-medium"
-  />
-</div>
+                <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">
+                  Tags (Comma separated)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. premier-league, transfers, tactical"
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  className="input"
+                />
+              </div>
 
-              <div className="flex flex-col gap-1 ">
-                <label className="text-xs font-bold uppercase text-[var(--color-text-secondary)]">Publish Status</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold uppercase text-[var(--color-text-secondary)]">
+                  Publish Status
+                </label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="w-full bg-[var(--color-background-body)] border border-[var(--color-border)] text-white text-xs rounded p-2 focus:outline-none"
+                  className="w-full bg-[var(--color-background-body)] border border-[var(--color-border)] text-white text-xs rounded-xl p-2.5 focus:outline-none"
                 >
                   <option value="DRAFT">DRAFT</option>
                   <option value="PUBLISHED">PUBLISHED</option>
@@ -243,22 +259,21 @@ export default function WriteNewsArticlePage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 pt-2 border-t border-[var(--color-border)]">
+            <div className="flex items-center gap-3 pt-2 border-t border-[var(--color-border)] justify-end">
               <button
-  type="button"
-  onClick={() => router.push("/admin/news")}
-  disabled={false || false}
-  className="px-4 py-2 rounded-full text-xs font-bold uppercase border border-[var(--color-border)] text-white hover:bg-white/5 disabled:opacity-50 transition-all-300 shadow-sm active:scale-95"
->
-  {false ? "Loading..." : "Cancel"}
-</button>
+                type="button"
+                onClick={() => router.push("/admin/news")}
+                className="btn btn-secondary !px-4 !py-2 !text-xs"
+              >
+                Cancel
+              </button>
               <button
-  type="button"
-  disabled={false || createArticleMutation.isPending}
-  className="px-4 py-2 rounded-full text-xs font-bold uppercase bg-[var(--color-accent)] text-black hover:opacity-90 disabled:opacity-50 transition-all-300 shadow-sm active:scale-95"
->
-  {createArticleMutation.isPending ? "Loading..." : createArticleMutation.isPending ? "Creating..." : "Save & Publish"}
-</button>
+                type="submit"
+                disabled={createArticleMutation.isPending}
+                className="btn btn-primary !px-5 !py-2 !text-xs"
+              >
+                {createArticleMutation.isPending ? "Creating..." : "Save & Publish"}
+              </button>
             </div>
           </div>
         </form>

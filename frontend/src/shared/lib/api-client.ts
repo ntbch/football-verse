@@ -2,8 +2,13 @@
 
 import axios from "axios";
 import type { AxiosError, InternalAxiosRequestConfig } from "axios";
-import { authToken, persistAuth, storedAuth, useAuthStore } from "./auth-store";
-import type { ApiEnvelope, AuthResponse } from "./types";
+import { getAuthToken, useAuthStore } from "./auth-store";
+
+export interface ApiEnvelope<T> {
+  success: boolean;
+  message?: string;
+  data: T;
+}
 
 export const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api/v1";
 
@@ -12,7 +17,7 @@ export const http = axios.create({ baseURL: apiBaseUrl });
 type RetryConfig = InternalAxiosRequestConfig & { _retry?: boolean };
 
 http.interceptors.request.use((config) => {
-  const token = authToken();
+  const token = getAuthToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -23,25 +28,36 @@ http.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<ApiEnvelope<unknown>>) => {
     const original = error.config as RetryConfig | undefined;
-    const auth = storedAuth();
-    if (error.response?.status === 401 && original && !original._retry && auth?.refreshToken) {
+    const authState = useAuthStore.getState();
+    const currentAuth = authState.auth;
+
+    if (error.response?.status === 401 && original && !original._retry && currentAuth?.refreshToken) {
       original._retry = true;
       try {
-        const refreshed = await axios.post<ApiEnvelope<AuthResponse>>(`${apiBaseUrl}/auth/refresh`, {
-          refreshToken: auth.refreshToken
-        });
-        persistAuth(refreshed.data.data);
-        useAuthStore.setState({ auth: refreshed.data.data });
+        const refreshed = await axios.post<ApiEnvelope<{ accessToken: string; refreshToken: string }>>(
+          `${apiBaseUrl}/auth/refresh`,
+          { refreshToken: currentAuth.refreshToken }
+        );
+        const updatedAuth = { ...currentAuth, ...refreshed.data.data };
+        authState.setAuth(updatedAuth);
         original.headers.Authorization = `Bearer ${refreshed.data.data.accessToken}`;
         return http(original);
       } catch {
-        useAuthStore.getState().logout();
+        authState.logout();
       }
     }
+
     if (error.response?.status === 401 || error.response?.status === 403) {
       if (typeof window !== "undefined") {
-        useAuthStore.getState().logout();
-        window.location.href = "/login";
+        const isAuthZone = window.location.pathname.startsWith("/admin") ||
+                           window.location.pathname.startsWith("/moderator") ||
+                           window.location.pathname.startsWith("/profile");
+
+        // ponytail: degrade to guest gracefully instead of forcing redirect on public pages
+        if (currentAuth || isAuthZone) {
+          authState.logout();
+          window.location.href = "/login";
+        }
       }
     }
     return Promise.reject(error);

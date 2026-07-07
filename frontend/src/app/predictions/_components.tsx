@@ -25,7 +25,7 @@ export const PickForm = ({ match, auth, onSuccess }: PickFormProps) => {
 
   if (!auth) {
     return (
-      <div className="mt-5 border-t border-[var(--fv-line)] pt-4">
+      <div className="mt-5 border-t border-[var(--color-border)] pt-4">
         <Link className="btn btn-secondary" href="/login">
           Login to predict
         </Link>
@@ -37,7 +37,7 @@ export const PickForm = ({ match, auth, onSuccess }: PickFormProps) => {
     return match.userPrediction ? (
       <UserPickDisplay match={match} prediction={match.userPrediction} />
     ) : (
-      <div className="mt-5 border-t border-[var(--fv-line)] pt-4 text-sm font-bold text-[var(--fv-muted)]">
+      <div className="mt-5 border-t border-[var(--color-border)] pt-4 text-sm font-bold text-[var(--color-text-secondary)]">
         Match has started — predictions closed
       </div>
     );
@@ -52,15 +52,15 @@ export const PickForm = ({ match, auth, onSuccess }: PickFormProps) => {
   };
 
   return (
-    <div className="mt-5 grid gap-3 border-t border-[var(--fv-line)] pt-4">
-      <p className="text-xs font-black uppercase text-[var(--fv-clay)]">
+    <div className="mt-5 grid gap-3 border-t border-[var(--color-border)] pt-4">
+      <p className="text-xs font-black uppercase text-[var(--color-accent)]">
         {match.userPrediction ? "Your pick" : "Pick result"}
       </p>
 
       <div className="flex gap-2">
         {(["home", "draw", "away"] as const).map((option) => (
           <button
-            className={pick === option ? "btn" : "btn btn-secondary"}
+            className={pick === option ? "btn btn-primary" : "btn btn-secondary"}
             key={option}
             onClick={() => setPick(option)}
             type="button"
@@ -93,15 +93,15 @@ export const PickForm = ({ match, auth, onSuccess }: PickFormProps) => {
               value={awayScore ?? ""}
               onChange={(e) => setAwayScore(e.target.value ? Number(e.target.value) : null)}
             />
-            <span className="text-xs text-[var(--fv-muted)]">(optional)</span>
+            <span className="text-xs text-[var(--color-text-secondary)]">(optional)</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-4 text-sm font-bold">
-            <span className="text-xs font-black uppercase text-[var(--fv-clay)]">O/U 2.5</span>
+            <span className="text-xs font-black uppercase text-[var(--color-accent)]">O/U 2.5</span>
             <div className="flex gap-1">
               {(["over", "under"] as const).map((opt) => (
                 <button
-                  className={pickOu25 === opt ? "btn btn-sm" : "btn btn-secondary btn-sm"}
+                  className={pickOu25 === opt ? "btn btn-primary btn-sm" : "btn btn-secondary btn-sm"}
                   key={opt}
                   onClick={() => setPickOu25(pickOu25 === opt ? null : opt)}
                   type="button"
@@ -110,11 +110,11 @@ export const PickForm = ({ match, auth, onSuccess }: PickFormProps) => {
                 </button>
               ))}
             </div>
-            <span className="text-xs font-black uppercase text-[var(--fv-clay)]">BTTS</span>
+            <span className="text-xs font-black uppercase text-[var(--color-accent)]">BTTS</span>
             <div className="flex gap-1">
               {(["yes", "no"] as const).map((opt) => (
                 <button
-                  className={pickBtts === opt ? "btn btn-sm" : "btn btn-secondary btn-sm"}
+                  className={pickBtts === opt ? "btn btn-primary btn-sm" : "btn btn-secondary btn-sm"}
                   key={opt}
                   onClick={() => setPickBtts(pickBtts === opt ? null : opt)}
                   type="button"
@@ -148,7 +148,7 @@ export const PickForm = ({ match, auth, onSuccess }: PickFormProps) => {
       </div>
 
       {error ? (
-        <p className="text-sm font-bold text-[var(--fv-clay)]">
+        <p className="text-sm font-bold text-red-500">
           {(error as { response?: { data?: { message?: string } } }).response?.data?.message ??
             "Failed to save prediction"}
         </p>
@@ -164,7 +164,7 @@ type UserPickDisplayProps = {
 
 const marketResultStyle = (hit: boolean, isResult: boolean) => {
   if (!isResult) return "";
-  return hit ? "bg-[var(--fv-grass)] text-white" : "bg-[var(--fv-clay)] text-white";
+  return hit ? "bg-green-600 text-white border-green-600" : "bg-red-600 text-white border-red-600";
 };
 
 export const UserPickDisplay = ({ match, prediction }: UserPickDisplayProps) => {
@@ -177,17 +177,16 @@ export const UserPickDisplay = ({ match, prediction }: UserPickDisplayProps) => 
 
   const isResult = match.status === "result" && match.homeScore !== null;
   const correct = isResult && prediction.correct;
-  // ponytail: trust backend breakdown. No recompute.
   const ou25Hit = isResult && prediction.correctOu25 === true;
   const bttsHit = isResult && prediction.correctBtts === true;
 
   return (
-    <div className="mt-5 grid gap-3 border-t border-[var(--fv-line)] pt-4">
+    <div className="mt-5 grid gap-3 border-t border-[var(--color-border)] pt-4">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-black uppercase text-[var(--fv-clay)]">Your prediction</p>
+        <p className="text-xs font-black uppercase text-[var(--color-accent)]">Your prediction</p>
         {isResult ? (
           <span
-            className={`px-2 py-1 text-xs font-black uppercase ${correct ? "bg-[var(--fv-grass)] text-white" : "bg-[var(--fv-clay)] text-white"}`}
+            className={`px-2 py-1 text-xs font-black uppercase rounded ${correct ? "bg-green-600 text-white" : "bg-red-600 text-white"}`}
           >
             {correct ? `+${prediction.points}pts` : "Missed"}
           </span>
@@ -195,19 +194,19 @@ export const UserPickDisplay = ({ match, prediction }: UserPickDisplayProps) => 
       </div>
 
       <div className="grid grid-cols-2 gap-3 text-sm font-bold">
-        <div className="border border-[var(--fv-line)] p-2">
-          <span className="text-[var(--fv-muted)]">Pick: </span>
+        <div className="border border-[var(--color-border)] p-2 rounded-lg">
+          <span className="text-[var(--color-text-secondary)]">Pick: </span>
           {pickLabel}
         </div>
         {prediction.homeScore != null && prediction.awayScore != null ? (
-          <div className="border border-[var(--fv-line)] p-2">
-            <span className="text-[var(--fv-muted)]">Score: </span>
+          <div className="border border-[var(--color-border)] p-2 rounded-lg">
+            <span className="text-[var(--color-text-secondary)]">Score: </span>
             {prediction.homeScore}-{prediction.awayScore}
           </div>
         ) : null}
         {prediction.pickOu25 ? (
-          <div className={`border p-2 ${marketResultStyle(ou25Hit, isResult)}`}>
-            <span className="text-[var(--fv-muted)]">O/U 2.5: </span>
+          <div className={`border p-2 rounded-lg ${marketResultStyle(ou25Hit, isResult)}`}>
+            <span className="text-[var(--color-text-secondary)]">O/U 2.5: </span>
             {prediction.pickOu25}
             {isResult && prediction.pickOu25 ? (
               ou25Hit ? " ✓" : " ✗"
@@ -215,8 +214,8 @@ export const UserPickDisplay = ({ match, prediction }: UserPickDisplayProps) => 
           </div>
         ) : null}
         {prediction.pickBtts ? (
-          <div className={`border p-2 ${marketResultStyle(bttsHit, isResult)}`}>
-            <span className="text-[var(--fv-muted)]">BTTS: </span>
+          <div className={`border p-2 rounded-lg ${marketResultStyle(bttsHit, isResult)}`}>
+            <span className="text-[var(--color-text-secondary)]">BTTS: </span>
             {prediction.pickBtts}
             {isResult && prediction.pickBtts ? (
               bttsHit ? " ✓" : " ✗"
@@ -224,8 +223,8 @@ export const UserPickDisplay = ({ match, prediction }: UserPickDisplayProps) => 
           </div>
         ) : null}
         {isResult ? (
-          <div className="border border-[var(--fv-line)] p-2">
-            <span className="text-[var(--fv-muted)]">Actual: </span>
+          <div className="border border-[var(--color-border)] p-2 rounded-lg">
+            <span className="text-[var(--color-text-secondary)]">Actual: </span>
             {match.homeScore}-{match.awayScore}
           </div>
         ) : null}
@@ -241,25 +240,25 @@ type LeaderboardPanelProps = {
 };
 
 export const LeaderboardPanel = ({ error, isLoading, entries }: LeaderboardPanelProps) => (
-  <aside className="panel h-fit p-5">
-    <h2 className="display-face text-3xl font-black">Leaderboard</h2>
+  <aside className="card h-fit p-5">
+    <h2 className="font-serif-title text-3xl font-black">Leaderboard</h2>
     {isLoading ? <LoadingBlock label="Loading leaderboard" /> : null}
     {error ? <ErrorBlock message="Could not load leaderboard." /> : null}
     {entries && entries.length === 0 ? (
-      <p className="mt-4 text-sm text-[var(--fv-muted)]">No participants yet.</p>
+      <p className="mt-4 text-sm text-[var(--color-text-secondary)]">No participants yet.</p>
     ) : null}
     {entries && entries.length > 0 ? (
       <div className="mt-4 grid gap-2">
         {entries.map((entry) => (
           <div
-            className="grid grid-cols-[24px_1fr_auto] items-center gap-2 border-t border-[var(--fv-line)] pt-2 text-sm"
+            className="grid grid-cols-[24px_1fr_auto] items-center gap-2 border-t border-[var(--color-border)] pt-2 text-sm"
             key={entry.userId}
           >
-            <span className={`text-center font-black ${entry.rank <= 3 ? "text-[var(--fv-sun)]" : ""}`}>
+            <span className={`text-center font-black ${entry.rank <= 3 ? "text-yellow-600" : ""}`}>
               {entry.rank}
             </span>
             <span className="truncate font-bold">{entry.displayName}</span>
-            <span className="font-black">{entry.points}</span>
+            <span className="font-black text-[var(--color-accent)]">{entry.points}</span>
           </div>
         ))}
       </div>
@@ -284,23 +283,30 @@ export const StatsBadges = ({ stats, isLoading }: StatsBadgesProps) => {
 
   return (
     <div className="flex flex-wrap items-center gap-3 text-sm font-bold">
-      <span className="border border-[var(--fv-line)] px-2 py-1">
+      <span className="border border-[var(--color-border)] px-2 py-1 rounded">
         {stats.totalPoints} pts
       </span>
-      <span className="border border-[var(--fv-line)] px-2 py-1">
+      <span className="border border-[var(--color-border)] px-2 py-1 rounded">
         {stats.correctPicks}/{stats.totalPicks}
       </span>
       {stats.currentStreak > 0 ? (
-        <span className="border border-[var(--fv-sun)] px-2 py-1">
-          🔥 {stats.currentStreak}
+        <span className="border border-orange-400 px-2 py-1 rounded flex items-center gap-1">
+          <svg className="w-3.5 h-3.5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 16.121A3 3 0 1014.12 11.88" />
+          </svg>
+          <span>{stats.currentStreak}</span>
         </span>
       ) : null}
       {stats.badges.map((b) => (
         <span
-          className="border border-[var(--fv-grass)] px-2 py-1 text-xs text-[var(--fv-grass)]"
+          className="border border-green-600 px-2 py-1 text-xs text-green-600 rounded flex items-center gap-1"
           key={b.code}
         >
-          🏆 {badgeLabels[b.code] ?? b.code}
+          <svg className="w-3.5 h-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 14a3 3 0 003-3V4H9v7a3 3 0 003 3zM15 4h3a1 1 0 011 1v3a3 3 0 01-3 3h-1M9 4H6a1 1 0 00-1 1v3a3 3 0 003 3h1m3 3v4M8 21h8" />
+          </svg>
+          <span>{badgeLabels[b.code] ?? b.code}</span>
         </span>
       ))}
     </div>

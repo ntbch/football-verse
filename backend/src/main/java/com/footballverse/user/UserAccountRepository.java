@@ -1,7 +1,11 @@
 package com.footballverse.user;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 public interface UserAccountRepository extends JpaRepository<UserAccount, Long> {
@@ -12,4 +16,11 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long> 
     Optional<UserAccount> findByEmail(String email);
 
     Optional<UserAccount> findByUsername(String username);
+
+    @Query("SELECT CAST(u.createdAt AS LocalDate) as date, COUNT(u) as count " +
+           "FROM UserAccount u " +
+           "WHERE u.createdAt >= :since " +
+           "GROUP BY CAST(u.createdAt AS LocalDate) " +
+           "ORDER BY CAST(u.createdAt AS LocalDate) ASC")
+    List<Object[]> countUsersCreatedGroupedByDate(@Param("since") Instant since);
 }

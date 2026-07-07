@@ -1,4 +1,3 @@
-// Cross-cutting types used by 3+ features. Feature-specific types live in their per-feature _types.ts
 export type ApiEnvelope<T> = {
   success: boolean;
   message: string;

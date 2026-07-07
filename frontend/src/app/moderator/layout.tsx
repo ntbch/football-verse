@@ -38,13 +38,13 @@ export default function ModeratorLayout({ children }: { children: React.ReactNod
 
   return (
     <SportsShell>
-      <div className="flex flex-col gap-6 w-full text-white">
+      <div className="flex flex-col gap-6 w-full text-white animate-fade-in">
         {/* Moderator Header */}
         <div className="flex flex-col gap-1 border-b border-[var(--color-border)] pb-4">
-          <h2 className="font-serif text-2xl md:text-3xl font-black tracking-tight text-white m-0 font-black text-2xl tracking-tight text-[var(--color-accent)]">
+          <h2 className="m-0 font-serif-title font-black text-2xl tracking-tight text-[var(--color-accent)]">
             MODERATOR CONSOLE
           </h2>
-          <p className="text-xs leading-relaxed font-medium text-[var(--color-text-secondary)] ">
+          <p className="text-xs leading-relaxed font-medium text-[var(--color-text-secondary)]">
             Flagged discussions, toxic comment queues, and community cleanup controls.
           </p>
         </div>
@@ -53,12 +53,14 @@ export default function ModeratorLayout({ children }: { children: React.ReactNod
         <div className="py-2 border-b border-[var(--color-border)] overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-3 min-w-max pb-1 text-xs font-bold uppercase tracking-wider">
             {MOD_LINKS.map((link) => {
-              const isActive = pathname === link.href || (link.href !== "/moderator" && pathname.startsWith(link.href));
+              const isActive =
+                pathname === link.href ||
+                (link.href !== "/moderator" && pathname.startsWith(link.href));
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-3 py-1.5 rounded transition-all ${
+                  className={`px-3 py-1.5 rounded-full transition-all duration-300 ${
                     isActive
                       ? "bg-[var(--color-accent)] text-black"
                       : "text-gray-300 hover:text-white hover:bg-slate-800"

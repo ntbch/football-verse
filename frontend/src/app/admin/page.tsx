@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { qk } from "@/shared/lib/query-keys";
 import { http, data } from "@/shared/lib/api-client";
@@ -21,6 +21,12 @@ type UserGrowthEntry = {
 };
 
 export default function AdminDashboardPage() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // 1. Fetch Stats
   const { data: stats, isLoading: isStatsLoading } = useQuery({
     queryKey: qk.admin.dashboardStats(),
@@ -38,43 +44,55 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full">
-      <h3 className="font-serif text-xl md:text-2xl font-black tracking-tight text-white m-0 font-serif font-bold text-xl text-white">
+    <div className="flex flex-col gap-6 w-full text-white">
+      <h3 className="font-serif-title text-xl md:text-2xl font-black tracking-tight text-white m-0">
         System Overview
       </h3>
 
       {/* Stats Cards Row */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full text-center">
-          <div className="p-5 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-premium bg-[var(--color-background-surface)] border border-[var(--color-border)]">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 w-full text-center">
+          <div className="card p-5">
             <span className="text-2xl font-black text-[var(--color-accent)]">{stats.totalUsers}</span>
-            <div className="text-[10px] text-[var(--color-text-secondary)] font-bold mt-1 uppercase">TOTAL USERS</div>
+            <div className="text-[10px] text-[var(--color-text-secondary)] font-bold mt-1 uppercase">
+              TOTAL USERS
+            </div>
           </div>
-          <div className="p-5 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-premium bg-[var(--color-background-surface)] border border-[var(--color-border)]">
+          <div className="card p-5">
             <span className="text-2xl font-black text-white">{stats.publishedArticles}</span>
-            <div className="text-[10px] text-[var(--color-text-secondary)] font-bold mt-1 uppercase">PUBLISHED ARTICLES</div>
+            <div className="text-[10px] text-[var(--color-text-secondary)] font-bold mt-1 uppercase">
+              PUBLISHED
+            </div>
           </div>
-          <div className="p-5 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-premium bg-[var(--color-background-surface)] border border-[var(--color-border)]">
+          <div className="card p-5">
             <span className="text-2xl font-black text-white">{stats.draftArticles}</span>
-            <div className="text-[10px] text-[var(--color-text-secondary)] font-bold mt-1 uppercase">DRAFTS</div>
+            <div className="text-[10px] text-[var(--color-text-secondary)] font-bold mt-1 uppercase">
+              DRAFTS
+            </div>
           </div>
-          <div className="p-5 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-premium bg-[var(--color-background-surface)] border border-[var(--color-border)]">
+          <div className="card p-5">
             <span className="text-2xl font-black text-white">{stats.archivedArticles}</span>
-            <div className="text-[10px] text-[var(--color-text-secondary)] font-bold mt-1 uppercase">ARCHIVED</div>
+            <div className="text-[10px] text-[var(--color-text-secondary)] font-bold mt-1 uppercase">
+              ARCHIVED
+            </div>
           </div>
-          <div className="p-5 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-premium bg-[var(--color-background-surface)] border border-[var(--color-border)]">
+          <div className="card p-5">
             <span className="text-2xl font-black text-white">{stats.newsSourcesCount}</span>
-            <div className="text-[10px] text-[var(--color-text-secondary)] font-bold mt-1 uppercase">RSS SOURCES</div>
+            <div className="text-[10px] text-[var(--color-text-secondary)] font-bold mt-1 uppercase">
+              RSS SOURCES
+            </div>
           </div>
         </div>
       )}
 
       {/* Chart Section */}
-      <div className="p-5 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-premium bg-[var(--color-background-surface)] border border-[var(--color-border)] w-full">
+      <div className="card p-5 w-full">
         <div className="flex flex-col gap-4 w-full">
-          <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-accent)]">User Sign-up Activity (Last 7 Days)</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-accent)]">
+            User Sign-up Activity (Last 7 Days)
+          </span>
           <div className="h-64 w-full">
-            {growth.length > 0 ? (
+            {mounted && growth.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={growth} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                   <defs>
@@ -89,7 +107,14 @@ export default function AdminDashboardPage() {
                     contentStyle={{ backgroundColor: "#0F1F16", border: "1px solid #1F2E24", color: "#FFF" }}
                     itemStyle={{ color: "#A7FF00" }}
                   />
-                  <Area type="monotone" dataKey="count" stroke="#A7FF00" strokeWidth={2} fillOpacity={1} fill="url(#colorCount)" />
+                  <Area
+                    type="monotone"
+                    dataKey="count"
+                    stroke="#A7FF00"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorCount)"
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
