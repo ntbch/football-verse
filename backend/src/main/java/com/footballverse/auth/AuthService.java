@@ -2,6 +2,7 @@ package com.footballverse.auth;
 
 import com.footballverse.auth.dto.AuthResponse;
 import com.footballverse.auth.dto.CurrentUserResponse;
+import com.footballverse.auth.dto.GoogleAuthRequest;
 import com.footballverse.auth.dto.LoginRequest;
 import com.footballverse.auth.dto.RefreshTokenRequest;
 import com.footballverse.auth.dto.RegisterRequest;
@@ -12,18 +13,26 @@ import com.footballverse.user.UserAccount;
 import com.footballverse.user.UserAccountRepository;
 import com.footballverse.user.UserProfile;
 import com.footballverse.user.UserProfileRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
     private final UserAccountRepository users;
     private final UserProfileRepository profiles;
@@ -34,6 +43,9 @@ public class AuthService {
 
     @Value("${app.jwt.refresh-token-days}")
     private long refreshTokenDays;
+
+    @Value("${app.google.client-id:}")
+    private String googleClientId;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -57,10 +69,80 @@ public class AuthService {
     public AuthResponse login(LoginRequest request) {
         UserAccount user = users.findByEmail(request.email().toLowerCase())
                 .orElseThrow(() -> new BadRequestException("Invalid credentials"));
-        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+        if (user.getPasswordHash() == null || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new BadRequestException("Invalid credentials");
         }
         return tokens(user);
+    }
+
+    @Transactional
+    public AuthResponse googleLogin(GoogleAuthRequest request) {
+        // Verify the Google ID token
+        JsonNode payload = verifyGoogleToken(request.idToken());
+        String googleId = payload.get("sub").asText();
+        String email = payload.get("email").asText().toLowerCase();
+        String name = payload.has("name") ? payload.get("name").asText() : email.split("@")[0];
+
+        // Find by googleId first, then by email
+        UserAccount user = users.findByGoogleId(googleId).orElse(null);
+
+        if (user == null) {
+            user = users.findByEmail(email).orElse(null);
+            if (user != null) {
+                // Link Google account to existing user
+                user.setGoogleId(googleId);
+            } else {
+                // Create new user
+                String username = generateUniqueUsername(name);
+                user = users.save(new UserAccount(email, username, googleId, true));
+                profiles.save(new UserProfile(user, name));
+            }
+        }
+
+        return tokens(user);
+    }
+
+    private JsonNode verifyGoogleToken(String idToken) {
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create("https://oauth2.googleapis.com/tokeninfo?id_token=" + idToken))
+                    .GET()
+                    .build();
+            HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() != 200) {
+                throw new BadRequestException("Invalid Google token");
+            }
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode node = mapper.readTree(resp.body());
+
+            // Verify audience matches our client ID
+            if (!googleClientId.isBlank()) {
+                String aud = node.get("aud").asText();
+                if (!googleClientId.equals(aud)) {
+                    throw new BadRequestException("Google token audience mismatch");
+                }
+            }
+
+            return node;
+        } catch (BadRequestException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to verify Google token", e);
+            throw new BadRequestException("Failed to verify Google token");
+        }
+    }
+
+    private String generateUniqueUsername(String name) {
+        String base = name.toLowerCase().replaceAll("[^a-z0-9]", "");
+        if (base.isBlank()) base = "user";
+        if (base.length() > 20) base = base.substring(0, 20);
+        String candidate = base;
+        int suffix = 1;
+        while (users.existsByUsername(candidate)) {
+            candidate = base + suffix++;
+        }
+        return candidate;
     }
 
     @Transactional

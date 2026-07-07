@@ -176,13 +176,22 @@ public class NewsArticleService {
     }
 
     private NewsArticleResponse toArticle(NewsArticle article) {
+        com.footballverse.user.UserAccount user = currentUser.getOrNull();
+        boolean isLiked = false;
+        boolean isBookmarked = false;
+        if (user != null) {
+            isLiked = likes.findByArticleAndUser(article, user).isPresent();
+            isBookmarked = bookmarks.findByArticleAndUser(article, user).isPresent();
+        }
         return new NewsArticleResponse(
                 article.getId(), article.getTitle(), article.getSlug(),
                 article.getSummary(), article.getContent(), article.getStatus(),
                 article.getCategory() == null ? null : article.getCategory().getName(),
                 article.getTags().stream().map(NewsTag::getName).collect(Collectors.toSet()),
                 likes.countByArticleId(article.getId()), bookmarks.countByArticleId(article.getId()),
-                article.getPublishedAt()
+                article.getPublishedAt(),
+                isLiked,
+                isBookmarked
         );
     }
 }

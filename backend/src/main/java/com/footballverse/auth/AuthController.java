@@ -2,6 +2,7 @@ package com.footballverse.auth;
 
 import com.footballverse.auth.dto.AuthResponse;
 import com.footballverse.auth.dto.CurrentUserResponse;
+import com.footballverse.auth.dto.GoogleAuthRequest;
 import com.footballverse.auth.dto.LoginRequest;
 import com.footballverse.auth.dto.RefreshTokenRequest;
 import com.footballverse.auth.dto.RegisterRequest;
@@ -28,6 +29,11 @@ public class AuthController {
     @PostMapping("/login")
     public ApiResponse<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ApiResponse.ok(authService.login(request));
+    }
+
+    @PostMapping("/google")
+    public ApiResponse<AuthResponse> googleLogin(@Valid @RequestBody GoogleAuthRequest request) {
+        return ApiResponse.ok(authService.googleLogin(request));
     }
 
     @PostMapping("/refresh")

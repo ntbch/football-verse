@@ -245,7 +245,7 @@ public class HtmlContentScraper {
         if (videoUrl.isBlank()) videoUrl = firstDomMediaUrl(doc, "article iframe, [class*=article] iframe, [class*=content] iframe", "src");
         if (!videoUrl.isBlank()) {
             String poster = firstImageCandidate(doc);
-            if (isEmbeddable(videoUrl)) {
+            if (isEmbeddable(videoUrl) || !isDirectVideoUrl(videoUrl)) {
                 return "<iframe src=\"" + escapeAttr(videoUrl) + "\" width=\"100%\" height=\"400\" allowfullscreen></iframe>" + content;
             }
             String posterAttr = poster.isBlank() ? "" : " poster=\"" + escapeAttr(poster) + "\"";
@@ -434,12 +434,25 @@ public class HtmlContentScraper {
         return Jsoup.parse(html).selectFirst("img[src], video[src], video source[src], iframe[src]") != null;
     }
 
-    private boolean isEmbeddable(String url) {
+    public static boolean isEmbeddable(String url) {
+        if (url == null || url.isBlank()) return false;
         String lower = url.toLowerCase();
         return lower.contains("youtube.com/embed/")
                 || lower.contains("youtube.com/watch")
                 || lower.contains("youtu.be/")
                 || lower.contains("vimeo.com");
+    }
+
+    public static boolean isDirectVideoUrl(String url) {
+        if (url == null || url.isBlank()) return false;
+        String path = url.split("\\?")[0].toLowerCase();
+        return path.endsWith(".mp4")
+                || path.endsWith(".webm")
+                || path.endsWith(".ogg")
+                || path.endsWith(".mov")
+                || path.endsWith(".m3u8")
+                || url.toLowerCase().contains(".mp4?")
+                || url.toLowerCase().contains(".m3u8?");
     }
 
     static String escapeAttr(String value) {

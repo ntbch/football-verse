@@ -294,6 +294,7 @@ public class ForumService {
                 thread.getTitle(),
                 thread.getSlug(),
                 thread.getCategory().getName(),
+                thread.getCategory().getSlug(),
                 thread.getAuthor().getUsername(),
                 thread.isPinned(),
                 thread.isLocked(),

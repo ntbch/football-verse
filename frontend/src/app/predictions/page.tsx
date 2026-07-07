@@ -205,7 +205,7 @@ export default function PredictionsPage() {
           {/* Left: Fixtures */}
           <div className="lg:col-span-2 flex flex-col gap-4">
             {/* Tabs */}
-            <div className="flex border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wider">
+            <div className="flex border-b border-[var(--color-border)] text-xs font-black uppercase tracking-[0.12em]">
               {(["upcoming", "live", "results"] as const).map((t) => (
                 <button
                   key={t}
@@ -213,13 +213,13 @@ export default function PredictionsPage() {
                     setTab(t);
                     setExpandedId(null);
                   }}
-                  className={`pb-2.5 px-4 border-b-2 transition-colors ${
+                  className={`pb-2 px-4 border-b-2 transition-all duration-200 cursor-pointer ${
                     tab === t
                       ? "border-[var(--color-accent)] text-[var(--color-accent)]"
                       : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                   }`}
                 >
-                  {t}
+                  {t.toUpperCase()}
                 </button>
               ))}
             </div>
@@ -470,6 +470,79 @@ export default function PredictionsPage() {
 
             {/* Leaderboard Panel */}
             <LeaderboardPanel entries={lbData} error={lbError} isLoading={lbLoading} />
+
+            {/* Scoring Rules sidebar card */}
+            <div className="card p-5">
+              <h3 className="font-serif-title font-black text-sm m-0 flex items-center gap-1.5 text-[var(--color-text-primary)] uppercase tracking-tight mb-4">
+                <svg className="w-4 h-4 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                <span>Scoring Rules</span>
+              </h3>
+              <div className="flex flex-col gap-3">
+                {[
+                  {
+                    pts: "+3",
+                    label: "Outcome",
+                    desc: "Correct result (H/D/A)",
+                    icon: (
+                      <svg className="w-3.5 h-3.5 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <circle cx="12" cy="12" r="10" />
+                        <circle cx="12" cy="12" r="2" />
+                      </svg>
+                    )
+                  },
+                  {
+                    pts: "+5",
+                    label: "Exact Score",
+                    desc: "Exact scoreline match",
+                    icon: (
+                      <svg className="w-3.5 h-3.5 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                      </svg>
+                    )
+                  },
+                  {
+                    pts: "+2",
+                    label: "Over/Under 2.5",
+                    desc: "Total goals predicted",
+                    icon: (
+                      <svg className="w-3.5 h-3.5 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                      </svg>
+                    )
+                  },
+                  {
+                    pts: "+2",
+                    label: "BTTS",
+                    desc: "Both teams to score",
+                    icon: (
+                      <svg className="w-3.5 h-3.5 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                      </svg>
+                    )
+                  }
+                ].map((rule, idx) => (
+                  <div
+                    key={idx}
+                    className="border-t border-[var(--color-border)] pt-2.5 first:border-0 first:pt-0 flex items-center gap-3"
+                  >
+                    <div className="flex items-center justify-center w-7 h-7 rounded-full bg-[var(--color-accent)]/10 text-[var(--color-accent)] font-mono text-[10px] font-black shrink-0">
+                      {rule.pts}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[10px] font-black uppercase text-[var(--color-text-primary)] tracking-wider flex items-center gap-1.5">
+                        {rule.icon}
+                        {rule.label}
+                      </span>
+                      <span className="text-[9px] text-[var(--color-text-secondary)] font-medium uppercase truncate">
+                        {rule.desc}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>

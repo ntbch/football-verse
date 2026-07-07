@@ -38,6 +38,8 @@ app:
     secret: ${JWT_SECRET:dev-secret-change-me-dev-secret-change-me}
     access-token-minutes: ${JWT_ACCESS_TOKEN_MINUTES:30}
     refresh-token-days: ${JWT_REFRESH_TOKEN_DAYS:30}
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:}
   match-engine:
     url: ${MATCH_ENGINE_URL:http://127.0.0.1:8090}
   upload:

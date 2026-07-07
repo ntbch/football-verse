@@ -18,7 +18,9 @@ export function Navbar() {
   const [q, setQ] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
+  const [userOpen, setUserOpen] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
+  const userRef = useRef<HTMLDivElement>(null);
 
   const isActive = (path: string) => {
     if (path === "/") return pathname === "/";
@@ -47,6 +49,9 @@ export function Navbar() {
     const handleClickOutside = (e: MouseEvent) => {
       if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
         setBellOpen(false);
+      }
+      if (userRef.current && !userRef.current.contains(e.target as Node)) {
+        setUserOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -88,9 +93,11 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-6">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
-          <span className="w-9 h-9 rounded-full bg-[var(--color-accent)] flex items-center justify-center text-white font-serif font-black text-base shadow-md group-hover:scale-105 transition-transform duration-300">
-            F
-          </span>
+          <img
+            src="/logo.png"
+            alt="Football Verse Logo"
+            className="w-9 h-9 rounded-full object-cover shadow-md group-hover:scale-105 transition-transform duration-300"
+          />
           <span className="font-serif text-xl md:text-2xl font-black tracking-tight text-[var(--color-text-primary)] cursor-pointer group-hover:opacity-80 transition-opacity duration-300">
             Football Verse
           </span>
@@ -116,9 +123,9 @@ export function Navbar() {
             {[
               { href: "/", label: "Home" },
               { href: "/news", label: "News" },
-              { href: "/matches", label: "Simulator" },
-              { href: "/predictions", label: "Predictions" },
               { href: "/forum", label: "Forum" },
+              { href: "/predictions", label: "Predictions" },
+              { href: "/matches", label: "Simulator" },
             ].map(({ href, label }) => {
               const active = isActive(href);
               return (
@@ -190,8 +197,8 @@ export function Navbar() {
                   </button>
 
                   {bellOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-[var(--color-border)] rounded-2xl shadow-lg overflow-hidden z-50 animate-fade-in">
-                      <div className="px-4 py-3 border-b border-[var(--color-border)] bg-gray-50/50 flex items-center justify-between">
+                    <div className="absolute right-0 top-full mt-2 w-80 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-lg overflow-hidden z-50 animate-fade-in">
+                      <div className="px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-background-body)]/30 flex items-center justify-between">
                         <h4 className="m-0 font-serif font-black text-sm text-[var(--color-text-primary)]">Notifications</h4>
                         {notifications.length > 0 && (
                           <button
@@ -202,7 +209,7 @@ export function Navbar() {
                           </button>
                         )}
                       </div>
-                      <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+                      <div className="max-h-72 overflow-y-auto divide-y divide-[var(--color-border)]/30">
                         {notifications.length === 0 ? (
                           <div className="px-4 py-8 text-center">
                             <p className="text-xs text-[var(--color-text-secondary)] font-medium">No notifications yet</p>
@@ -211,7 +218,7 @@ export function Navbar() {
                           notifications.slice(0, 15).map((notif) => (
                             <div
                               key={notif.id}
-                              className={`px-4 py-3 transition-colors ${!notif.read ? "bg-orange-50/30" : "hover:bg-gray-50"}`}
+                              className={`px-4 py-3 transition-colors ${!notif.read ? "bg-[var(--color-accent)]/5" : "hover:bg-[var(--color-background-body)]/20"}`}
                             >
                               <p className="text-[11px] text-[var(--color-text-primary)] font-medium leading-snug m-0">
                                 {notif.message}
@@ -227,20 +234,52 @@ export function Navbar() {
                   )}
                 </div>
 
-                <Link href="/profile" className="flex items-center gap-2 group active:scale-[0.98] transition-all">
-                  <span className="w-7 h-7 rounded-full bg-[var(--color-background-body)] flex items-center justify-center font-bold text-xs text-[var(--color-text-primary)] border border-[var(--color-border)] group-hover:border-[var(--color-accent)] transition-colors">
+                {/* User Dropdown */}
+                <div ref={userRef} className="relative">
+                  <button
+                    onClick={() => setUserOpen(!userOpen)}
+                    className="w-7 h-7 rounded-full bg-[var(--color-background-body)] flex items-center justify-center font-bold text-xs text-[var(--color-text-primary)] border border-[var(--color-border)] hover:border-[var(--color-accent)] active:scale-95 transition-all duration-150 shadow-sm"
+                  >
                     {auth.username[0].toUpperCase()}
-                  </span>
-                  <span className="text-xs font-bold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] transition-colors">
-                    {auth.username}
-                  </span>
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="btn btn-secondary !px-4 !py-1.5 !text-[10px] active:scale-[0.98] transition-all"
-                >
-                  Logout
-                </button>
+                  </button>
+
+                  {userOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-lg overflow-hidden z-50 animate-fade-in text-left">
+                      <div className="px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-background-body)]/30">
+                        <p className="text-[11px] font-bold text-[var(--color-text-primary)] truncate m-0">
+                          {auth.username}
+                        </p>
+                        <span className="text-[9px] text-[var(--color-text-secondary)] block truncate mt-0.5">
+                          Logged in
+                        </span>
+                      </div>
+                      <div className="p-1 flex flex-col gap-0.5">
+                        <Link
+                          href="/profile"
+                          onClick={() => setUserOpen(false)}
+                          className="px-3 py-2 text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-accent)]/10 hover:text-[var(--color-accent)] rounded-lg transition-colors flex items-center gap-2"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          Profile
+                        </Link>
+                        <button
+                          onClick={() => {
+                            setUserOpen(false);
+                            handleLogout();
+                          }}
+                          className="w-full text-left px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50/50 rounded-lg transition-colors flex items-center gap-2"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          </svg>
+                          Logout
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <Link href="/login">
@@ -310,9 +349,9 @@ export function Navbar() {
             {[
               { href: "/", label: "Home" },
               { href: "/news", label: "News" },
-              { href: "/matches", label: "Simulator" },
-              { href: "/predictions", label: "Predictions" },
               { href: "/forum", label: "Forum" },
+              { href: "/predictions", label: "Predictions" },
+              { href: "/matches", label: "Simulator" },
             ].map(({ href, label }) => {
               const active = isActive(href);
               return (
@@ -409,20 +448,20 @@ export function Navbar() {
 
       {/* Mobile notifications */}
       {bellOpen && (
-        <div className="md:hidden absolute right-4 top-16 w-[calc(100%-2rem)] max-w-sm bg-white border border-[var(--color-border)] rounded-2xl shadow-lg overflow-hidden z-50 animate-fade-in">
-          <div className="px-4 py-3 border-b border-[var(--color-border)] bg-gray-50/50 flex items-center justify-between">
+        <div className="md:hidden absolute right-4 top-16 w-[calc(100%-2rem)] max-w-sm bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-lg overflow-hidden z-50 animate-fade-in">
+          <div className="px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-background-body)]/30 flex items-center justify-between">
             <h4 className="m-0 font-serif font-black text-sm text-[var(--color-text-primary)]">Notifications</h4>
             <button
               onClick={() => setBellOpen(false)}
               className="p-1 rounded-lg text-[var(--color-text-secondary)] hover:bg-black/5 transition-colors active:scale-95 duration-150"
               title="Close notifications"
             >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-          <div className="max-h-64 overflow-y-auto divide-y divide-gray-50">
+          <div className="max-h-64 overflow-y-auto divide-y divide-[var(--color-border)]/30">
             {notifications.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <p className="text-xs text-[var(--color-text-secondary)] font-medium">No notifications yet</p>
@@ -431,7 +470,7 @@ export function Navbar() {
               notifications.slice(0, 10).map((notif) => (
                 <div
                   key={notif.id}
-                  className={`px-4 py-3 transition-colors ${!notif.read ? "bg-orange-50/30" : ""}`}
+                  className={`px-4 py-3 transition-colors ${!notif.read ? "bg-[var(--color-accent)]/5" : "hover:bg-[var(--color-background-body)]/20"}`}
                 >
                   <p className="text-[11px] text-[var(--color-text-primary)] font-medium leading-snug m-0">{notif.message}</p>
                   <span className="text-[9px] text-[var(--color-text-secondary)] mt-1 block">{timeAgo(notif.createdAt)}</span>

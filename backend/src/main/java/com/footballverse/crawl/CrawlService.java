@@ -304,10 +304,15 @@ public class CrawlService {
 
         String videoUrl = item.videoUrl();
         if (videoUrl != null && !videoUrl.isBlank()) {
-            String poster = item.thumbnailUrl() == null || item.thumbnailUrl().isBlank()
-                    ? ""
-                    : " poster=\"" + HtmlContentScraper.escapeAttr(item.thumbnailUrl().trim()) + "\"";
-            return "<video src=\"" + HtmlContentScraper.escapeAttr(videoUrl.trim()) + "\" controls" + poster + "></video>" + body;
+            String url = videoUrl.trim();
+            if (HtmlContentScraper.isEmbeddable(url) || !HtmlContentScraper.isDirectVideoUrl(url)) {
+                return "<iframe src=\"" + HtmlContentScraper.escapeAttr(url) + "\" width=\"100%\" height=\"400\" allowfullscreen></iframe>" + body;
+            } else {
+                String poster = item.thumbnailUrl() == null || item.thumbnailUrl().isBlank()
+                        ? ""
+                        : " poster=\"" + HtmlContentScraper.escapeAttr(item.thumbnailUrl().trim()) + "\"";
+                return "<video src=\"" + HtmlContentScraper.escapeAttr(url) + "\" controls" + poster + "></video>" + body;
+            }
         }
 
         String thumbnailUrl = item.thumbnailUrl();

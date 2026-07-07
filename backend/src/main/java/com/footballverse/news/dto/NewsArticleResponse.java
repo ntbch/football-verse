@@ -16,6 +16,8 @@ public record NewsArticleResponse(
         Set<String> tags,
         long likes,
         long bookmarks,
-        Instant publishedAt
+        Instant publishedAt,
+        Boolean liked,
+        Boolean bookmarked
 ) {
 }

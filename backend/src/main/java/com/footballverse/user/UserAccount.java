@@ -36,8 +36,11 @@ public class UserAccount extends AuditableEntity {
     @Column(nullable = false, unique = true, length = 60)
     private String username;
 
-    @Column(name = "password_hash", nullable = false)
+    @Column(name = "password_hash")
     private String passwordHash;
+
+    @Column(name = "google_id", unique = true)
+    private String googleId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -53,5 +56,12 @@ public class UserAccount extends AuditableEntity {
         this.email = email;
         this.username = username;
         this.passwordHash = passwordHash;
+    }
+
+    /** Constructor for Google OAuth users (no password). */
+    public UserAccount(String email, String username, String googleId, boolean oauth) {
+        this.email = email;
+        this.username = username;
+        this.googleId = googleId;
     }
 }

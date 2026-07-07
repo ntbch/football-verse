@@ -17,6 +17,8 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long> 
 
     Optional<UserAccount> findByUsername(String username);
 
+    Optional<UserAccount> findByGoogleId(String googleId);
+
     @Query("SELECT CAST(u.createdAt AS LocalDate) as date, COUNT(u) as count " +
            "FROM UserAccount u " +
            "WHERE u.createdAt >= :since " +

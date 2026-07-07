@@ -55,52 +55,91 @@ export default function ModeratorReportsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 w-full text-white">
-      <h3 className="font-serif-title text-xl md:text-2xl font-black tracking-tight text-white m-0">
-        Moderation Queue: Open Reports
-      </h3>
+    <div className="flex flex-col gap-4 w-full">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4 pb-4" style={{ borderBottom: "1px solid var(--color-border)" }}>
+        <div className="flex items-center gap-3 min-w-0">
+          <h1 className="text-lg font-black font-serif-title tracking-tight m-0 whitespace-nowrap" style={{ color: "var(--color-text-primary)" }}>
+            Open Reports Queue
+          </h1>
+          <span className="text-[11px] whitespace-nowrap" style={{ color: "var(--color-text-secondary)" }}>
+            {reports.length} reports
+          </span>
+        </div>
+      </div>
 
+      {/* Table */}
       <div className="card overflow-hidden">
         <div className="overflow-x-auto w-full">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-[var(--color-border)] bg-[var(--color-background-body)] text-[var(--color-text-secondary)] font-bold">
-                <th className="py-3 px-4">Report ID</th>
-                <th className="py-3 px-4">Target Type</th>
-                <th className="py-3 px-4">Content ID</th>
-                <th className="py-3 px-4">Reporter</th>
-                <th className="py-3 px-4">Flag Reason</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4 text-right">Actions</th>
+              <tr style={{ borderBottom: "1px solid var(--color-border)", backgroundColor: "var(--color-background-body)" }}>
+                {["Report ID", "Target Type", "Content ID", "Reporter", "Flag Reason", "Status", "Actions"].map((h, i) => (
+                  <th
+                    key={h}
+                    className={`py-3 px-4 text-[10px] font-black uppercase tracking-wider ${i === 6 ? "text-right" : "text-left"}`}
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--color-border)]">
+            <tbody>
               {reports.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 px-4 text-center text-[var(--color-text-secondary)] italic">
+                  <td colSpan={7} className="py-10 text-center text-xs italic" style={{ color: "var(--color-text-secondary)" }}>
                     Moderation queue is empty. Good job!
                   </td>
                 </tr>
               ) : (
-                reports.map((report) => (
-                  <tr key={report.id} className="hover:bg-[var(--color-background-body)] text-white">
-                    <td className="py-3 px-4 font-mono text-[var(--color-text-secondary)]">#{report.id}</td>
-                    <td className="py-3 px-4 font-bold text-yellow-500">{report.targetType}</td>
-                    <td className="py-3 px-4 font-mono font-bold text-gray-300">ID: {report.targetId}</td>
-                    <td className="py-3 px-4 font-bold">@{report.reporter}</td>
-                    <td className="py-3 px-4 text-gray-300 max-w-xs truncate">{report.reason}</td>
+                reports.map((report, i) => (
+                  <tr
+                    key={report.id}
+                    className="hover:bg-black/[0.02] transition-colors"
+                    style={{ borderBottom: i < reports.length - 1 ? "1px solid var(--color-border)" : undefined }}
+                  >
+                    <td className="py-3 px-4 font-mono text-[10px]" style={{ color: "var(--color-text-secondary)" }}>
+                      #{report.id}
+                    </td>
                     <td className="py-3 px-4">
-                      <span className="font-bold px-2 py-0.5 rounded text-[9px] bg-red-950 text-red-300 border border-red-800">
+                      <span
+                        className="px-2 py-0.5 rounded text-[9px] font-black uppercase"
+                        style={{
+                          background: report.targetType === "THREAD" ? "rgba(180,95,53,0.12)" : "rgba(74,124,89,0.12)",
+                          color: report.targetType === "THREAD" ? "var(--color-accent)" : "#4a7c59",
+                        }}
+                      >
+                        {report.targetType}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 font-mono text-[10px]" style={{ color: "var(--color-text-secondary)" }}>
+                      ID: {report.targetId}
+                    </td>
+                    <td className="py-3 px-4 font-bold" style={{ color: "var(--color-text-primary)" }}>
+                      @{report.reporter}
+                    </td>
+                    <td className="py-3 px-4 max-w-xs truncate" style={{ color: "var(--color-text-secondary)" }} title={report.reason}>
+                      {report.reason}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span
+                        className="px-2 py-0.5 rounded text-[9px] font-black uppercase"
+                        style={{ background: "rgba(185,28,28,0.12)", color: "#b91c1c" }}
+                      >
                         {report.status}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-right">
-                      <button
-                        onClick={() => handleResolve(report.id)}
-                        className="btn btn-sm !bg-green-800 hover:!bg-green-700 !text-white text-[9px] font-bold uppercase rounded px-2.5 py-1 transition-colors"
-                      >
-                        Resolve Report
-                      </button>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center justify-end">
+                        <button
+                          onClick={() => handleResolve(report.id)}
+                          className="px-3 py-1.5 rounded text-[9px] font-black uppercase transition-colors hover:opacity-80 active:scale-[0.98] cursor-pointer"
+                          style={{ background: "rgba(74,124,89,0.15)", color: "#4a7c59" }}
+                        >
+                          Resolve Report
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

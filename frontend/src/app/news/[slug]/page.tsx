@@ -12,6 +12,40 @@ import { useToast } from "@/shared/components/toast";
 import type { NewsArticleResponse, CommentResponse } from "@/shared/lib/types";
 import { LoadingBlock, ErrorBlock } from "@/shared/components/state-blocks";
 
+function preprocessArticleContent(html: string): string {
+  if (typeof window === "undefined" || !html) return html;
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+    const videos = doc.querySelectorAll("video");
+    videos.forEach((video) => {
+      const src = video.getAttribute("src");
+      if (src) {
+        const isDirect = src.toLowerCase().endsWith(".mp4")
+          || src.toLowerCase().endsWith(".webm")
+          || src.toLowerCase().endsWith(".ogg")
+          || src.toLowerCase().endsWith(".mov")
+          || src.toLowerCase().endsWith(".m3u8")
+          || src.toLowerCase().includes(".mp4?")
+          || src.toLowerCase().includes(".m3u8?");
+          
+        if (!isDirect) {
+          const iframe = doc.createElement("iframe");
+          iframe.setAttribute("src", src);
+          iframe.setAttribute("width", "100%");
+          iframe.setAttribute("height", "400");
+          iframe.setAttribute("allowfullscreen", "true");
+          if (video.className) iframe.className = video.className;
+          video.parentNode?.replaceChild(iframe, video);
+        }
+      }
+    });
+    return doc.body.innerHTML;
+  } catch (e) {
+    return html;
+  }
+}
+
 // Main component
 export default function NewsDetailPage() {
   const params = useParams();
@@ -302,8 +336,11 @@ export default function NewsDetailPage() {
             {article.title}
           </h1>
           <div className="flex items-center justify-between flex-wrap gap-3 text-xs text-[var(--color-text-secondary)] font-semibold border-y border-[var(--color-border)] py-3">
-            <div className="flex items-center gap-4">
-              <span>
+            <div className="flex items-center gap-4 flex-wrap">
+              <span className="flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
                 Published:{" "}
                 {new Date(article.publishedAt).toLocaleDateString("en-US", {
                   year: "numeric",
@@ -311,42 +348,110 @@ export default function NewsDetailPage() {
                   day: "numeric",
                 })}
               </span>
-              <span>Likes: {article.likes}</span>
-              <span>Bookmarks: {article.bookmarks}</span>
+              <span className="flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5" fill={article.liked ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={article.liked ? { color: "var(--color-accent)" } : {}}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
+                </svg>
+                {article.likes} {article.likes === 1 ? "like" : "likes"}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5" fill={article.bookmarked ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={article.bookmarked ? { color: "#4a7c59" } : {}}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+                {article.bookmarks} {article.bookmarks === 1 ? "bookmark" : "bookmarks"}
+              </span>
             </div>
 
             <div className="flex items-center gap-2">
               <button
                 onClick={handleLike}
-                className="px-4 py-1.5 bg-[var(--color-background-surface)] hover:bg-black/5 border border-[var(--color-border)] rounded-full text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-1.5"
+                className="px-4 py-1.5 border rounded-full text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-1.5 cursor-pointer shadow-sm"
+                style={
+                  article.liked
+                    ? {
+                        backgroundColor: "rgba(180, 95, 53, 0.12)",
+                        borderColor: "var(--color-accent)",
+                        color: "var(--color-accent)",
+                      }
+                    : {
+                        backgroundColor: "var(--color-background-surface)",
+                        borderColor: "var(--color-border)",
+                        color: "var(--color-text-primary)",
+                      }
+                }
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
+                <svg
+                  className="w-3.5 h-3.5 transition-transform"
+                  fill={article.liked ? "currentColor" : "none"}
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"
+                  />
                 </svg>
-                <span>Like</span>
+                <span>{article.liked ? "Liked" : "Like"}</span>
               </button>
+
               <button
                 onClick={handleBookmark}
-                className="px-4 py-1.5 bg-[var(--color-background-surface)] hover:bg-black/5 border border-[var(--color-border)] rounded-full text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-1.5"
+                className="px-4 py-1.5 border rounded-full text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-1.5 cursor-pointer shadow-sm"
+                style={
+                  article.bookmarked
+                    ? {
+                        backgroundColor: "rgba(74, 124, 89, 0.12)",
+                        borderColor: "#4a7c59",
+                        color: "#4a7c59",
+                      }
+                    : {
+                        backgroundColor: "var(--color-background-surface)",
+                        borderColor: "var(--color-border)",
+                        color: "var(--color-text-primary)",
+                      }
+                }
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                <svg
+                  className="w-3.5 h-3.5 transition-transform"
+                  fill={article.bookmarked ? "currentColor" : "none"}
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                  />
                 </svg>
-                <span>Bookmark</span>
+                <span>{article.bookmarked ? "Bookmarked" : "Bookmark"}</span>
               </button>
             </div>
           </div>
         </div>
 
         {/* Article Summary */}
-        <div className="bg-[var(--color-background-body)] border-l-4 border-[var(--color-accent)] p-4 rounded-xl text-xs md:text-sm italic text-[var(--color-text-secondary)] leading-relaxed font-serif">
+        <div className="bg-[var(--color-background-surface)] border border-[var(--color-border)] border-l-4 border-l-[var(--color-accent)] p-5 rounded-r-2xl text-sm leading-relaxed text-[var(--color-text-primary)] font-serif shadow-sm">
           {article.summary}
         </div>
 
         {/* Article content body */}
         <article className="article-body text-base md:text-lg text-[var(--color-text-primary)] leading-relaxed font-serif">
-          <div dangerouslySetInnerHTML={{ __html: article.content }} />
+          <div dangerouslySetInnerHTML={{ __html: preprocessArticleContent(article.content) }} />
         </article>
+
+        {/* Article tags */}
+        {article.tags && article.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pt-4 border-t border-[var(--color-border)] max-w-[720px] mx-auto w-full">
+            {article.tags.map((t) => (
+              <span key={t} className="px-2.5 py-1 bg-black/[0.04] text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)] rounded-full">
+                #{t}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Comments Section */}
         <div className="flex flex-col gap-6 mt-8 border-t border-[var(--color-border)] pt-8">

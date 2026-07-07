@@ -37,6 +37,8 @@ export type NewsArticleResponse = {
   likes: number;
   bookmarks: number;
   publishedAt: string;
+  liked?: boolean;
+  bookmarked?: boolean;
 };
 
 export type CommentResponse = {

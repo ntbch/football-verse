@@ -10,7 +10,6 @@ import type { ForumCategoryResponse, ThreadResponse, PageResponse } from "@/shar
 import { LoadingBlock } from "@/shared/components/state-blocks";
 import { useToast } from "@/shared/components/toast";
 import {
-  ForumHeroBanner,
   CategoryList,
   ForumSidebarWidget,
   CategoryBanner,
@@ -130,8 +129,7 @@ export default function ForumPage() {
     <PublicShell>
       <div className="flex flex-col gap-6 w-full animate-fade-in">
 
-        {/* Hero Banner */}
-        <ForumHeroBanner totalThreads={totalThreads} totalCategories={categories.length} />
+
 
         {isCategoriesLoading ? (
           <LoadingBlock label="Loading Forum" />
