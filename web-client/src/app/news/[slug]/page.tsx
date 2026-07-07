@@ -19,26 +19,6 @@ function preprocessArticleContent(html: string, coverImageUrl?: string): string 
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
 
-    // Remove duplicate cover image from the body content
-    if (coverImageUrl) {
-      const coverUrlTrimmed = coverImageUrl.trim();
-      const imgs = doc.querySelectorAll("img");
-      for (const img of Array.from(imgs)) {
-        const src = img.getAttribute("src");
-        if (src) {
-          const srcTrimmed = src.trim();
-          if (
-            srcTrimmed === coverUrlTrimmed ||
-            coverUrlTrimmed.endsWith(srcTrimmed) ||
-            srcTrimmed.endsWith(coverUrlTrimmed)
-          ) {
-            img.remove();
-            break;
-          }
-        }
-      }
-    }
-
     const videos = doc.querySelectorAll("video");
     videos.forEach((video) => {
       const src = video.getAttribute("src");
