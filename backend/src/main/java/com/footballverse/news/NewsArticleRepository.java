@@ -38,7 +38,36 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
             nativeQuery = true)
     Page<NewsArticle> searchPublishedArticles(String query, Pageable pageable);
 
-    Page<NewsArticle> findByStatusNot(ArticleStatus status, Pageable pageable);
+    @Query("SELECT a FROM NewsArticle a WHERE " +
+           "a.status <> 'DELETED' " +
+           "AND (:hasStatus = false OR a.status = :status) " +
+           "AND (:search = '' OR LOWER(a.title) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(a.category.name) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+           "AND (:categoryId IS NULL OR a.category.id = :categoryId) " +
+           "AND (:hasDate = false OR (a.publishedAt IS NOT NULL AND a.publishedAt >= :startDate AND a.publishedAt <= :endDate))")
+    Page<NewsArticle> adminFilterArticles(
+            @org.springframework.data.repository.query.Param("hasStatus") boolean hasStatus,
+            @org.springframework.data.repository.query.Param("status") ArticleStatus status,
+            @org.springframework.data.repository.query.Param("search") String search,
+            @org.springframework.data.repository.query.Param("categoryId") Long categoryId,
+            @org.springframework.data.repository.query.Param("hasDate") boolean hasDate,
+            @org.springframework.data.repository.query.Param("startDate") java.time.Instant startDate,
+            @org.springframework.data.repository.query.Param("endDate") java.time.Instant endDate,
+            Pageable pageable
+    );
+
+    @Query("SELECT COUNT(a) FROM NewsArticle a WHERE " +
+           "a.status = :status " +
+           "AND (:search = '' OR LOWER(a.title) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(a.category.name) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+           "AND (:categoryId IS NULL OR a.category.id = :categoryId) " +
+           "AND (:hasDate = false OR (a.publishedAt IS NOT NULL AND a.publishedAt >= :startDate AND a.publishedAt <= :endDate))")
+    long adminCountStatus(
+            @org.springframework.data.repository.query.Param("status") ArticleStatus status,
+            @org.springframework.data.repository.query.Param("search") String search,
+            @org.springframework.data.repository.query.Param("categoryId") Long categoryId,
+            @org.springframework.data.repository.query.Param("hasDate") boolean hasDate,
+            @org.springframework.data.repository.query.Param("startDate") java.time.Instant startDate,
+            @org.springframework.data.repository.query.Param("endDate") java.time.Instant endDate
+    );
 
     long countByStatus(ArticleStatus status);
 

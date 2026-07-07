@@ -33,7 +33,9 @@ export default function ThreadDetailPage() {
   });
 
   const thread = detail?.thread;
-  const posts = detail?.posts?.content || [];
+  // Backend returns posts as a plain PostResponse[] array
+  const posts: PostResponse[] = detail?.posts ?? [];
+
 
   // 2. Submit reply mutation
   const replyMutation = useMutation({
@@ -259,7 +261,7 @@ export default function ThreadDetailPage() {
                   <div className="flex items-center justify-between text-xs text-[var(--color-text-secondary)] border-b border-[var(--color-border)] pb-2 font-semibold">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-[var(--color-text-primary)]">
-                        @{post.authorUsername}
+                        @{post.author}
                       </span>
                       <span>·</span>
                       <span>{new Date(post.createdAt).toLocaleDateString()}</span>
@@ -324,7 +326,7 @@ export default function ThreadDetailPage() {
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
                       </svg>
-                      <span>{post.likes}</span>
+                      <span>{post.likeCount}</span>
                     </button>
 
                     {/* Best Answer Marking */}

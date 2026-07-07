@@ -1,191 +1,181 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { qk } from "@/shared/lib/query-keys";
 import { http, data, apiErrorMessage } from "@/shared/lib/api-client";
 import { LoadingBlock } from "@/shared/components/state-blocks";
 import { useToast } from "@/shared/components/toast";
 
-type RssSource = {
-  id: number;
-  name: string;
-  url: string;
-  type: string;
-  active: boolean;
-};
-
-type CrawlResult = {
-  saved: number;
-  repaired: number;
-  skipped: number;
-  failed: number;
-};
+type RssSource = { id: number; name: string; feedUrl: string; sourceType: "RSS" | "SITEMAP" | "HOMEPAGE"; active: boolean };
+type CrawlResult = { saved: number; repaired: number; skipped: number; failed: number };
 
 export default function RssCrawlerPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
-
   const [newName, setNewName] = useState("");
   const [newUrl, setNewUrl] = useState("");
   const [newType, setNewType] = useState("RSS");
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [cssSelector, setCssSelector] = useState("");
+  const [showAdd, setShowAdd] = useState(false);
+  const [search, setSearch] = useState("");
+  const [crawlResult, setCrawlResult] = useState<CrawlResult | null>(null);
 
-  // 1. Fetch RSS Sources
   const { data: sources = [], isLoading } = useQuery({
     queryKey: qk.admin.newsSources(),
     queryFn: () => data<RssSource[]>(http.get("/admin/news/sources")),
   });
 
-  // 2. Create Source Mutation
-  const createSourceMutation = useMutation({
-    mutationFn: (payload: { name: string; url: string; type: string }) =>
-      data<RssSource>(http.post("/admin/news/sources", payload)),
+  const createMutation = useMutation({
+    mutationFn: (p: { name: string; feedUrl: string; sourceType: string; cssSelector?: string }) => data<RssSource>(http.post("/admin/news/sources", p)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: qk.admin.newsSources() });
-      toast({ body: "New crawler source added successfully!", type: "info" });
-      setNewName("");
-      setNewUrl("");
-      setShowAddForm(false);
+      toast({ body: "Source added successfully!", type: "info" });
+      setNewName(""); setNewUrl(""); setCssSelector(""); setShowAdd(false);
     },
-    onError: (err) => {
-      toast({ body: apiErrorMessage(err, "Failed to create source."), type: "error" });
-    },
+    onError: (err) => toast({ body: apiErrorMessage(err, "Failed to add source. Make sure it is a valid URL."), type: "error" }),
   });
 
-  // 3. Delete Source Mutation
-  const deleteSourceMutation = useMutation({
+  const deleteMutation = useMutation({
     mutationFn: (id: number) => data<any>(http.delete(`/admin/news/sources/${id}`)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: qk.admin.newsSources() });
-      toast({ body: "Crawler source deleted.", type: "info" });
+      toast({ body: "Source deleted.", type: "info" });
     },
-    onError: (err) => {
-      toast({ body: apiErrorMessage(err, "Failed to delete source."), type: "error" });
-    },
+    onError: (err) => toast({ body: apiErrorMessage(err, "Failed to delete."), type: "error" }),
   });
 
-  // 4. Toggle Source Mutation
-  const toggleSourceMutation = useMutation({
+  const toggleMutation = useMutation({
     mutationFn: (id: number) => data<RssSource>(http.patch(`/admin/news/sources/${id}/toggle`)),
-    onSuccess: (updated) => {
+    onSuccess: (s) => {
       queryClient.invalidateQueries({ queryKey: qk.admin.newsSources() });
-      toast({
-        body: `${updated.name} crawler is now ${updated.active ? "enabled" : "disabled"}.`,
-        type: "info",
-      });
+      toast({ body: `${s.name} ${s.active ? "enabled" : "disabled"}.`, type: "info" });
     },
-    onError: (err) => {
-      toast({ body: apiErrorMessage(err, "Failed to toggle source."), type: "error" });
-    },
+    onError: (err) => toast({ body: apiErrorMessage(err, "Failed to toggle."), type: "error" }),
   });
 
-  // 5. Run Crawler Mutation
   const crawlMutation = useMutation({
     mutationFn: () => data<CrawlResult>(http.post("/admin/news/crawl")),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: qk.admin.news() });
       queryClient.invalidateQueries({ queryKey: qk.admin.dashboardStats() });
-      toast({
-        body: `Crawler Completed! Saved: ${res.saved} | Skipped: ${res.skipped} | Failed: ${res.failed}`,
-        type: "info",
-        autoHideDuration: 6000,
-      });
+      setCrawlResult(res);
+      toast({ body: `Done! Saved: ${res.saved} · Skipped: ${res.skipped} · Failed: ${res.failed}`, type: "info", autoHideDuration: 6000 });
     },
-    onError: (err) => {
-      toast({ body: apiErrorMessage(err, "Crawler run failed."), type: "error" });
-    },
+    onError: (err) => toast({ body: apiErrorMessage(err, "Crawler failed."), type: "error" }),
   });
 
-  const handleCreateSource = (e: React.FormEvent) => {
+  const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName.trim() || !newUrl.trim()) {
-      toast({ body: "Name and URL are required.", type: "error" });
-      return;
-    }
-    createSourceMutation.mutate({ name: newName.trim(), url: newUrl.trim(), type: newType });
+    if (!newName.trim() || !newUrl.trim()) return toast({ body: "Name and URL required.", type: "error" });
+    createMutation.mutate({
+      name: newName.trim(),
+      feedUrl: newUrl.trim(),
+      sourceType: newType,
+      cssSelector: newType === "HOMEPAGE" && cssSelector.trim() ? cssSelector.trim() : undefined
+    });
   };
 
-  if (isLoading) {
-    return <LoadingBlock label="Fetching RSS directories" />;
-  }
+  const filtered = useMemo(() => {
+    if (!search.trim()) return sources;
+    const q = search.toLowerCase();
+    return sources.filter((s) => s.name.toLowerCase().includes(q) || s.feedUrl.toLowerCase().includes(q));
+  }, [sources, search]);
+
+  if (isLoading) return <LoadingBlock label="Fetching RSS directories" />;
+
+  const activeSources = sources.filter((s) => s.active).length;
 
   return (
-    <div className="flex flex-col gap-4 w-full text-white">
-      <div className="flex items-center justify-between w-full border-b border-[var(--color-border)] pb-2 flex-wrap gap-2">
-        <h3 className="font-serif-title text-xl md:text-2xl font-black tracking-tight text-white m-0">
-          RSS Crawler Feeds
-        </h3>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => crawlMutation.mutate()}
-            disabled={crawlMutation.isPending}
-            className="btn btn-primary !rounded-full !px-4 !py-2 !text-xs"
-          >
-            {crawlMutation.isPending ? "Crawling Feeds..." : "Run Crawler Now"}
+    <div className="flex flex-col gap-5 w-full">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4 pb-4" style={{ borderBottom: "1px solid var(--color-border)" }}>
+        <div className="flex items-center gap-3 min-w-0">
+          <h1 className="text-lg font-black font-serif-title tracking-tight m-0 whitespace-nowrap" style={{ color: "var(--color-text-primary)" }}>News Sources</h1>
+          <span className="text-[11px] whitespace-nowrap" style={{ color: "var(--color-text-secondary)" }}>{sources.length} sources · {activeSources} active</span>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="relative w-48 hidden sm:block">
+            <input
+              placeholder="Search source..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full px-4 py-2 pl-9 rounded-full text-xs font-semibold border border-[var(--color-border)] bg-[var(--color-background-body)]/50 text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)] transition-all duration-300"
+            />
+            <svg className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--color-text-secondary)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <button onClick={() => setShowAdd(!showAdd)} className="btn btn-secondary !rounded-full !px-4 !py-2 !text-xs whitespace-nowrap">
+            {showAdd ? "Cancel" : "+ Add Source"}
           </button>
           <button
-            type="button"
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="btn btn-secondary !rounded-full !px-4 !py-2 !text-xs"
+            onClick={() => crawlMutation.mutate()}
+            disabled={crawlMutation.isPending}
+            className="btn btn-primary !rounded-full !px-4 !py-2 !text-xs whitespace-nowrap"
           >
-            Add Crawler Source
+            {crawlMutation.isPending ? "Syncing…" : "Sync Feeds"}
           </button>
         </div>
       </div>
 
-      {/* Add Form Card */}
-      {showAddForm && (
-        <div className="card p-5 w-full">
-          <form onSubmit={handleCreateSource} className="w-full">
-            <div className="flex flex-col gap-3">
-              <span className="text-xs font-bold uppercase text-[var(--color-accent)] text-left">
-                Register RSS feed
-              </span>
+      {/* Last crawl result */}
+      {crawlResult && (
+        <div className="card p-4 flex items-center gap-6 text-xs" style={{ borderLeft: "3px solid var(--color-accent)" }}>
+          <span className="font-black uppercase text-[10px]" style={{ color: "var(--color-accent)" }}>Last Run Result</span>
+          {[
+            { label: "Saved", value: crawlResult.saved, color: "#4a7c59" },
+            { label: "Skipped", value: crawlResult.skipped, color: "var(--color-text-secondary)" },
+            { label: "Failed", value: crawlResult.failed, color: "#b91c1c" },
+          ].map((m) => (
+            <div key={m.label} className="flex items-center gap-1.5">
+              <span className="font-black tabular-nums text-base" style={{ color: m.color }}>{m.value}</span>
+              <span className="text-[10px]" style={{ color: "var(--color-text-secondary)" }}>{m.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                <div className="flex flex-col gap-1 w-full text-left">
-                  <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">
-                    Source Name
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. BBC Sport"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    className="input"
-                  />
+      {/* Add Source Form */}
+      {showAdd && (
+        <div className="card p-5">
+          <form onSubmit={handleCreate}>
+            <div className="flex flex-col gap-4">
+              <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: "var(--color-accent)" }}>Add New Source</div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold uppercase" style={{ color: "var(--color-text-secondary)" }}>Source Name</label>
+                  <input type="text" placeholder="e.g. BBC Sport" value={newName} onChange={(e) => setNewName(e.target.value)} className="input !text-xs" />
                 </div>
-                <div className="flex flex-col gap-1 w-full text-left">
-                  <label className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)]">
-                    RSS Feed URL
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. http://feeds.bbci.co.uk/sport/football/rss.xml"
-                    value={newUrl}
-                    onChange={(e) => setNewUrl(e.target.value)}
-                    className="input"
-                  />
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold uppercase" style={{ color: "var(--color-text-secondary)" }}>Feed / Page URL</label>
+                  <input type="text" placeholder="https://feeds.bbc.co.uk/.../rss.xml" value={newUrl} onChange={(e) => setNewUrl(e.target.value)} className="input !text-xs" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold uppercase" style={{ color: "var(--color-text-secondary)" }}>Source Type</label>
+                  <select value={newType} onChange={(e) => { setNewType(e.target.value); setCssSelector(""); }}
+                    className="input !text-xs cursor-pointer">
+                    <option value="RSS">RSS Feed</option>
+                    <option value="SITEMAP">Sitemap Index / XML</option>
+                    <option value="HOMEPAGE">Homepage Scraper</option>
+                  </select>
                 </div>
               </div>
+              
+              {newType === "HOMEPAGE" && (
+                <div className="flex flex-col gap-1 w-full md:w-1/2">
+                  <label className="text-[10px] font-bold uppercase" style={{ color: "var(--color-text-secondary)" }}>CSS Selector (Optional)</label>
+                  <input type="text" placeholder="e.g. .news-list__item a (defaults to all links)" value={cssSelector} onChange={(e) => setCssSelector(e.target.value)} className="input !text-xs" />
+                </div>
+              )}
 
-              <div className="flex items-center gap-3 pt-2 justify-end">
-                <button
-                  type="button"
-                  onClick={() => setShowAddForm(false)}
-                  className="btn btn-secondary !px-4 !py-2 !text-xs"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={createSourceMutation.isPending}
-                  className="btn btn-primary !px-4 !py-2 !text-xs"
-                >
-                  {createSourceMutation.isPending ? "Adding..." : "Add feed"}
+              <div className="text-[10px] italic" style={{ color: "var(--color-text-secondary)" }}>
+                RSS: standard XML feed. Sitemap: crawls listed article URLs. Homepage: parses article links directly from homepage HTML (optionally restricted by CSS selector).
+              </div>
+              <div className="flex justify-end gap-2 pt-2" style={{ borderTop: "1px solid var(--color-border)" }}>
+                <button type="button" onClick={() => setShowAdd(false)} className="btn btn-secondary !px-4 !py-2 !text-xs">Cancel</button>
+                <button type="submit" disabled={createMutation.isPending} className="btn btn-primary !px-4 !py-2 !text-xs">
+                  {createMutation.isPending ? "Adding…" : "Add Source"}
                 </button>
               </div>
             </div>
@@ -193,73 +183,55 @@ export default function RssCrawlerPage() {
         </div>
       )}
 
-      {/* List of Sources */}
+      {/* Sources Table */}
       <div className="card overflow-hidden">
-        <div className="overflow-x-auto w-full">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-[var(--color-border)] bg-[var(--color-background-body)] text-[var(--color-text-secondary)] font-bold">
-                <th className="py-3 px-4">Name</th>
-                <th className="py-3 px-4">URL</th>
-                <th className="py-3 px-4">Type</th>
-                <th className="py-3 px-4">Crawler State</th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--color-border)]">
-              {sources.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="py-8 px-4 text-center text-[var(--color-text-secondary)] italic">
-                    No crawler sources configured.
-                  </td>
-                </tr>
-              ) : (
-                sources.map((source) => (
-                  <tr key={source.id} className="hover:bg-[var(--color-background-body)] text-white">
-                    <td className="py-3 px-4 font-bold">{source.name}</td>
-                    <td className="py-3 px-4 font-mono select-all truncate max-w-xs">{source.url}</td>
-                    <td className="py-3 px-4 font-bold text-gray-300">{source.type}</td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={`font-bold px-2 py-0.5 rounded text-[9px] ${
-                          source.active
-                            ? "bg-green-950 text-green-300 border border-green-800"
-                            : "bg-gray-900 text-gray-400 border border-gray-800"
-                        }`}
-                      >
-                        {source.active ? "ENABLED" : "DISABLED"}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex items-center gap-1.5 justify-end">
-                        <button
-                          onClick={() => toggleSourceMutation.mutate(source.id)}
-                          className={`btn btn-sm text-[9px] font-bold uppercase rounded px-2.5 py-1 transition-colors ${
-                            source.active
-                              ? "!bg-slate-700 hover:!bg-slate-600 !text-white"
-                              : "!bg-green-800 hover:!bg-green-700 !text-white"
-                          }`}
-                        >
-                          {source.active ? "Disable" : "Enable"}
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (window.confirm(`Are you sure you want to delete ${source.name}?`)) {
-                              deleteSourceMutation.mutate(source.id);
-                            }
-                          }}
-                          className="btn btn-sm !bg-red-800 hover:!bg-red-700 !text-white text-[9px] font-bold uppercase rounded px-2.5 py-1 transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div className="px-5 py-3" style={{ borderBottom: "1px solid var(--color-border)" }}>
+          <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "var(--color-text-secondary)" }}>Configured Sources</span>
         </div>
+        <table className="w-full text-xs">
+          <thead>
+            <tr style={{ borderBottom: "1px solid var(--color-border)", backgroundColor: "var(--color-background-body)" }}>
+              {["Name", "URL / Endpoint", "Type", "State", "Actions"].map((h, i) => (
+                <th key={h} className={`py-3 px-4 text-[10px] font-black uppercase tracking-wider ${i === 4 ? "text-right" : "text-left"}`} style={{ color: "var(--color-text-secondary)" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr><td colSpan={5} className="py-10 text-center text-xs italic" style={{ color: "var(--color-text-secondary)" }}>No crawler sources configured yet.</td></tr>
+            ) : filtered.map((src, i) => (
+              <tr key={src.id} className="hover:bg-black/[0.02] transition-colors" style={{ borderBottom: i < filtered.length - 1 ? "1px solid var(--color-border)" : undefined }}>
+                <td className="py-3 px-4 font-bold" style={{ color: "var(--color-text-primary)" }}>{src.name}</td>
+                <td className="py-3 px-4 max-w-xs">
+                  <a href={src.feedUrl} target="_blank" rel="noreferrer" className="font-mono text-[10px] truncate block hover:underline" style={{ color: "var(--color-text-secondary)" }}>{src.feedUrl}</a>
+                </td>
+                <td className="py-3 px-4">
+                  <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase" style={{ background: "rgba(180,95,53,0.08)", color: "var(--color-accent)" }}>
+                    {src.sourceType || "RSS"}
+                  </span>
+                </td>
+                <td className="py-3 px-4">
+                  <span className="inline-flex items-center gap-1 text-[9px] font-black" style={{ color: src.active ? "#4a7c59" : "var(--color-text-secondary)" }}>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: src.active ? "#4a7c59" : "#9ca3af" }} />
+                    {src.active ? "ENABLED" : "DISABLED"}
+                  </span>
+                </td>
+                <td className="py-3 px-4">
+                  <div className="flex items-center gap-1.5 justify-end">
+                    <button onClick={() => toggleMutation.mutate(src.id)}
+                      className="px-2.5 py-1 rounded text-[9px] font-black uppercase hover:opacity-80 transition-opacity"
+                      style={src.active ? { background: "rgba(109,113,95,0.12)", color: "var(--color-text-secondary)" } : { background: "rgba(74,124,89,0.12)", color: "#4a7c59" }}>
+                      {src.active ? "Disable" : "Enable"}
+                    </button>
+                    <button onClick={() => { if (window.confirm(`Delete ${src.name}?`)) deleteMutation.mutate(src.id); }}
+                      className="px-2.5 py-1 rounded text-[9px] font-black uppercase hover:opacity-80 transition-opacity"
+                      style={{ background: "rgba(185,28,28,0.12)", color: "#b91c1c" }}>Delete</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

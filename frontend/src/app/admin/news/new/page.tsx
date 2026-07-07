@@ -17,6 +17,7 @@ export default function WriteNewsArticlePage() {
   const [slug, setSlug] = useState("");
   const [summary, setSummary] = useState("");
   const [content, setContent] = useState("");
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const [category, setCategory] = useState("");
   const [tags, setTags] = useState("");
   const [status, setStatus] = useState("DRAFT");
@@ -64,8 +65,29 @@ export default function WriteNewsArticlePage() {
       const url = res.data.data.url;
       setUploadedImageUrl(url);
 
-      // Inject image markdown helper into the content textarea
-      setContent((prev) => `${prev}\n\n![Image](${url})\n\n`);
+      // Smart insert at cursor position
+      const textarea = textareaRef.current;
+      const imageMarkdown = `\n\n![Image](${url})\n\n`;
+      
+      if (textarea) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value;
+        const before = text.substring(0, start);
+        const after = text.substring(end);
+        
+        setContent(before + imageMarkdown + after);
+        
+        // Restore focus and move cursor right after the inserted markdown
+        setTimeout(() => {
+          textarea.focus();
+          const newPos = start + imageMarkdown.length;
+          textarea.setSelectionRange(newPos, newPos);
+        }, 50);
+      } else {
+        setContent((prev) => `${prev}${imageMarkdown}`);
+      }
+
       toast({ body: "Image uploaded successfully!", type: "info" });
     } catch (err) {
       toast({ body: "Failed to upload image.", type: "error" });
@@ -121,9 +143,9 @@ export default function WriteNewsArticlePage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 w-full text-white">
+    <div className="flex flex-col gap-4 w-full" style={{ color: "var(--color-text-primary)" }}>
       <div className="border-b border-[var(--color-border)] pb-2 flex items-center justify-between">
-        <h3 className="font-serif-title text-xl md:text-2xl font-black tracking-tight text-white m-0">
+        <h3 className="font-serif-title text-xl md:text-2xl font-black tracking-tight m-0" style={{ color: "var(--color-text-primary)" }}>
           Write Editorial News Publication
         </h3>
         <button
@@ -178,24 +200,29 @@ export default function WriteNewsArticlePage() {
               />
             </div>
 
-            {/* Custom rich helper bar */}
+             {/* Custom rich helper bar */}
             <div className="flex flex-col gap-1 w-full">
               <label className="text-xs font-bold uppercase text-[var(--color-text-secondary)] text-left">
                 Image Uploader
               </label>
-              <div className="flex items-center gap-3 bg-[var(--color-background-body)] border border-[var(--color-border)] p-3 rounded-xl">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="text-xs text-gray-300"
-                />
-                {imageUploadLoading && (
-                  <span className="text-xs animate-pulse text-[var(--color-accent)]">Uploading file...</span>
-                )}
-                {uploadedImageUrl && (
-                  <span className="text-[10px] text-green-400 font-bold">Uploaded: {uploadedImageUrl}</span>
-                )}
+              <div className="flex flex-col gap-1.5 bg-[var(--color-background-body)] border border-[var(--color-border)] p-3 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="text-xs text-[var(--color-text-primary)]"
+                  />
+                  {imageUploadLoading && (
+                    <span className="text-xs animate-pulse text-[var(--color-accent)]">Uploading file...</span>
+                  )}
+                  {uploadedImageUrl && (
+                    <span className="text-[10px] text-green-400 font-bold">Uploaded: {uploadedImageUrl}</span>
+                  )}
+                </div>
+                <span className="text-[10px]" style={{ color: "var(--color-text-secondary)", opacity: 0.85 }}>
+                  💡 Tip: The image will be inserted automatically at your current cursor position in the editor body below.
+                </span>
               </div>
             </div>
 
@@ -204,11 +231,12 @@ export default function WriteNewsArticlePage() {
                 Article Content Body (supports HTML/markdown)
               </label>
               <textarea
+                ref={textareaRef}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Write your article stories here..."
                 rows={12}
-                className="w-full bg-[var(--color-background-body)] border border-[var(--color-border)] text-white text-sm rounded-xl p-3 focus:outline-none focus:border-[var(--color-accent)] font-mono"
+                className="w-full bg-[var(--color-background-body)] border border-[var(--color-border)] text-[var(--color-text-primary)] text-sm rounded-xl p-3 focus:outline-none focus:border-[var(--color-accent)] font-mono"
               />
             </div>
 
@@ -220,10 +248,10 @@ export default function WriteNewsArticlePage() {
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full bg-[var(--color-background-body)] border border-[var(--color-border)] text-white text-xs rounded-xl p-2.5 focus:outline-none"
+                  className="w-full bg-[var(--color-background-body)] border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs rounded-xl p-2.5 focus:outline-none"
                 >
                   {categories.map((cat) => (
-                    <option key={cat.id} value={cat.name}>
+                    <option key={cat.id} value={cat.name} style={{ backgroundColor: "var(--color-background-body)", color: "var(--color-text-primary)" }}>
                       {cat.name}
                     </option>
                   ))}
@@ -250,11 +278,11 @@ export default function WriteNewsArticlePage() {
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="w-full bg-[var(--color-background-body)] border border-[var(--color-border)] text-white text-xs rounded-xl p-2.5 focus:outline-none"
+                  className="w-full bg-[var(--color-background-body)] border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs rounded-xl p-2.5 focus:outline-none"
                 >
-                  <option value="DRAFT">DRAFT</option>
-                  <option value="PUBLISHED">PUBLISHED</option>
-                  <option value="ARCHIVED">ARCHIVED</option>
+                  <option value="DRAFT" style={{ backgroundColor: "var(--color-background-body)", color: "var(--color-text-primary)" }}>DRAFT</option>
+                  <option value="PUBLISHED" style={{ backgroundColor: "var(--color-background-body)", color: "var(--color-text-primary)" }}>PUBLISHED</option>
+                  <option value="ARCHIVED" style={{ backgroundColor: "var(--color-background-body)", color: "var(--color-text-primary)" }}>ARCHIVED</option>
                 </select>
               </div>
             </div>

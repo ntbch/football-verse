@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { PublicShell } from "@/shared/components/page-shell";
 import { useAuthStore } from "@/shared/lib/auth-store";
@@ -11,15 +11,22 @@ import {
   usePredictionStats,
   useSubmitPrediction,
 } from "./_api";
-import { LeaderboardPanel, PickForm, StatsBadges } from "./_components";
+import { LeaderboardPanel, PickForm, StatsBadges, MatchAnalytics } from "./_components";
 import { LoadingBlock, ErrorBlock } from "@/shared/components/state-blocks";
 
 function isUpcoming(status: string) {
-  return status === "upcoming";
+  const s = status?.toUpperCase?.() ?? "";
+  return ["NS", "TBD", "PST", "CANC", "", "UPCOMING"].includes(s);
 }
 
 function isLive(status: string) {
-  return status === "live";
+  const s = status?.toUpperCase?.() ?? "";
+  return ["LIVE", "1H", "2H", "HT", "ET", "BT", "P"].includes(s);
+}
+
+function isResult(status: string) {
+  const s = status?.toUpperCase?.() ?? "";
+  return ["FT", "AET", "PEN", "AWD", "WO", "RESULT", "RESULTS"].includes(s);
 }
 
 function formatTime(dateStr: string) {
@@ -42,61 +49,68 @@ export default function PredictionsPage() {
   // Queries
   const { data: stats, isLoading: statsLoading } = usePredictionStats();
   const { data: lbData, isLoading: lbLoading, error: lbError } = useLeaderboard(lbPeriod);
-  const { data: centre, isLoading: centreLoading, error: centreError } = useMatchCentre(
-    league,
-    selectedRound || undefined
-  );
+  const { data: centre, isLoading: centreLoading, error: centreError } = useMatchCentre(league);
 
   const submitMut = useSubmitPrediction();
 
-  // Pick stats for current view
   const fixtures = centre?.fixtures ?? [];
   const standings = centre?.standings ?? [];
-  const availableRounds = centre?.rounds ?? [];
-  const currentRound = centre?.currentRound ?? "";
 
-  // Auto-select current round if none selected
-  if (!selectedRound && currentRound && availableRounds.includes(currentRound)) {
-    setSelectedRound(currentRound);
-  }
+  // Filter fixtures by tab status using robust status checking
+  const filteredFixtures = useMemo(() => {
+    return fixtures.filter((f: MatchCentreFixture) => {
+      if (tab === "upcoming") return isUpcoming(f.status);
+      if (tab === "live") return isLive(f.status);
+      return isResult(f.status);
+    });
+  }, [fixtures, tab]);
 
-  // Filter fixtures by tab status
-  const filteredFixtures = fixtures.filter((f: MatchCentreFixture) => {
-    if (tab === "upcoming") return f.status === "upcoming";
-    if (tab === "live") return f.status === "live";
-    return f.status === "result" || f.status === "ft";
-  });
+  // Extract all unique rounds in the current tab client-side
+  const availableRounds = useMemo(() => {
+    const rounds = new Set<string>();
+    for (const fix of filteredFixtures) {
+      if (fix.round) rounds.add(fix.round);
+    }
+    return Array.from(rounds);
+  }, [filteredFixtures]);
 
-  // Group by round
-  const groupedByRound = [
-    {
-      round: selectedRound || currentRound || "Current Round",
-      fixtures: filteredFixtures,
-    },
-  ].filter((g) => g.fixtures.length > 0);
+  // Set default selected round on tab/data change
+  useEffect(() => {
+    if (availableRounds.length > 0) {
+      if (!selectedRound || !availableRounds.includes(selectedRound)) {
+        if (tab === "results") {
+          // Select last round for results (latest played)
+          setSelectedRound(availableRounds[availableRounds.length - 1]);
+        } else {
+          // Select first round for upcoming/live (soonest)
+          setSelectedRound(availableRounds[0]);
+        }
+      }
+    } else {
+      setSelectedRound(null);
+    }
+  }, [availableRounds, selectedRound, tab]);
+
+  // Group and filter by selected round
+  const groupedByRound = useMemo(() => {
+    const map = new Map<string, MatchCentreFixture[]>();
+    for (const fix of filteredFixtures) {
+      const round = fix.round || "Fixtures";
+      if (!map.has(round)) map.set(round, []);
+      map.get(round)!.push(fix);
+    }
+    const result: { round: string; fixtures: MatchCentreFixture[] }[] = [];
+    for (const [round, fxs] of map) {
+      if (selectedRound && round !== selectedRound) continue;
+      result.push({ round, fixtures: fxs });
+    }
+    return result;
+  }, [filteredFixtures, selectedRound]);
 
   const changeLeague = (newLeague: string) => {
     setLeague(newLeague);
     setSelectedRound(null);
     setExpandedId(null);
-  };
-
-  const handlePredictSubmit = (fixtureId: number, pick: "home" | "draw" | "away", hScore: number, aScore: number) => {
-    submitMut.mutate(
-      {
-        matchId: fixtureId,
-        pick,
-        homeScore: hScore,
-        awayScore: aScore,
-        pickOu25: "over", // defaults
-        pickBtts: "yes",
-      },
-      {
-        onSuccess: () => {
-          setExpandedId(null);
-        },
-      }
-    );
   };
 
   return (
@@ -287,7 +301,7 @@ export default function PredictionsPage() {
                           <button
                             onClick={() => setExpandedId(isExpanded ? null : fix.id)}
                             className={`w-full flex items-center px-4 md:px-5 py-4 hover:bg-gray-50/50 transition-colors text-left gap-2 ${
-                              predicted ? "border-l-[3px] border-l-green-500" : ""
+                              predicted ? "border-l-[3px] border-l-green-500" : "border-l-[3px] border-l-transparent"
                             }`}
                           >
                             {/* Home */}
@@ -339,11 +353,22 @@ export default function PredictionsPage() {
                               )}
                               <span className="text-xs font-bold truncate">{fix.awayTeam}</span>
                             </div>
+
+                            {/* Arrow Indicator */}
+                            <span className={`text-[var(--color-text-secondary)] text-sm ml-1 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}>
+                              ›
+                            </span>
                           </button>
 
-                          {/* Expanded Form / Picker */}
+                          {/* Expanded Form / Picker / Analytics */}
                           {isExpanded && (
                             <div className="px-5 py-4 border-t border-[var(--color-border)] bg-gray-50/30">
+                              {/* AI Analytics and Insights */}
+                              {fix.aiPrediction && (
+                                <MatchAnalytics match={fix} />
+                              )}
+
+                              {/* Prediction form */}
                               <PickForm
                                 match={fix}
                                 auth={auth}
@@ -365,7 +390,12 @@ export default function PredictionsPage() {
             {/* Standings */}
             <div className="card overflow-hidden">
               <div className="px-5 py-3.5 border-b border-[var(--color-border)] flex items-center justify-between">
-                <h3 className="font-serif-title font-black text-sm m-0">📋 Standings</h3>
+                <h3 className="font-serif-title font-black text-sm m-0 flex items-center gap-1.5 text-[var(--color-text-primary)]">
+                  <svg className="w-4 h-4 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <span>Standings</span>
+                </h3>
                 <button
                   onClick={() => setShowAllStandings(!showAllStandings)}
                   className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-accent)] hover:underline border-0 bg-transparent cursor-pointer"
@@ -374,39 +404,61 @@ export default function PredictionsPage() {
                 </button>
               </div>
               {standings.length > 0 ? (
-                <table className="w-full text-[11px] text-left">
-                  <thead>
-                    <tr className="text-[var(--color-text-secondary)] border-b border-[var(--color-border)] bg-gray-50/50">
-                      <th className="px-4 py-2 font-bold w-6">#</th>
-                      <th className="py-2 font-bold">Team</th>
-                      <th className="text-center py-2 font-bold w-8">P</th>
-                      <th className="text-right px-4 py-2 font-bold w-8">Pts</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {standings.slice(0, showAllStandings ? 20 : 8).map((s: StandingRow) => (
-                      <tr key={s.teamId} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-4 py-2 font-black text-[var(--color-text-secondary)]">
-                          {s.rank}
-                        </td>
-                        <td className="py-2 font-bold">
-                          <div className="flex items-center gap-1.5">
-                            {s.teamLogo && (
-                              <img src={s.teamLogo} alt="" className="w-4 h-4 object-contain" />
-                            )}
-                            <span className="truncate max-w-[100px]">{s.teamName}</span>
-                          </div>
-                        </td>
-                        <td className="text-center py-2 text-[var(--color-text-secondary)]">
-                          {s.played}
-                        </td>
-                        <td className="text-right px-4 py-2 font-black text-[var(--color-accent)]">
-                          {s.points}
-                        </td>
+                <div className="w-full">
+                  <table className="w-full text-[11px] text-left border-collapse">
+                    <thead>
+                      <tr className="text-[var(--color-text-secondary)] border-b border-[var(--color-border)] bg-gray-50/50">
+                        <th className="px-2 py-2 font-bold w-5 text-center">#</th>
+                        <th className="py-2 font-bold">Team</th>
+                        <th className="text-center py-2 font-bold w-6">P</th>
+                        {showAllStandings && (
+                          <>
+                            <th className="text-center py-2 font-bold w-12">W-D-L</th>
+                            <th className="text-center py-2 font-bold w-12">GF-GA</th>
+                            <th className="text-center py-2 font-bold w-8">GD</th>
+                          </>
+                        )}
+                        <th className="text-right px-2 py-2 font-bold w-7">Pts</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {standings.slice(0, showAllStandings ? 20 : 8).map((s: StandingRow) => (
+                        <tr key={s.teamId} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="px-2 py-2 font-black text-[var(--color-text-secondary)] text-center">
+                            {s.rank}
+                          </td>
+                          <td className="py-2 font-bold">
+                            <div className="flex items-center gap-1">
+                              {s.teamLogo && (
+                                <img src={s.teamLogo} alt="" className="w-3.5 h-3.5 object-contain" />
+                              )}
+                              <span className="truncate max-w-[70px]" title={s.teamName}>{s.teamName}</span>
+                            </div>
+                          </td>
+                          <td className="text-center py-2 text-[var(--color-text-secondary)]">
+                            {s.played}
+                          </td>
+                          {showAllStandings && (
+                            <>
+                              <td className="text-center py-2 text-[var(--color-text-secondary)] font-mono text-[10px]">
+                                {s.wins ?? 0}-{s.draws ?? 0}-{s.losses ?? 0}
+                              </td>
+                              <td className="text-center py-2 text-[var(--color-text-secondary)] font-mono text-[10px]">
+                                {s.goalsFor ?? 0}-{s.goalsAgainst ?? 0}
+                              </td>
+                              <td className="text-center py-2 font-bold text-[var(--color-text-secondary)]">
+                                {(s.goalDifference ?? 0) > 0 ? `+${s.goalDifference}` : s.goalDifference}
+                              </td>
+                            </>
+                          )}
+                          <td className="text-right px-2 py-2 font-black text-[var(--color-accent)]">
+                            {s.points}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               ) : (
                 <div className="p-8 text-center">
                   <p className="text-xs text-[var(--color-text-secondary)] font-serif italic">

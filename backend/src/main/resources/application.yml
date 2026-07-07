@@ -39,7 +39,7 @@ app:
     access-token-minutes: ${JWT_ACCESS_TOKEN_MINUTES:30}
     refresh-token-days: ${JWT_REFRESH_TOKEN_DAYS:30}
   match-engine:
-    url: ${MATCH_ENGINE_URL:http://localhost:8090}
+    url: ${MATCH_ENGINE_URL:http://127.0.0.1:8090}
   upload:
     dir: ${APP_UPLOAD_DIR:uploads}
 

@@ -13,6 +13,7 @@ import com.footballverse.security.CurrentUser;
 import com.footballverse.user.UserAccount;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,13 +44,41 @@ public class NewsArticleService {
                 categoryIds,
                 hasTags,
                 tagIds,
-                PageRequest.of(page, size)
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "publishedAt"))
         ).map(this::toArticle));
     }
 
+    private java.time.Instant parseInstant(String str) {
+        if (str == null || str.isBlank()) return null;
+        try {
+            return java.time.Instant.parse(str);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     @Transactional(readOnly = true)
-    public PageResponse<NewsArticleResponse> adminArticles(int page, int size) {
-        return PageResponse.from(articles.findByStatusNot(ArticleStatus.DELETED, PageRequest.of(page, size)).map(this::toArticle));
+    public PageResponse<NewsArticleResponse> adminArticles(int page, int size, ArticleStatus status, String search, Long categoryId, String startDateStr, String endDateStr) {
+        org.springframework.data.domain.Pageable pageable = PageRequest.of(page, size, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "publishedAt"));
+        java.time.Instant startDate = parseInstant(startDateStr);
+        java.time.Instant endDate = parseInstant(endDateStr);
+        boolean hasStatus = (status != null);
+        boolean hasDate = (startDate != null && endDate != null);
+        String searchQuery = (search != null) ? search.trim() : "";
+        return PageResponse.from(articles.adminFilterArticles(hasStatus, status, searchQuery, categoryId, hasDate, startDate, endDate, pageable).map(this::toArticle));
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.Map<String, Long> adminCounts(String search, Long categoryId, String startDateStr, String endDateStr) {
+        java.time.Instant startDate = parseInstant(startDateStr);
+        java.time.Instant endDate = parseInstant(endDateStr);
+        boolean hasDate = (startDate != null && endDate != null);
+        String searchQuery = (search != null) ? search.trim() : "";
+        return java.util.Map.of(
+                "PUBLISHED", articles.adminCountStatus(ArticleStatus.PUBLISHED, searchQuery, categoryId, hasDate, startDate, endDate),
+                "DRAFT", articles.adminCountStatus(ArticleStatus.DRAFT, searchQuery, categoryId, hasDate, startDate, endDate),
+                "ARCHIVED", articles.adminCountStatus(ArticleStatus.ARCHIVED, searchQuery, categoryId, hasDate, startDate, endDate)
+        );
     }
 
     @Transactional(readOnly = true)

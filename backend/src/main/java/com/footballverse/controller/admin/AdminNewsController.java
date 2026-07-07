@@ -39,9 +39,24 @@ public class AdminNewsController {
     @GetMapping
     public ApiResponse<PageResponse<NewsArticleResponse>> articles(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) com.footballverse.news.ArticleStatus status,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate
     ) {
-        return ApiResponse.ok(articleService.adminArticles(page, size));
+        return ApiResponse.ok(articleService.adminArticles(page, size, status, search, categoryId, startDate, endDate));
+    }
+
+    @GetMapping("/meta/counts")
+    public ApiResponse<java.util.Map<String, Long>> counts(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate
+    ) {
+        return ApiResponse.ok(articleService.adminCounts(search, categoryId, startDate, endDate));
     }
 
     @PostMapping

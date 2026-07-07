@@ -9,6 +9,7 @@ import com.footballverse.news.NewsCategory;
 import com.footballverse.news.NewsCategoryRepository;
 import com.footballverse.news.NewsSource;
 import com.footballverse.news.NewsSourceRepository;
+import com.footballverse.news.NewsSourceType;
 import com.footballverse.user.UserAccount;
 import com.footballverse.user.UserAccountRepository;
 import com.footballverse.user.UserProfile;
@@ -71,6 +72,26 @@ public class DataSeeder implements CommandLineRunner {
         seedArticle(admin);
         seedForumCategories();
         seedNewsSources();
+        seedCustomNewsSources();
+    }
+
+    private void seedCustomNewsSources() {
+        // Sitemap source: Football Italia
+        String sitemapUrl = "https://football-italia.net/post-sitemap.xml";
+        if (!newsSources.existsByFeedUrl(sitemapUrl)) {
+            NewsSource source = new NewsSource("Football Italia ", sitemapUrl);
+            source.setSourceType(NewsSourceType.SITEMAP);
+            newsSources.save(source);
+        }
+
+        // Homepage scrape source: Sky Sports Football
+        String homepageUrl = "https://www.skysports.com/football";
+        if (!newsSources.existsByFeedUrl(homepageUrl)) {
+            NewsSource source = new NewsSource("Sky Sports Football", homepageUrl);
+            source.setSourceType(NewsSourceType.HOMEPAGE);
+            source.setCssSelector(".news-list__item a");
+            newsSources.save(source);
+        }
     }
 
     private UserAccount seedAdmin() {
@@ -142,7 +163,8 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void forEachSeed(String seeds, SeedConsumer consumer) {
-        if (seeds == null || seeds.isBlank()) return;
+        if (seeds == null || seeds.isBlank())
+            return;
         for (String seed : seeds.split(";")) {
             String[] parts = seed.split("=", 2);
             if (parts.length == 2 && !parts[0].isBlank() && !parts[1].isBlank()) {

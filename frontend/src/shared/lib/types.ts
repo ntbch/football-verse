@@ -80,18 +80,19 @@ export type ThreadResponse = {
 
 export type PostResponse = {
   id: number;
+  author: string;           // backend field is "author", not "authorUsername"
   content: string;
-  authorUsername: string;
-  liked: boolean;
-  likes: number;
-  hidden: boolean;
   createdAt: string;
-  bestAnswer: boolean;
+  likeCount: number;        // backend field is "likeCount", not "likes"
+  liked: boolean;
+  // optional fields that may exist in extended responses
+  hidden?: boolean;
+  bestAnswer?: boolean;
 };
 
 export type ThreadDetailResponse = {
   thread: ThreadResponse;
-  posts: PageResponse<PostResponse>;
+  posts: PostResponse[];
 };
 
 export type StandingResponse = {
