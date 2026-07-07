@@ -84,12 +84,20 @@ public class DataSeeder implements CommandLineRunner {
             newsSources.save(source);
         }
 
+        // Sitemap source: Goal.com (Google News XML)
+        String goalSitemapUrl = "https://www.goal.com/en/sitemap/google-news.xml";
+        if (!newsSources.existsByFeedUrl(goalSitemapUrl)) {
+            NewsSource source = new NewsSource("Goal.com", goalSitemapUrl);
+            source.setSourceType(NewsSourceType.SITEMAP);
+            newsSources.save(source);
+        }
+
         // Homepage scrape source: Sky Sports Football
         String homepageUrl = "https://www.skysports.com/football";
         if (!newsSources.existsByFeedUrl(homepageUrl)) {
             NewsSource source = new NewsSource("Sky Sports Football", homepageUrl);
             source.setSourceType(NewsSourceType.HOMEPAGE);
-            source.setCssSelector(".news-list__item a");
+            source.setCssSelector(".sdc-site-tile__headline a");
             newsSources.save(source);
         }
     }

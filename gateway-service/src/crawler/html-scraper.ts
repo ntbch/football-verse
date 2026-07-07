@@ -78,7 +78,7 @@ export async function scrapeArticle(
     let content = '';
     let container = cssSelector && cssSelector.trim().length > 0 ? $(cssSelector).first() : null;
     if (!container || !container.length) {
-      for (const selector of ['.article-body', '.article-content', 'article', 'main', 'body']) {
+      for (const selector of ['.article-body', '.article-content', '.sdc-article-body', 'article', 'main', 'body']) {
         const found = $(selector).first();
         if (found.length) {
           container = found;
@@ -126,6 +126,24 @@ export async function scrapeArticle(
         const list = $(elem);
         if (!list.text().trim() && !list.find('img').length) {
           list.remove();
+        }
+      });
+
+      // Remove promotional / push notification elements (Sky Sports, etc.)
+      const promoPatterns = [
+        'sign up for sky sports',
+        'sky sports push notifications',
+        'get sky sports on whatsapp',
+        'follow sky sports on whatsapp',
+        'download the sky sports app',
+        'push notification',
+        'sign up to get',
+      ];
+      container.find('p, a, span, div, li').each((_, elem) => {
+        const el = $(elem);
+        const text = el.text().toLowerCase().trim();
+        if (promoPatterns.some(p => text.includes(p))) {
+          el.remove();
         }
       });
 

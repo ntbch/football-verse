@@ -82,14 +82,15 @@ export async function runCrawlCycle() {
           }
 
           console.log(`[Crawler] Scraping article: ${item.link}`);
-          const scraped = await scrapeArticle(item.link, source.cssSelector);
+          const scraped = await scrapeArticle(item.link, source.sourceType === 'HOMEPAGE' ? undefined : source.cssSelector);
           if (!scraped) {
             console.warn(`[Crawler] Failed to scrape article at ${item.link}`);
             continue;
           }
 
           // Use RSS metadata if HTML metadata is missing
-          const title = item.title || scraped.title;
+          const rawTitle = item.title || scraped.title;
+          const title = rawTitle && rawTitle.length > 200 ? rawTitle.substring(0, 197) + '...' : rawTitle;
           const summary = item.description || scraped.summary;
           const content = scraped.content;
           const publishedAt = item.pubDate || scraped.publishedAt || new Date().toISOString();
