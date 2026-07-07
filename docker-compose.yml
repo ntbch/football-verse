@@ -10,8 +10,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  match-engine:
-    build: ./match-engine
+  prediction-service:
+    build: ./prediction-service
     environment:
       FOOTBALL_API_KEY: ${FOOTBALL_API_KEY:-}
       FOOTBALL_PROVIDER: ${FOOTBALL_PROVIDER:-football-data}
@@ -19,6 +19,53 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
     ports:
       - "8090:8090"
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  core-service:
+    build: ./core-service
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_URL=jdbc:postgresql://postgres:5432/football_verse
+      - DB_USERNAME=football_verse
+      - DB_PASSWORD=football_verse
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - MATCH_ENGINE_URL=http://prediction-service:8090
+      - APP_GATEWAY_URL=http://gateway-service:8000
+      - INTERNAL_TOKEN=${INTERNAL_TOKEN:-dev-internal-token}
+    depends_on:
+      - postgres
+      - redis
+
+  gateway-service:
+    build: ./gateway-service
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - BACKEND_URL=http://core-service:8080
+      - PREDICTION_SERVICE_URL=http://prediction-service:8090
+      - REDIS_URL=redis://redis:6379
+      - INTERNAL_TOKEN=${INTERNAL_TOKEN:-dev-internal-token}
+      - RUN_CRAWL_ON_STARTUP=${RUN_CRAWL_ON_STARTUP:-true}
+    depends_on:
+      - redis
+      - prediction-service
+      - core-service
+
+  web-client:
+    build: ./web-client
+    ports:
+      - "3000:3000"
+    depends_on:
+      - gateway-service
 
 volumes:
   postgres_data:

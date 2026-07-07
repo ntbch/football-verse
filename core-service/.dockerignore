@@ -1,0 +1,10 @@
+target
+uploads
+.git
+*.log
+.settings
+.classpath
+.project
+.metadata
+.mvn
+bin

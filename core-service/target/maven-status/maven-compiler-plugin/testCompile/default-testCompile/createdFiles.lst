@@ -1,0 +1,10 @@
+com\footballverse\UploadIntegrationTest.class
+com\footballverse\prediction\ScoringServiceTest.class
+com\footballverse\common\text\RichTextSanitizerTest.class
+com\footballverse\ForumModerationIntegrityTest.class
+com\footballverse\MentionIntegrationTest.class
+com\footballverse\SearchIntegrationTest.class
+com\footballverse\LoginApiTest.class
+com\footballverse\LikesAndSseIntegrationTest.class
+com\footballverse\NewsInteractionIntegrityTest.class
+com\footballverse\LoginTest.class

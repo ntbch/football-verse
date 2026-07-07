@@ -2,8 +2,10 @@
 .vscode/
 
 backend/target/
-frontend/.next/
-frontend/node_modules/
+web-client/.next/
+web-client/node_modules/
+gateway-service/node_modules/
+gateway-service/dist/
 
 *.log
 __pycache__/

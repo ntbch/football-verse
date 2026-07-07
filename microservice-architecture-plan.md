@@ -7,71 +7,40 @@ Move Football Verse from Spring Boot monolith toward staged microservices for le
 
 To leverage the best capabilities of each technology stack:
 
-### 1. Java (Spring Boot) - Core business domain & Transact-heavy DB CRUD
+### 1. Java (core-service) - Core business domain & Transact-heavy DB CRUD
 * **Strengths:** Thread safety, strict type system, transactional consistency (ACID), enterprise-grade security.
 * **Responsibilities:**
   * **User Core:** Authentication, User Profiles, JWT issuing, role/permission management.
   * **Social/CMS Core:** News CMS storage, Forum categories/threads/replies, nested comments, Likes & Bookmarks databases.
   * **Audit & Moderation:** Report handling and admin logs.
 
-### 2. Node.js (JavaScript/TypeScript) - High-concurrency I/O & Realtime Gateway
+### 2. Node.js (gateway-service) - High-concurrency I/O, API Gateway & Realtime
 * **Strengths:** Non-blocking I/O event loop, massive concurrent socket connections, rich browser automation and scraping ecosystem.
 * **Responsibilities:**
   * **API Gateway & Routing:** Single ingress point routing traffic downstream.
-  * **Realtime & Notifications:** SSE/WebSocket server to push realtime notifications (mentions, likes) and live scores, subscribing to Redis Pub/Sub.
-  * **Scraper & Crawler:** Periodic RSS & web page scraping. Uses `fingerprint-suite` to bypass anti-bot, parses HTML, and imports clean text into the Core DB.
+  * **Realtime & Notifications:** Socket.io WebSocket server to push realtime notifications (mentions, likes) and live scores, subscribing to Redis Pub/Sub.
+  * **Scraper & Crawler:** Periodic RSS, Sitemap, and Homepage HTML scraping with anti-bot bypass (`fingerprint-suite` + `cheerio`).
 
-### 3. Python - Data sync, Analytics, Scoring & Game Simulation
-* **Strengths:** Excellent for data manipulation, mathematical models, machine learning, and rapid algorithmic script execution.
+### 3. Python (prediction-service & simulator-service) - Data Sync & Game Simulation
+* **Strengths:** Excellent for data manipulation, mathematical models, rapid algorithmic script execution.
 * **Responsibilities:**
-  * **Data Ingestion:** Fetching external football data APIs (fixtures, standings, live stats) and mapping to CSDL.
-  * **Prediction Scoring Engine:** Running probability algorithms and scoring user predictions.
-  * **Football Manager Lite Match Engine:** Running tactical game simulations and generating chronological match event timelines.
+  * **prediction-service:** Fetching external football data APIs, syncing fixtures/standings, and calculating prediction scoring.
+  * **simulator-service (Phase 4):** Running tactical game simulations and generating chronological match event timelines for mini Football Manager.
 
 ## Recommended Approach
 Use hybrid staged microservices first:
 
-- Keep Spring Boot as core API for auth, users, news, forum, admin, moderator.
-- Add Node.js service for realtime gateway, live updates, leaderboard streams, and API aggregation.
-- Add Node.js crawler service for robust news feed/HTML scraping, anti-bot bypassing (via fingerprint-suite), and raw article processing.
-- Add Python service for match data ingestion, prediction scoring, and game simulation.
-- Keep Next.js as main web app; add separate React app only when game UI grows beyond normal pages.
+- Keep `core-service` as core API for auth, users, news, forum, admin, moderator.
+- Add `gateway-service` for realtime gateway, live updates, crawler, and API aggregation.
+- Add `prediction-service` for match data ingestion and prediction scoring.
+- Add `simulator-service` later for virtual game simulation.
+- Keep `web-client` as main Next.js web app.
 - Use Docker Compose + API Gateway first; add Kubernetes/minikube after services run locally.
 
 Skipped full service split now. Add when core boundaries are stable and duplicated local ops pain is worth it.
 
-## Reference: Digesty Sports
-Digesty positions prediction as an AI football feature, but the visible product shell is simple: league page, match schedule, status tabs, standings, and prediction entry.
 
-Borrow:
 
-- League-first navigation, starting with Premier League.
-- Match schedule as the main prediction entry point.
-- Status tabs: upcoming, live, result.
-- Separate standings and prediction routes.
-- Login gate only when user submits prediction, not when browsing fixtures.
-
-Do not copy:
-
-- AI branding before the scoring model exists.
-- Heavy realtime UI before live data and prediction leaderboard work.
-
-## Reference: Prediction Sites
-
-Borrow:
-
-- League and season navigation before prediction details.
-- Round/date grouping so users scan fixtures quickly.
-- Prediction table columns: home team, away team, kickoff, probability, pick, correct score, average goals, odds, and result.
-- Market tabs later: 1X2, over/under 2.5, both teams to score, double chance.
-- Match detail page later: team form, head-to-head, standings position, injuries/news, trend notes.
-- Prediction history: show actual score and whether the pick won/lost after final whistle.
-
-Do not copy:
-
-- Betting slip, stake controls, bookmaker CTA, or gambling-first copy.
-- Too many markets before basic user prediction works.
-- "AI" label until a model or transparent heuristic exists.
 
 ## Alternatives Considered
 - Modular monolith: simpler, but does not teach service ops or multi-runtime boundaries enough.
@@ -82,10 +51,10 @@ Do not copy:
 - [x] Write target service map in `docs/ARCHITECTURE.md` -> Verify: each service has owner domain, stack, database, and public routes.
 - [x] Define API Gateway route table -> Verify: `/api/v1/*`, `/realtime/*`, `/matches/*`, `/game/*` have one upstream each.
 - [x] Split databases inside PostgreSQL by service -> Verify: architecture plan lists `core_db`, `match_game_db`, optional Redis for realtime.
-- [ ] Keep Spring Boot core service intact -> Verify: current auth/news/forum/admin/moderator APIs remain unchanged.
-- [ ] Plan Node.js realtime & notification service -> Verify: covers SSE/WebSocket for live score, prediction leaderboard, simulation events, and user notifications (likes/mentions) via Redis Pub/Sub.
-- [ ] Plan Node.js crawler service -> Verify: RSS/scraping with fingerprint-suite, pushes raw/clean articles to Spring Boot API.
-- [x] Plan Python match/game service -> Verify: covers third-party football API sync, prediction scoring, mini-manager simulation.
+- [ ] Keep `core-service` intact -> Verify: current auth/news/forum/admin/moderator APIs remain unchanged.
+- [ ] Plan `gateway-service` realtime & notifications -> Verify: covers WebSocket for live score, prediction leaderboard, simulation events, and user notifications (likes/mentions) via Redis Pub/Sub.
+- [ ] Plan `gateway-service` crawler -> Verify: RSS/scraping with fingerprint-suite, pushes raw/clean articles to `core-service` API.
+- [x] Plan `prediction-service` -> Verify: covers third-party football API sync, prediction scoring.
 - [ ] Define cross-service auth -> Verify: JWT user identity passed through gateway; internal service calls documented.
 - [ ] Define event flow -> Verify: match updates, game events, and user notifications publish once, realtime service fans out.
 - [ ] Add local ops plan -> Verify: Docker Compose starts gateway, core, realtime, match-game, PostgreSQL, Redis/logs if used.
@@ -93,29 +62,29 @@ Do not copy:
 
 ## Done When
 - [ ] Architecture doc shows staged migration, not big-bang rewrite.
-- [ ] Each stack has a clear reason: Spring Boot for core domain, Node.js for realtime, Python for data/simulation, Next.js for web.
+- [ ] Each stack has a clear reason: `core-service` for core domain, `gateway-service` for realtime/crawler, `prediction-service` for prediction scoring, `web-client` for frontend.
 - [ ] First implementation phase has 2-3 services max.
 - [ ] No new runtime is added without a feature that needs it.
 
 ## Backend Phases
 
 - [x] Phase 0: contracts and ownership in `docs/ARCHITECTURE.md`.
-- [ ] Phase 1: Python Match/Game service for Premier League fixtures, standings, and prediction table. Spring user-pick APIs pending.
-- [ ] Phase 2: Spring Boot prediction submission, scoring, and leaderboard.
-- [ ] Phase 3: Node Realtime & Notification and Crawler services (realtime/notification for live score/leaderboard/game streams, crawler for robust news extraction).
-- [ ] Phase 4: mini Football Manager simulation in Python Match/Game.
+- [ ] Phase 1: `prediction-service` for Premier League fixtures, standings, and prediction table. Spring user-pick APIs pending.
+- [ ] Phase 2: `core-service` prediction submission, scoring, and leaderboard.
+- [ ] Phase 3: `gateway-service` Realtime & Notification and Crawler services.
+- [ ] Phase 4: mini Football Manager simulation in `simulator-service`.
 - [ ] Phase 5: move working Compose services to minikube.
 
 ## Decision Log
 - Chose staged hybrid microservices because current app is a working monolith and user wants learning plus selective scaling.
-- Chose Spring Boot core because auth/user/news/forum already exist there.
-- Chose Node.js for realtime/notification because WebSocket/SSE connection density, event loop concurrency, and API aggregation fit its strengths.
-- Chose Node.js for crawler service because JavaScript scraping ecosystem (cheerio, fingerprint-suite) is superior for bypassing anti-bot measures than Java.
-- Chose Python for match API ingestion, prediction scoring, and simulation because future ML/game logic fits Python better.
+- Chose `core-service` because auth/user/news/forum already exist there.
+- Chose `gateway-service` for realtime/notification because WebSocket connection density, event loop concurrency, and API aggregation fit its strengths.
+- Chose `gateway-service` crawler because JavaScript scraping ecosystem (cheerio, fingerprint-suite) is superior for bypassing anti-bot measures than Java.
+- Chose `prediction-service` and `simulator-service` because data manipulation, prediction scoring, and future simulation fit Python better.
 - Chose one PostgreSQL instance with separate databases because local learning stays simple while service ownership is visible.
 - Chose Docker Compose first, Kubernetes/minikube later because ops should not block feature slicing.
 
 ## Open Questions
 - Pick football API provider: football-data, API-Football, Sportmonks, or another.
-- Decide first extracted service: Node realtime or Python match-game.
-- Decide whether game UI stays inside Next.js first or becomes separate React app later.
+- Decide first extracted service: Node gateway-service or Python prediction-service.
+- Decide whether game UI stays inside `web-client` first or becomes separate React app later.
