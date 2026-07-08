@@ -328,7 +328,7 @@ export function Navbar() {
           )}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="p-2 rounded-xl border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-black/5 transition-colors active:scale-95 duration-150 flex items-center justify-center"
+            className="p-2 rounded-full border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-black/5 transition-colors active:scale-95 duration-150 flex items-center justify-center"
             title="Toggle Menu"
           >
             {mobileOpen ? (
@@ -344,23 +344,31 @@ export function Navbar() {
         </div>
       </div>
 
+      {/* Backdrop for mobile menu */}
+      {mobileOpen && (
+        <div
+          className="md:hidden absolute inset-x-0 top-full h-screen bg-black/45 backdrop-blur-sm z-40 transition-opacity duration-300 animate-fade-in"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
       {/* Mobile Menu Panel */}
       {mobileOpen && (
-        <div className="md:hidden flex flex-col gap-4 mt-3 bg-[var(--color-background-surface)] border-t border-[var(--color-border)] pt-4 px-2 w-full animate-fade-in">
+        <div className="md:hidden absolute top-full left-0 w-full bg-[var(--color-background-surface)] border-b border-[var(--color-border)] py-6 px-6 flex flex-col gap-5 shadow-xl animate-slide-down z-50 max-h-[calc(100vh-70px)] overflow-y-auto">
           <form onSubmit={handleSearchSubmit} className="w-full relative">
             <input
               type="text"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search news, posts..."
-              className="w-full px-4 py-2 pl-9 rounded-full text-xs font-semibold border border-[var(--color-border)] bg-transparent text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)]/50 focus:outline-none"
+              className="w-full px-4 py-2.5 pl-10 rounded-full text-xs font-semibold border border-[var(--color-border)] bg-[var(--color-background-body)]/50 text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)] transition-all duration-300 shadow-inner"
             />
-            <svg className="w-3.5 h-3.5 text-[var(--color-text-secondary)]/60 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            <svg className="w-4 h-4 text-[var(--color-text-secondary)]/60 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </form>
 
-          <div className="flex flex-col gap-2 text-xs font-bold uppercase tracking-wider text-[var(--color-text-primary)]">
+          <div className="flex flex-col gap-2.5 text-xs font-bold uppercase tracking-wider text-[var(--color-text-primary)]">
             {[
               { href: "/", label: "Home" },
               { href: "/news", label: "News" },
@@ -393,13 +401,13 @@ export function Navbar() {
                   key={href}
                   href={href}
                   onClick={() => setMobileOpen(false)}
-                  className={`transition-all duration-200 py-2 border-b border-black/5 flex items-center justify-between active:scale-[0.98] ${
+                  className={`transition-all duration-200 py-2.5 border-b border-black/5 flex items-center justify-between active:scale-[0.98] ${
                     active ? "text-[var(--color-accent)] font-extrabold pl-2 border-l-2 border-l-[var(--color-accent)] bg-[var(--color-background-body)]/40 rounded-r-lg" : "text-[var(--color-text-primary)]/80 hover:text-[var(--color-accent)]"
                   }`}
                 >
                   <span>{label}</span>
                   {active && (
-                    <svg className="w-3 h-3 text-[var(--color-accent)] mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                    <svg className="w-3.5 h-3.5 text-[var(--color-accent)] mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
                   )}
@@ -410,13 +418,13 @@ export function Navbar() {
               <Link
                 href="/admin"
                 onClick={() => setMobileOpen(false)}
-                className={`transition-all duration-200 py-2 border-b border-black/5 flex items-center justify-between active:scale-[0.98] ${
+                className={`transition-all duration-200 py-2.5 border-b border-black/5 flex items-center justify-between active:scale-[0.98] ${
                   isActive("/admin") ? "text-[var(--color-accent)] font-extrabold pl-2 border-l-2 border-l-[var(--color-accent)] bg-[var(--color-background-body)]/40 rounded-r-lg" : "text-[var(--color-text-primary)]/80 hover:text-[var(--color-accent)]"
                 }`}
               >
                 <span>Admin</span>
                 {isActive("/admin") && (
-                  <svg className="w-3 h-3 text-[var(--color-accent)] mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                  <svg className="w-3.5 h-3.5 text-[var(--color-accent)] mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 )}
@@ -426,13 +434,13 @@ export function Navbar() {
               <Link
                 href="/moderator"
                 onClick={() => setMobileOpen(false)}
-                className={`transition-all duration-200 py-2 border-b border-black/5 flex items-center justify-between active:scale-[0.98] ${
+                className={`transition-all duration-200 py-2.5 border-b border-black/5 flex items-center justify-between active:scale-[0.98] ${
                   isActive("/moderator") ? "text-[var(--color-accent)] font-extrabold pl-2 border-l-2 border-l-[var(--color-accent)] bg-[var(--color-background-body)]/40 rounded-r-lg" : "text-[var(--color-text-primary)]/80 hover:text-[var(--color-accent)]"
                 }`}
               >
                 <span>Moderator</span>
                 {isActive("/moderator") && (
-                  <svg className="w-3 h-3 text-[var(--color-accent)] mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                  <svg className="w-3.5 h-3.5 text-[var(--color-accent)] mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 )}
@@ -442,13 +450,13 @@ export function Navbar() {
               <Link
                 href="/profile"
                 onClick={() => setMobileOpen(false)}
-                className={`transition-all duration-200 py-2 border-b border-black/5 flex items-center justify-between active:scale-[0.98] ${
+                className={`transition-all duration-200 py-2.5 border-b border-black/5 flex items-center justify-between active:scale-[0.98] ${
                   isActive("/profile") ? "text-[var(--color-accent)] font-extrabold pl-2 border-l-2 border-l-[var(--color-accent)] bg-[var(--color-background-body)]/40 rounded-r-lg" : "text-[var(--color-text-primary)]/80 hover:text-[var(--color-accent)]"
                 }`}
               >
                 <span>Profile</span>
                 {isActive("/profile") && (
-                  <svg className="w-3 h-3 text-[var(--color-accent)] mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                  <svg className="w-3.5 h-3.5 text-[var(--color-accent)] mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 )}
@@ -456,24 +464,23 @@ export function Navbar() {
             )}
           </div>
 
-          <div className="pt-2 border-t border-[var(--color-border)]">
-
+          <div className="pt-3 border-t border-[var(--color-border)]">
             {auth ? (
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-3.5">
                 <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Hi, {auth.username}</span>
                 <button
                   onClick={() => {
                     setMobileOpen(false);
                     handleLogout();
                   }}
-                  className="w-full btn btn-secondary !py-2.5 !text-xs"
+                  className="w-full btn btn-secondary !py-2.5 !text-xs cursor-pointer"
                 >
                   Logout
                 </button>
               </div>
             ) : (
               <Link href="/login" onClick={() => setMobileOpen(false)} className="w-full block">
-                <button className="w-full btn btn-primary !py-2.5 !text-xs">Login</button>
+                <button className="w-full btn btn-primary !py-2.5 !text-xs cursor-pointer">Login</button>
               </Link>
             )}
           </div>
