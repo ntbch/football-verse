@@ -115,13 +115,13 @@ export default function RegisterPage() {
       <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden bg-[var(--color-background-body)]">
         {/* Subtle grid pattern */}
         <div 
-          className="absolute inset-0 opacity-30" 
+          className="absolute inset-0 opacity-35" 
           style={{
             backgroundImage: `
-              linear-gradient(90deg, rgba(16, 20, 15, 0.03) 1px, transparent 1px),
-              linear-gradient(180deg, rgba(16, 20, 15, 0.03) 1px, transparent 1px)
+              linear-gradient(90deg, rgba(16, 20, 15, 0.035) 1px, transparent 1px),
+              linear-gradient(180deg, rgba(16, 20, 15, 0.035) 1px, transparent 1px)
             `,
-            backgroundSize: "28px 28px"
+            backgroundSize: "32px 32px"
           }}
         />
         {/* Stylized tactical board SVG overlay */}
@@ -131,59 +131,114 @@ export default function RegisterPage() {
           fill="none" 
           xmlns="http://www.w3.org/2000/svg"
         >
+          <style>{`
+            @keyframes tactical-dash {
+              to {
+                stroke-dashoffset: -40;
+              }
+            }
+            @keyframes tactical-pulse {
+              0%, 100% {
+                r: 16px;
+                fill-opacity: 0.03;
+              }
+              50% {
+                r: 22px;
+                fill-opacity: 0.12;
+              }
+            }
+            @keyframes tactical-pulse-accent {
+              0%, 100% {
+                r: 20px;
+                fill-opacity: 0.05;
+              }
+              50% {
+                r: 28px;
+                fill-opacity: 0.18;
+              }
+            }
+            .animate-tactical-path {
+              stroke-dasharray: 8, 8;
+              animation: tactical-dash 18s linear infinite;
+            }
+            .animate-tactical-pulse-1 {
+              animation: tactical-pulse 4s ease-in-out infinite;
+            }
+            .animate-tactical-pulse-accent {
+              animation: tactical-pulse-accent 4s ease-in-out infinite;
+            }
+          `}</style>
+
           {/* Pitch boundary */}
-          <rect x="100" y="100" width="1400" height="700" rx="16" stroke="currentColor" strokeWidth="1" strokeOpacity="0.1" />
-          <line x1="800" y1="100" x2="800" y2="800" stroke="currentColor" strokeWidth="1" strokeOpacity="0.1" />
-          <circle cx="800" cy="450" r="120" stroke="currentColor" strokeWidth="1" strokeOpacity="0.1" />
+          <rect x="100" y="100" width="1400" height="700" rx="16" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.12" />
+          <line x1="800" y1="100" x2="800" y2="800" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.12" />
+          <circle cx="800" cy="450" r="120" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.12" />
           
           {/* Penalty boxes */}
-          <rect x="100" y="275" width="220" height="350" stroke="currentColor" strokeWidth="1" strokeOpacity="0.1" />
-          <rect x="1280" y="275" width="220" height="350" stroke="currentColor" strokeWidth="1" strokeOpacity="0.1" />
-          <circle cx="320" cy="450" r="80" stroke="currentColor" strokeWidth="1" strokeOpacity="0.1" strokeDasharray="4,4" />
-          <circle cx="1280" cy="450" r="80" stroke="currentColor" strokeWidth="1" strokeOpacity="0.1" strokeDasharray="4,4" />
+          <rect x="100" y="275" width="220" height="350" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.12" />
+          <rect x="1280" y="275" width="220" height="350" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.12" />
+          <circle cx="320" cy="450" r="80" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.12" strokeDasharray="4,4" />
+          <circle cx="1280" cy="450" r="80" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.12" strokeDasharray="4,4" />
 
           {/* Tactical movements */}
-          <path d="M 400 250 Q 550 220 720 380" stroke="var(--color-accent)" strokeWidth="1.5" strokeOpacity="0.25" strokeDasharray="6,6" />
-          <path d="M 420 650 Q 600 680 750 520" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.15" strokeDasharray="6,6" />
-          <path d="M 780 480 Q 950 550 1150 450" stroke="var(--color-accent)" strokeWidth="1.5" strokeOpacity="0.25" strokeDasharray="6,6" />
+          <path d="M 400 250 Q 550 220 720 380" stroke="var(--color-accent)" strokeWidth="1.8" strokeOpacity="0.3" className="animate-tactical-path" />
+          <path d="M 420 650 Q 600 680 750 520" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.2" className="animate-tactical-path" />
+          <path d="M 780 480 Q 950 550 1150 450" stroke="var(--color-accent)" strokeWidth="1.8" strokeOpacity="0.3" className="animate-tactical-path" />
 
           {/* Arrows */}
-          <path d="M 715 370 L 720 380 L 710 382" fill="var(--color-accent)" fillOpacity="0.3" stroke="var(--color-accent)" strokeWidth="1" strokeOpacity="0.3" />
-          <path d="M 745 530 L 750 520 L 740 522" fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="1" strokeOpacity="0.2" />
-          <path d="M 1145 440 L 1150 450 L 1140 452" fill="var(--color-accent)" fillOpacity="0.3" stroke="var(--color-accent)" strokeWidth="1" strokeOpacity="0.3" />
+          <path d="M 715 370 L 720 380 L 710 382" fill="var(--color-accent)" fillOpacity="0.4" stroke="var(--color-accent)" strokeWidth="1" strokeOpacity="0.4" />
+          <path d="M 745 530 L 750 520 L 740 522" fill="currentColor" fillOpacity="0.25" stroke="currentColor" strokeWidth="1" strokeOpacity="0.25" />
+          <path d="M 1145 440 L 1150 450 L 1140 452" fill="var(--color-accent)" fillOpacity="0.4" stroke="var(--color-accent)" strokeWidth="1" strokeOpacity="0.4" />
+
+          {/* Glowing backdrops for Player Nodes */}
+          <circle cx="400" cy="250" r="16" fill="currentColor" className="animate-tactical-pulse-1" />
+          <circle cx="420" cy="650" r="16" fill="currentColor" className="animate-tactical-pulse-1" />
+          <circle cx="750" cy="450" r="20" fill="var(--color-accent)" className="animate-tactical-pulse-accent" />
+          <circle cx="1150" cy="450" r="16" fill="var(--color-accent)" className="animate-tactical-pulse-1" />
 
           {/* Circular Player Nodes */}
-          <circle cx="400" cy="250" r="16" fill="var(--color-background-surface)" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.2" />
-          <text x="400" y="255" textAnchor="middle" fontSize="12" fontWeight="bold" fill="currentColor" fillOpacity="0.3">4</text>
+          <circle cx="400" cy="250" r="16" fill="var(--color-background-surface)" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.25" />
+          <text x="400" y="254" textAnchor="middle" fontSize="12" fontWeight="bold" fill="currentColor" fillOpacity="0.35">4</text>
 
-          <circle cx="420" cy="650" r="16" fill="var(--color-background-surface)" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.2" />
-          <text x="420" y="655" textAnchor="middle" fontSize="12" fontWeight="bold" fill="currentColor" fillOpacity="0.3">2</text>
+          <circle cx="420" cy="650" r="16" fill="var(--color-background-surface)" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.25" />
+          <text x="420" y="654" textAnchor="middle" fontSize="12" fontWeight="bold" fill="currentColor" fillOpacity="0.35">2</text>
 
-          <circle cx="750" cy="450" r="20" fill="var(--color-background-surface)" stroke="var(--color-accent)" strokeWidth="2" strokeOpacity="0.3" />
-          <text x="750" y="455" textAnchor="middle" fontSize="14" fontWeight="bold" fill="var(--color-accent)" fillOpacity="0.4">8</text>
+          <circle cx="750" cy="450" r="20" fill="var(--color-background-surface)" stroke="var(--color-accent)" strokeWidth="2" strokeOpacity="0.4" />
+          <text x="750" y="455" textAnchor="middle" fontSize="14" fontWeight="bold" fill="var(--color-accent)" fillOpacity="0.5">8</text>
 
-          <circle cx="1150" cy="450" r="16" fill="var(--color-background-surface)" stroke="var(--color-accent)" strokeWidth="1.5" strokeOpacity="0.3" />
-          <text x="1150" y="455" textAnchor="middle" fontSize="12" fontWeight="bold" fill="var(--color-accent)" fillOpacity="0.4">9</text>
+          <circle cx="1150" cy="450" r="16" fill="var(--color-background-surface)" stroke="var(--color-accent)" strokeWidth="1.5" strokeOpacity="0.4" />
+          <text x="1150" y="454" textAnchor="middle" fontSize="12" fontWeight="bold" fill="var(--color-accent)" fillOpacity="0.5">9</text>
         </svg>
       </div>
 
       {/* Card container */}
-      <div className="w-full max-w-[440px] card bg-[var(--color-background-surface)] p-8 md:p-10 flex flex-col justify-between min-h-[580px] z-10">
+      <div className="w-full max-w-[440px] card bg-[var(--color-background-surface)] p-8 md:px-10 md:py-9 flex flex-col justify-between min-h-[600px] z-10 relative overflow-hidden shadow-[0_20px_50px_rgba(16,20,15,0.08)] border border-[var(--color-border)]">
+        {/* Top Decorative Accent Bar */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-[var(--color-accent)]" />
+
         <div>
+          {/* Editorial Tagline */}
+          <div className="text-center mb-6 mt-1">
+            <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-[var(--color-accent)] block mb-1">
+              PREDICT THE MATCH // MASTER THE TACTICS
+            </span>
+            <div className="w-full h-px bg-[var(--color-border)] opacity-40" />
+          </div>
+
           {/* Logo */}
-          <div className="flex items-center gap-2 mb-8">
+          <div className="flex items-center justify-center gap-2 mb-6">
             <img
               src="/logo.png"
               alt="Football Verse Logo"
-              className="w-8 h-8 rounded-full object-cover shadow-sm"
+              className="w-6 h-6 rounded-full object-cover shadow-sm"
             />
-            <span className="font-serif font-black text-xl tracking-tight text-[var(--color-text-primary)]">
+            <span className="font-serif font-black text-xs uppercase tracking-wider text-[var(--color-text-secondary)]">
               Football Verse
             </span>
           </div>
 
           {/* Title */}
-          <div className="mb-8">
+          <div className="mb-6 text-center">
             <h2 className="font-serif font-black text-3xl text-[var(--color-text-primary)] tracking-tight mb-2">
               Create Account
             </h2>
