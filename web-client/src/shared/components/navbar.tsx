@@ -466,18 +466,15 @@ export function Navbar() {
 
           <div className="pt-3 border-t border-[var(--color-border)]">
             {auth ? (
-              <div className="flex flex-col gap-3.5">
-                <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Hi, {auth.username}</span>
-                <button
-                  onClick={() => {
-                    setMobileOpen(false);
-                    handleLogout();
-                  }}
-                  className="w-full btn btn-secondary !py-2.5 !text-xs cursor-pointer"
-                >
-                  Logout
-                </button>
-              </div>
+              <button
+                onClick={() => {
+                  setMobileOpen(false);
+                  handleLogout();
+                }}
+                className="w-full btn btn-secondary !py-2.5 !text-xs cursor-pointer"
+              >
+                Logout
+              </button>
             ) : (
               <Link href="/login" onClick={() => setMobileOpen(false)} className="w-full block">
                 <button className="w-full btn btn-primary !py-2.5 !text-xs cursor-pointer">Login</button>
