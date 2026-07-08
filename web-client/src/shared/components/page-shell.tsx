@@ -31,7 +31,7 @@ function useNotificationsSSE() {
       query: {
         userId: auth.userId.toString(),
       },
-      transports: ["websocket", "polling"],
+      transports: ["polling", "websocket"],
     });
 
     socket.on("connect", () => {

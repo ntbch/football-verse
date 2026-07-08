@@ -116,157 +116,102 @@ export default function PredictionsPage() {
   return (
     <PublicShell>
       <div className="flex flex-col gap-6 w-full animate-fade-in">
-        {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-4 border-b border-[var(--color-border)] pb-4">
-          <div className="flex flex-col gap-1">
-            <h1 className="m-0 font-serif-title font-black text-3xl uppercase tracking-tight text-[var(--color-text-primary)] flex items-center gap-2">
-              <svg className="w-7 h-7 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v20M2 12h20M12 2c5.523 0 10 4.477 10 10S17.523 22 12 22 2 17.523 2 12 6.477 2 12 2z" />
-              </svg>
-              <span>Prediction Centre</span>
-            </h1>
-            <p className="text-xs text-[var(--color-text-secondary)] font-semibold">
-              Forecast real-world fixtures, check AI probabilities, and climb the leaderboard.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <select
-              value={league}
-              onChange={(e) => changeLeague(e.target.value)}
-              className="bg-[var(--color-background-body)] border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs font-bold uppercase rounded-lg px-3 py-1.5 focus:outline-none"
-            >
-              <option value="premier-league">Premier League</option>
-              <option value="championship">Championship</option>
-              <option value="champions-league">Champions League</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Stats Section */}
+        {/* Stats Section at the very top */}
         {auth && stats && (
-          <section className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div className="card p-3 md:p-4 grid grid-cols-5 divide-x divide-[var(--color-border)] bg-[var(--color-background-surface)] shadow-premium">
             {[
-              { icon: (
-                  <svg className="w-5 h-5 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                ), label: "Points", value: stats.totalPoints ?? 0, accent: true },
-              { icon: (
-                  <svg className="w-5 h-5 text-[var(--color-text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2" />
-                  </svg>
-                ), label: "Streak", value: stats.currentStreak ?? 0 },
+              { label: "Points", value: stats.totalPoints ?? 0, accent: true },
+              { label: "Streak", value: stats.currentStreak ?? 0 },
               {
-                icon: (
-                  <svg className="w-5 h-5 text-[var(--color-text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" />
-                    <circle cx="12" cy="12" r="6" />
-                    <circle cx="12" cy="12" r="2" />
-                  </svg>
-                ),
                 label: "Accuracy",
                 value: `${stats.totalPicks ? Math.round((stats.correctPicks / stats.totalPicks) * 100) : 0}%`,
               },
-              { icon: (
-                  <svg className="w-5 h-5 text-[var(--color-text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L12 2l6 10-6 10-6-10z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v20M6 12h12" />
-                  </svg>
-                ), label: "Correct Picks", value: stats.correctPicks ?? 0 },
-              { icon: (
-                  <svg className="w-5 h-5 text-[var(--color-text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.91 11.672a.375.375 0 010 .656l-5.603 3.113a.375.375 0 01-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112z" />
-                  </svg>
-                ), label: "Played", value: stats.totalPicks ?? 0 },
+              { label: "Correct", value: stats.correctPicks ?? 0 },
+              { label: "Played", value: stats.totalPicks ?? 0 },
             ].map((s) => (
               <div
                 key={s.label}
-                className={`card p-4 flex flex-col items-center gap-1.5 ${
-                  s.accent ? "border-[var(--color-accent)]/30 bg-[var(--color-accent)]/5" : ""
-                }`}
+                className="flex flex-col items-center justify-center px-1 first:pl-0 last:pr-0"
               >
-                <span>{s.icon}</span>
-                <span className="text-[10px] font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">
+                <span className="text-[8px] sm:text-[10px] font-bold text-[var(--color-text-secondary)] uppercase tracking-wider text-center">
                   {s.label}
                 </span>
-                <span className="text-lg font-black text-[var(--color-text-primary)] tabular-nums">
+                <span className={`text-sm sm:text-lg font-black mt-0.5 tabular-nums ${s.accent ? "text-[var(--color-accent)]" : "text-[var(--color-text-primary)]"
+                  }`}>
                   {s.value}
                 </span>
               </div>
             ))}
-          </section>
+          </div>
         )}
+
+        {/* Controls Bar: League Select + Round Select side-by-side */}
+        <div className="flex items-center gap-2 border-b border-[var(--color-border)] pb-4 w-full">
+          {/* League Dropdown */}
+          <div className="relative">
+            <select
+              value={league}
+              onChange={(e) => changeLeague(e.target.value)}
+              className="appearance-none bg-white border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs font-bold uppercase rounded-xl pl-4 pr-9 py-2.5 focus:outline-none cursor-pointer shadow-sm hover:bg-gray-50 transition-colors"
+            >
+              <option value="premier-league">Premier League</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+              <svg className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Round Dropdown */}
+          {availableRounds.length > 0 && (
+            <div className="relative">
+              <select
+                value={selectedRound || ""}
+                onChange={(e) => setSelectedRound(e.target.value)}
+                className="appearance-none bg-white border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs font-bold uppercase rounded-xl pl-4 pr-9 py-2.5 focus:outline-none cursor-pointer shadow-sm hover:bg-gray-50 transition-colors"
+              >
+                {availableRounds.map((r: string) => (
+                  <option key={r} value={r}>
+                    {r.replace("-", " ").toUpperCase()}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                <svg className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           {/* Left: Fixtures */}
           <div className="lg:col-span-2 flex flex-col gap-4">
-            {/* Tabs */}
-            <div className="flex border-b border-[var(--color-border)] text-xs font-black uppercase tracking-[0.12em]">
-              {(["upcoming", "live", "results"] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => {
-                    setTab(t);
-                    setExpandedId(null);
-                  }}
-                  className={`pb-2 px-4 border-b-2 transition-all duration-200 cursor-pointer ${
-                    tab === t
-                      ? "border-[var(--color-accent)] text-[var(--color-accent)]"
-                      : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-                  }`}
-                >
-                  {t.toUpperCase()}
-                </button>
-              ))}
-            </div>
-
-            {/* Rounds Selector */}
-            {availableRounds.length > 0 && (
-              <div className="flex items-center justify-between gap-2 p-1.5 rounded-2xl bg-white border border-[var(--color-border)] shadow-sm">
-                <button
-                  disabled={availableRounds.indexOf(selectedRound || "") <= 0}
-                  onClick={() => {
-                    const idx = availableRounds.indexOf(selectedRound || "");
-                    if (idx > 0) setSelectedRound(availableRounds[idx - 1]);
-                  }}
-                  className="btn btn-secondary !px-2.5 !py-1 !text-[10px] active:scale-[0.98] transition-all"
-                >
-                  ← Prev
-                </button>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
-                    Round:
-                  </span>
-                  <select
-                    value={selectedRound || ""}
-                    onChange={(e) => setSelectedRound(e.target.value)}
-                    className="bg-transparent text-xs font-bold focus:outline-none cursor-pointer"
+            {/* Tabs - Premium Segmented Control / Pill Style */}
+            <div className="bg-[#E5DFD3] p-1 rounded-xl flex w-full shadow-inner">
+              {(["upcoming", "live", "results"] as const).map((t) => {
+                const isActive = tab === t;
+                const label = t === "upcoming" ? "Upcoming" : t === "live" ? "Live" : "Results";
+                return (
+                  <button
+                    key={t}
+                    onClick={() => {
+                      setTab(t);
+                      setExpandedId(null);
+                    }}
+                    className={`flex-1 py-2 text-xs font-bold text-center rounded-lg transition-all duration-200 cursor-pointer ${isActive
+                      ? "bg-white text-[var(--color-text-primary)] shadow-sm font-black"
+                      : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                      }`}
                   >
-                    {availableRounds.map((r: string) => (
-                      <option key={r} value={r}>
-                        {r.replace("-", " ").toUpperCase()}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <button
-                  disabled={
-                    availableRounds.indexOf(selectedRound || "") >= availableRounds.length - 1
-                  }
-                  onClick={() => {
-                    const idx = availableRounds.indexOf(selectedRound || "");
-                    if (idx < availableRounds.length - 1) setSelectedRound(availableRounds[idx + 1]);
-                  }}
-                  className="btn btn-secondary !px-2.5 !py-1 !text-[10px] active:scale-[0.98] transition-all"
-                >
-                  Next →
-                </button>
-              </div>
-            )}
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
 
             {/* Fixtures list */}
             <div className="card overflow-hidden">
@@ -300,9 +245,8 @@ export default function PredictionsPage() {
                         <div key={fix.id} className="w-full">
                           <button
                             onClick={() => setExpandedId(isExpanded ? null : fix.id)}
-                            className={`w-full flex items-center px-4 md:px-5 py-4 hover:bg-gray-50/50 transition-colors text-left gap-2 ${
-                              predicted ? "border-l-[3px] border-l-green-500" : "border-l-[3px] border-l-transparent"
-                            }`}
+                            className={`w-full flex items-center px-4 md:px-5 py-4 hover:bg-gray-50/50 transition-colors text-left gap-2 ${predicted ? "border-l-[3px] border-l-green-500" : "border-l-[3px] border-l-transparent"
+                              }`}
                           >
                             {/* Home */}
                             <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
