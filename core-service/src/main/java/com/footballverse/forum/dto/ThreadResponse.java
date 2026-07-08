@@ -16,6 +16,7 @@ public record ThreadResponse(
         Long bestAnswerPostId,
         boolean followed,
         long replyCount,
+        long likes,
         Instant lastActivityAt
 ) {
 }

@@ -3,6 +3,8 @@ package com.footballverse.search;
 import com.footballverse.common.pagination.PageResponse;
 import com.footballverse.forum.ForumThread;
 import com.footballverse.forum.ForumThreadRepository;
+import com.footballverse.forum.ForumPostRepository;
+import com.footballverse.forum.ForumPostLikeRepository;
 import com.footballverse.forum.dto.ThreadResponse;
 import com.footballverse.news.NewsArticle;
 import com.footballverse.news.NewsArticleRepository;
@@ -28,6 +30,8 @@ public class SearchService {
 
     private final NewsArticleRepository articles;
     private final ForumThreadRepository threads;
+    private final ForumPostRepository posts;
+    private final ForumPostLikeRepository postLikes;
     private final NewsLikeRepository likes;
     private final NewsBookmarkRepository bookmarks;
     private final CurrentUser currentUser;
@@ -81,7 +85,8 @@ public class SearchService {
                 thread.isSolved(),
                 thread.getBestAnswer() == null ? null : thread.getBestAnswer().getId(),
                 false,
-                0,
+                posts.countByThreadIdAndHiddenFalse(thread.getId()),
+                postLikes.countByThreadId(thread.getId()),
                 thread.getLastActivityAt()
         );
     }

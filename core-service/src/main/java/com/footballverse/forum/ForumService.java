@@ -348,6 +348,7 @@ public class ForumService {
                 thread.getBestAnswer() == null ? null : thread.getBestAnswer().getId(),
                 followed(thread),
                 posts.countByThreadIdAndHiddenFalse(thread.getId()),
+                forumPostLikeRepository.countByThreadId(thread.getId()),
                 thread.getLastActivityAt()
         );
     }
