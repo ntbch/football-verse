@@ -152,7 +152,7 @@ export default function MatchSimulatorPage() {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start w-full">
             
             {/* Left Panel: Configuration Form */}
-            <div className="lg:col-span-2 border border-[var(--color-border)] bg-[var(--color-background-surface)] rounded-2xl p-5 shadow-premium flex flex-col gap-5">
+            <div className="lg:col-span-2 order-2 lg:order-1 border border-[var(--color-border)] bg-[var(--color-background-surface)] rounded-2xl p-5 shadow-premium flex flex-col gap-5">
               <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-secondary)] border-b border-[var(--color-border)] pb-2">
                 Simulation Setup
               </span>
@@ -263,7 +263,7 @@ export default function MatchSimulatorPage() {
             </div>
 
             {/* Right Panel: Live Match Monitor */}
-            <div className="lg:col-span-3 flex flex-col gap-5 w-full">
+            <div className="lg:col-span-3 order-1 lg:order-2 flex flex-col gap-5 w-full">
               
               {/* Score Display Widget */}
               <div className="p-6 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-premium relative text-center">

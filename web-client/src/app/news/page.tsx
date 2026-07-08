@@ -12,6 +12,7 @@ import { LoadingBlock } from "@/shared/components/state-blocks";
 
 export default function NewsListingPage() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [page, setPage] = useState(0);
   const size = 24;
 
@@ -45,31 +46,93 @@ export default function NewsListingPage() {
   return (
     <PublicShell>
       <div className="flex flex-col gap-6 w-full animate-fade-in">
-        {/* Editorial Title Banner */}
-        <div className="text-center py-6 border-b border-[var(--color-border)]">
-          <h1 className="m-0 font-serif-title font-black text-4xl md:text-5xl uppercase tracking-tight text-[var(--color-text-primary)]">
-            The Touchline News
-          </h1>
-          <p className="mt-2 font-serif italic text-sm md:text-base text-[var(--color-text-secondary)]">
-            crawled updates, columns, and editorial publications
-          </p>
-        </div>
+
 
         {/* Main 2-Column Content Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
           {/* Left Sidebar */}
-          <aside className="lg:col-span-1 flex flex-col gap-4 lg:sticky lg:top-24">
-            {/* Categories Box */}
-            <div className="card overflow-hidden">
+          <aside className="lg:col-span-1 flex flex-col gap-4 lg:sticky lg:top-24 w-full">
+            {/* Mobile/Tablet Category Selector (Dropdown Popover) */}
+            <div className="lg:hidden relative w-full">
+              {isDropdownOpen && (
+                <div 
+                  className="fixed inset-0 z-30" 
+                  onClick={() => setIsDropdownOpen(false)}
+                />
+              )}
+
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="w-full px-5 py-3.5 rounded-2xl bg-[var(--color-background-surface)] border border-[var(--color-border)] text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text-primary)] flex items-center justify-between shadow-sm active:scale-[0.99] transition-all z-40 relative cursor-pointer"
+              >
+                <span className="flex items-center gap-2">
+                  📰 Category:{" "}
+                  <span className="text-[var(--color-accent)]">
+                    {selectedCategory === null
+                      ? "All Articles"
+                      : categories.find((c) => c.id === selectedCategory)?.name || "All Articles"}
+                  </span>
+                </span>
+                <svg
+                  className={`w-4 h-4 text-[var(--color-text-secondary)] transition-transform duration-200 ${
+                    isDropdownOpen ? "rotate-180" : ""
+                  }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {isDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-2 z-40 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-premium p-2 flex flex-col gap-1.5 animate-fade-in">
+                  <button
+                    onClick={() => {
+                      handleCategoryChange(null);
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`w-full px-4 py-2.5 rounded-xl text-left text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                      selectedCategory === null
+                        ? "bg-[var(--color-accent)] text-white shadow-sm"
+                        : "text-[var(--color-text-secondary)] hover:bg-gray-50 hover:text-[var(--color-text-primary)]"
+                    }`}
+                  >
+                    All Articles
+                  </button>
+                  {categories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => {
+                        handleCategoryChange(cat.id);
+                        setIsDropdownOpen(false);
+                      }}
+                      className={`w-full px-4 py-2.5 rounded-xl text-left text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                        selectedCategory === cat.id
+                          ? "bg-[var(--color-accent)] text-white shadow-sm"
+                          : "text-[var(--color-text-secondary)] hover:bg-gray-50 hover:text-[var(--color-text-primary)]"
+                      }`}
+                    >
+                      {cat.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Desktop Categories Box */}
+            <div className="card overflow-hidden hidden lg:block">
+              {/* Desktop Header */}
               <div className="px-5 py-3.5 border-b border-[var(--color-border)] bg-gray-50/50">
                 <h3 className="font-serif-title font-black text-sm m-0 uppercase tracking-wider text-[var(--color-text-primary)] flex items-center gap-1.5">
                   📰 Categories
                 </h3>
               </div>
-              <div className="p-3 flex flex-col gap-1">
+              <div className="p-2.5 flex flex-col gap-1.5">
                 <button
                   onClick={() => handleCategoryChange(null)}
-                  className={`w-full px-4 py-2.5 rounded-xl text-left text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
+                  className={`px-3 py-2.5 rounded-xl text-left text-xs font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
                     selectedCategory === null
                       ? "bg-[var(--color-accent)] text-white shadow-sm"
                       : "text-[var(--color-text-secondary)] hover:bg-gray-50 hover:text-[var(--color-text-primary)]"
@@ -81,7 +144,7 @@ export default function NewsListingPage() {
                   <button
                     key={cat.id}
                     onClick={() => handleCategoryChange(cat.id)}
-                    className={`w-full px-4 py-2.5 rounded-xl text-left text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
+                    className={`px-3 py-2.5 rounded-xl text-left text-xs font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
                       selectedCategory === cat.id
                         ? "bg-[var(--color-accent)] text-white shadow-sm"
                         : "text-[var(--color-text-secondary)] hover:bg-gray-50 hover:text-[var(--color-text-primary)]"
@@ -95,7 +158,7 @@ export default function NewsListingPage() {
 
             {/* Trending Articles Widget */}
             {articles.length > 0 && (
-              <div className="card overflow-hidden">
+              <div className="card overflow-hidden hidden lg:block">
                 <div className="px-5 py-3.5 border-b border-[var(--color-border)] bg-gray-50/50">
                   <h3 className="font-serif-title font-black text-sm m-0 uppercase tracking-wider text-[var(--color-text-primary)] flex items-center gap-1.5">
                     <svg className="w-4 h-4 text-[var(--color-accent)] animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -145,7 +208,7 @@ export default function NewsListingPage() {
             )}
 
             {/* Quick Info Card */}
-            <div className="card overflow-hidden">
+            <div className="card overflow-hidden hidden lg:block">
               <div className="px-5 py-3.5 border-b border-[var(--color-border)] bg-gray-50/50">
                 <h3 className="font-serif-title font-black text-sm m-0 uppercase tracking-wider text-[var(--color-text-primary)] flex items-center gap-1.5">
                   <svg className="w-4 h-4 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">

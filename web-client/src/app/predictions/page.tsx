@@ -124,10 +124,10 @@ export default function PredictionsPage() {
                 <circle cx="12" cy="12" r="10" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v20M2 12h20M12 2c5.523 0 10 4.477 10 10S17.523 22 12 22 2 17.523 2 12 6.477 2 12 2z" />
               </svg>
-              <span>Predictions & Arena</span>
+              <span>Prediction Centre</span>
             </h1>
             <p className="text-xs text-[var(--color-text-secondary)] font-semibold">
-              Lock in your scores, analyze AI forecasts, and track the global leaderboard.
+              Forecast real-world fixtures, check AI probabilities, and climb the leaderboard.
             </p>
           </div>
 

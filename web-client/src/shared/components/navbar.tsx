@@ -125,9 +125,24 @@ export function Navbar() {
               { href: "/news", label: "News" },
               { href: "/forum", label: "Forum" },
               { href: "/predictions", label: "Predictions" },
-              { href: "/matches", label: "Simulator" },
+              { href: "/matches", label: "Tactics Arena" },
             ].map(({ href, label }) => {
               const active = isActive(href);
+              if (href === "/matches") {
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={`relative px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 active:scale-95 border ${
+                      active
+                        ? "bg-[var(--color-accent)] text-black border-[var(--color-accent)] shadow-md shadow-[var(--color-accent)]/20"
+                        : "border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--color-accent)] hover:text-black hover:shadow-md hover:shadow-[var(--color-accent)]/20"
+                    }`}
+                  >
+                    {label}
+                  </Link>
+                );
+              }
               return (
                 <Link
                   key={href}
@@ -351,9 +366,28 @@ export function Navbar() {
               { href: "/news", label: "News" },
               { href: "/forum", label: "Forum" },
               { href: "/predictions", label: "Predictions" },
-              { href: "/matches", label: "Simulator" },
+              { href: "/matches", label: "Tactics Arena" },
             ].map(({ href, label }) => {
               const active = isActive(href);
+              if (href === "/matches") {
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`transition-all duration-300 py-2.5 my-1.5 px-3.5 rounded-xl border flex items-center justify-between font-black active:scale-[0.98] ${
+                      active
+                        ? "bg-[var(--color-accent)] text-black border-[var(--color-accent)] shadow-md shadow-[var(--color-accent)]/20"
+                        : "border-[var(--color-accent)] text-[var(--color-accent)] bg-[var(--color-accent)]/5 hover:bg-[var(--color-accent)] hover:text-black"
+                    }`}
+                  >
+                    <span>{label}</span>
+                    <svg className={`w-3.5 h-3.5 ${active ? "text-black" : "text-[var(--color-accent)]"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                );
+              }
               return (
                 <Link
                   key={href}
