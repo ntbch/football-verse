@@ -73,16 +73,22 @@ function getAuthorInitials(username?: string | null) {
   return username.substring(0, 2).toUpperCase();
 }
 
-const AVATAR_COLORS = [
-  "bg-red-500","bg-amber-500","bg-emerald-500","bg-blue-500",
-  "bg-purple-500","bg-pink-500","bg-indigo-500","bg-teal-500",
+const AVATAR_GRADS = [
+  "from-pink-500 to-rose-500",
+  "from-amber-400 to-orange-500",
+  "from-emerald-400 to-teal-600",
+  "from-blue-500 to-indigo-600",
+  "from-violet-500 to-purple-600",
+  "from-fuchsia-500 to-pink-600",
+  "from-sky-400 to-blue-600",
+  "from-cyan-500 to-blue-500"
 ];
 
-function avatarColor(username?: string | null) {
-  if (!username) return AVATAR_COLORS[0];
+function avatarGrad(username?: string | null) {
+  if (!username) return AVATAR_GRADS[0];
   let hash = 0;
   for (let i = 0; i < username.length; i++) hash = username.charCodeAt(i) + ((hash << 5) - hash);
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+  return AVATAR_GRADS[Math.abs(hash) % AVATAR_GRADS.length];
 }
 
 // ─────────────────────────────────────────────
@@ -170,7 +176,10 @@ export function CategoryList({ categories, activeCategorySlug, onSelect }: Categ
           className="w-full px-5 py-3.5 rounded-2xl bg-[var(--color-background-surface)] border border-[var(--color-border)] text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text-primary)] flex items-center justify-between shadow-sm active:scale-[0.99] transition-all z-40 relative cursor-pointer"
         >
           <span className="flex items-center gap-2">
-            💬 Topic:{" "}
+            <svg className="w-4 h-4 text-[var(--color-accent)] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            Topic:{" "}
             <span className="text-[var(--color-accent)]">
               {activeCat ? activeCat.name : "All Topics"}
             </span>
@@ -371,8 +380,8 @@ export function ThreadCard({ thread, index = 0 }: ThreadCardProps) {
         <div className="flex items-center gap-2 flex-wrap">
           {/* Author avatar chip */}
           <div className="flex items-center gap-1.5 shrink-0">
-            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black text-white shrink-0 ${avatarColor(thread.authorUsername)}`}>
-              {getAuthorInitials(thread.authorUsername)}
+            <span className="w-7 h-7 rounded-full bg-[var(--color-background-body)] border border-[var(--color-border)] flex items-center justify-center font-bold text-xs text-[var(--color-text-primary)] shadow-sm shrink-0 group-hover:border-[var(--color-accent)]/50 transition-colors">
+              {(thread.authorUsername?.[0] || "?").toUpperCase()}
             </span>
             <span className="text-[10px] font-bold text-[var(--color-text-secondary)]">
               @{thread.authorUsername}
@@ -385,7 +394,8 @@ export function ThreadCard({ thread, index = 0 }: ThreadCardProps) {
           {/* Status badges */}
           <div className="flex items-center gap-1.5 ml-auto">
             {isNew && !thread.pinned && (
-              <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[8px] font-black uppercase tracking-wider border border-blue-100">
+              <span className="px-2.5 py-0.5 rounded-full bg-[var(--color-accent)]/8 text-[var(--color-accent)] text-[8px] font-black uppercase tracking-wider border border-[var(--color-accent)]/20 flex items-center gap-1.5 shadow-sm">
+                <span className="w-1 h-1 rounded-full bg-[var(--color-accent)] animate-pulse" />
                 New
               </span>
             )}
@@ -546,7 +556,7 @@ export function CreateThreadModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/25 backdrop-blur-[2px]" />
       <div className="relative w-full max-w-xl bg-white border border-[var(--color-border)] rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] bg-gradient-to-r from-[var(--color-accent)]/5 to-transparent">

@@ -43,6 +43,13 @@ public class NotificationService {
         notifications.findByUserOrderByCreatedAtDesc(currentUser.get()).forEach(notification -> notification.setReadAt(Instant.now()));
     }
 
+    @Transactional
+    public void delete(Long id) {
+        Notification notification = notifications.findByIdAndUser(id, currentUser.get())
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
+        notifications.delete(notification);
+    }
+
     private NotificationResponse toResponse(Notification notification) {
         return new NotificationResponse(
                 notification.getId(),

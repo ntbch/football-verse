@@ -20,6 +20,7 @@ export function Navbar() {
   const [bellOpen, setBellOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
+  const mobileBellRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
 
   const isActive = (path: string) => {
@@ -44,10 +45,26 @@ export function Navbar() {
     },
   });
 
+  const markSingleReadMutation = useMutation({
+    mutationFn: (id: number) => http.patch(`/notifications/${id}/read`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: qk.user.notifications() });
+    },
+  });
+
+  const deleteNotificationMutation = useMutation({
+    mutationFn: (id: number) => http.delete(`/notifications/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: qk.user.notifications() });
+    },
+  });
+
   // Close dropdowns on outside clicks
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
+      const inBell = (bellRef.current && bellRef.current.contains(e.target as Node)) || 
+                     (mobileBellRef.current && mobileBellRef.current.contains(e.target as Node));
+      if (!inBell) {
         setBellOpen(false);
       }
       if (userRef.current && !userRef.current.contains(e.target as Node)) {
@@ -76,6 +93,67 @@ export function Navbar() {
 
   const hasRole = (role: string) => {
     return auth?.roles?.includes(role as any) ?? false;
+  };
+
+  const renderNotificationsDropdown = () => {
+    return (
+      <div className="absolute right-0 mt-2 w-80 max-w-[90vw] bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-lg overflow-hidden z-50 animate-fade-in">
+        <div className="px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-background-body)]/30 flex items-center justify-between">
+          <h4 className="m-0 font-serif font-black text-sm text-[var(--color-text-primary)]">Notifications</h4>
+          {notifications.length > 0 && (
+            <button
+              onClick={() => markReadMutation.mutate()}
+              className="text-[9px] font-bold uppercase text-[var(--color-accent)] hover:underline active:scale-[0.98] transition-all"
+            >
+              Mark all read
+            </button>
+          )}
+        </div>
+        <div className="max-h-72 overflow-y-auto divide-y divide-[var(--color-border)]/30">
+          {notifications.length === 0 ? (
+            <div className="px-4 py-8 text-center">
+              <p className="text-xs text-[var(--color-text-secondary)] font-medium">No notifications yet</p>
+            </div>
+          ) : (
+            notifications.slice(0, 50).map((notif) => (
+              <div
+                key={notif.id}
+                className={`group px-4 py-3 transition-colors flex items-start justify-between gap-2 ${!notif.read ? "bg-[var(--color-accent)]/5" : "hover:bg-[var(--color-background-body)]/20"}`}
+              >
+                <Link
+                  href={notif.linkUrl || "#"}
+                  onClick={() => {
+                    setBellOpen(false);
+                    if (!notif.read) {
+                      markSingleReadMutation.mutate(notif.id);
+                    }
+                  }}
+                  className="flex-1 min-w-0"
+                >
+                  <p className="text-[11px] text-[var(--color-text-primary)] font-medium leading-snug m-0 group-hover:text-[var(--color-accent)] transition-colors">
+                    {notif.message}
+                  </p>
+                  <span className="text-[9px] text-[var(--color-text-secondary)] mt-1 block">
+                    {timeAgo(notif.createdAt)}
+                  </span>
+                </Link>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    deleteNotificationMutation.mutate(notif.id);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 text-[9px] text-red-500 hover:text-red-700 transition-all font-bold uppercase cursor-pointer"
+                  title="Delete notification"
+                >
+                  Delete
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    );
   };
 
   const timeAgo = (dateStr: string) => {
@@ -211,42 +289,7 @@ export function Navbar() {
                     )}
                   </button>
 
-                  {bellOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-80 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-lg overflow-hidden z-50 animate-fade-in">
-                      <div className="px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-background-body)]/30 flex items-center justify-between">
-                        <h4 className="m-0 font-serif font-black text-sm text-[var(--color-text-primary)]">Notifications</h4>
-                        {notifications.length > 0 && (
-                          <button
-                            onClick={() => markReadMutation.mutate()}
-                            className="text-[9px] font-bold uppercase text-[var(--color-accent)] hover:underline active:scale-[0.98] transition-all"
-                          >
-                            Mark all read
-                          </button>
-                        )}
-                      </div>
-                      <div className="max-h-72 overflow-y-auto divide-y divide-[var(--color-border)]/30">
-                        {notifications.length === 0 ? (
-                          <div className="px-4 py-8 text-center">
-                            <p className="text-xs text-[var(--color-text-secondary)] font-medium">No notifications yet</p>
-                          </div>
-                        ) : (
-                          notifications.slice(0, 15).map((notif) => (
-                            <div
-                              key={notif.id}
-                              className={`px-4 py-3 transition-colors ${!notif.read ? "bg-[var(--color-accent)]/5" : "hover:bg-[var(--color-background-body)]/20"}`}
-                            >
-                              <p className="text-[11px] text-[var(--color-text-primary)] font-medium leading-snug m-0">
-                                {notif.message}
-                              </p>
-                              <span className="text-[9px] text-[var(--color-text-secondary)] mt-1 block">
-                                {timeAgo(notif.createdAt)}
-                              </span>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  )}
+                  {bellOpen && renderNotificationsDropdown()}
                 </div>
 
                 {/* User Dropdown */}
@@ -309,22 +352,25 @@ export function Navbar() {
         {/* Mobile menu button */}
         <div className="md:hidden flex items-center gap-2">
           {auth && (
-            <button
-              onClick={() => {
-                setBellOpen(!bellOpen);
-                if (!bellOpen && unreadCount > 0) markReadMutation.mutate();
-              }}
-              className="relative p-1.5 rounded-full hover:bg-black/5 transition-colors active:scale-95 duration-150"
-            >
-              <svg className="w-5 h-5 text-[var(--color-text-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-              </svg>
-              {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
-            </button>
+            <div ref={mobileBellRef} className="relative">
+              <button
+                onClick={() => {
+                  setBellOpen(!bellOpen);
+                  if (!bellOpen && unreadCount > 0) markReadMutation.mutate();
+                }}
+                className="relative p-1.5 rounded-full hover:bg-black/5 transition-colors active:scale-95 duration-150"
+              >
+                <svg className="w-5 h-5 text-[var(--color-text-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                </svg>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+              {bellOpen && renderNotificationsDropdown()}
+            </div>
           )}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}

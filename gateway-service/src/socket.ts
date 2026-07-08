@@ -26,6 +26,22 @@ export const setupSocket = (server: HttpServer): void => {
       console.log(`Socket ${socket.id} joined user room: ${room}`);
     }
 
+    socket.on('join_thread', (data: { slug: string }) => {
+      if (data && data.slug) {
+        const room = `room:thread:${data.slug}`;
+        socket.join(room);
+        console.log(`Socket ${socket.id} joined thread room: ${room}`);
+      }
+    });
+
+    socket.on('leave_thread', (data: { slug: string }) => {
+      if (data && data.slug) {
+        const room = `room:thread:${data.slug}`;
+        socket.leave(room);
+        console.log(`Socket ${socket.id} left thread room: ${room}`);
+      }
+    });
+
     socket.on('disconnect', () => {
       console.log(`Socket ${socket.id} disconnected`);
     });
@@ -40,12 +56,12 @@ export const setupSocket = (server: HttpServer): void => {
     }
   });
 
-  // Pattern subscribe to user notifications
-  redisSub.psubscribe('realtime:notifications:*', (err) => {
+  // Pattern subscribe to user notifications and thread replies
+  redisSub.psubscribe('realtime:notifications:*', 'realtime:threads:*', (err) => {
     if (err) {
-      console.error('Failed to psubscribe to Redis pattern realtime:notifications:*:', err);
+      console.error('Failed to psubscribe to Redis patterns:', err);
     } else {
-      console.log('Successfully pattern-subscribed to realtime:notifications:*');
+      console.log('Successfully pattern-subscribed to realtime:notifications:* and realtime:threads:*');
     }
   });
 
@@ -66,16 +82,26 @@ export const setupSocket = (server: HttpServer): void => {
     try {
       const data: unknown = JSON.parse(message);
       
-      // Channel: realtime:notifications:<userId>
       const parts = channel.split(':');
-      const userId = parts[2];
       
-      if (userId) {
-        const room = `room:user:${userId}`;
-        console.log(`[Socket Gateway] Forwarding notification to room: ${room}`);
-        io.to(room).emit('notification', data);
-      } else {
-        console.warn('[Socket Gateway] userId not found in channel name:', channel);
+      if (pattern === 'realtime:notifications:*') {
+        const userId = parts[2];
+        if (userId) {
+          const room = `room:user:${userId}`;
+          console.log(`[Socket Gateway] Forwarding notification to room: ${room}`);
+          io.to(room).emit('notification', data);
+        } else {
+          console.warn('[Socket Gateway] userId not found in channel name:', channel);
+        }
+      } else if (pattern === 'realtime:threads:*') {
+        const slug = parts[2];
+        if (slug) {
+          const room = `room:thread:${slug}`;
+          console.log(`[Socket Gateway] Forwarding new reply to room: ${room}`);
+          io.to(room).emit('new_reply', data);
+        } else {
+          console.warn('[Socket Gateway] thread slug not found in channel name:', channel);
+        }
       }
     } catch (error: unknown) {
       console.error(`Error parsing pmessage on channel ${channel}:`, error);

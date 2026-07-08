@@ -48,6 +48,9 @@ public class ForumService {
     private final NotificationService notifications;
     private final MentionService mentionService;
 
+    private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+
     @Transactional(readOnly = true)
     public List<ForumCategoryResponse> categories() {
         return categories.findAll().stream()
@@ -121,7 +124,26 @@ public class ForumService {
         thread.setLastActivityAt(Instant.now());
         mentionService.processMentions(user, request.content(), "%s mentioned you in a forum post", "/forum/threads/" + thread.getSlug());
         notifyReplySubscribers(thread, user);
-        return toPost(saved);
+
+        PostResponse response = toPost(saved);
+
+        // Publish to Redis for real-time thread page update after commit
+        org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+            new org.springframework.transaction.support.TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    try {
+                        String json = objectMapper.writeValueAsString(response);
+                        redisTemplate.convertAndSend("realtime:threads:" + thread.getSlug(), json);
+                        log.info("Published real-time reply for thread {} to Redis after commit", thread.getSlug());
+                    } catch (Exception e) {
+                        log.error("Failed to publish real-time reply to Redis", e);
+                    }
+                }
+            }
+        );
+
+        return response;
     }
 
     @Transactional

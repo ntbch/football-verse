@@ -1,17 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PublicShell } from "@/shared/components/page-shell";
 import { qk } from "@/shared/lib/query-keys";
-import { http, data, apiErrorMessage } from "@/shared/lib/api-client";
+import { http, data, apiErrorMessage, apiBaseUrl } from "@/shared/lib/api-client";
 import { useAuthStore } from "@/shared/lib/auth-store";
 import type { ThreadDetailResponse, PostResponse } from "@/shared/lib/types";
 import { LoadingBlock, ErrorBlock } from "@/shared/components/state-blocks";
 import { MentionRenderer } from "@/shared/components/MentionRenderer";
 import { useToast } from "@/shared/components/toast";
+import { io, Socket } from "socket.io-client";
 
 export default function ThreadDetailPage() {
   const params = useParams();
@@ -25,6 +26,46 @@ export default function ThreadDetailPage() {
   const [reportPostId, setReportPostId] = useState<number | null>(null);
   const [reportReason, setReportReason] = useState("");
   const [showReportModal, setShowReportModal] = useState(false);
+
+  // Real-time reply update via WebSockets
+  useEffect(() => {
+    let socketUrl = "http://localhost:8000";
+    try {
+      socketUrl = new URL(apiBaseUrl).origin;
+    } catch (e) {
+      console.error("Failed to parse apiBaseUrl for socket connection", e);
+    }
+
+    const socket: Socket = io(socketUrl, {
+      query: {
+        userId: auth?.userId?.toString() || "",
+      },
+      transports: ["polling", "websocket"],
+    });
+
+    socket.on("connect", () => {
+      socket.emit("join_thread", { slug });
+    });
+
+    socket.on("new_reply", (newPost: any) => {
+      // Invalidate thread query to fetch new replies list
+      queryClient.invalidateQueries({ queryKey: qk.forum.thread(slug) });
+      
+      // Show toast if the reply was by someone else
+      if (auth && newPost.author !== auth.username) {
+        toast({
+          body: `${newPost.author} posted a new reply!`,
+          type: "info",
+          autoHideDuration: 3000,
+        });
+      }
+    });
+
+    return () => {
+      socket.emit("leave_thread", { slug });
+      socket.disconnect();
+    };
+  }, [slug, auth?.userId, auth?.username, queryClient, toast]);
 
   // 1. Fetch thread details
   const { data: detail, isLoading, error } = useQuery({
@@ -266,12 +307,14 @@ export default function ThreadDetailPage() {
                       <span>·</span>
                       <span>{new Date(post.createdAt).toLocaleDateString()}</span>
                       {index === 0 && (
-                        <span className="bg-gray-200 text-[var(--color-text-primary)] text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase">
+                        <span className="px-2 py-0.5 rounded-full bg-slate-900 text-white text-[8px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1">
+                          <span className="w-1 h-1 rounded-full bg-slate-300 animate-pulse" />
                           OP
                         </span>
                       )}
                       {isBestAnswer && (
-                        <span className="bg-green-100 text-green-700 text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase">
+                        <span className="px-2.5 py-0.5 rounded-full bg-green-50 text-green-700 text-[8px] font-black uppercase tracking-wider border border-green-200 flex items-center gap-1.5 shadow-sm">
+                          <span className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />
                           Best Answer
                         </span>
                       )}

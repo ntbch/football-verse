@@ -32,4 +32,10 @@ public class NotificationController {
         notificationService.readAll();
         return ApiResponse.ok(null);
     }
+
+    @org.springframework.web.bind.annotation.DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable Long id) {
+        notificationService.delete(id);
+        return ApiResponse.ok(null);
+    }
 }
