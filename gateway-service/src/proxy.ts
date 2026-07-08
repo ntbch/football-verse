@@ -2,7 +2,7 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import { Express } from 'express';
 
 const backendUrl = process.env.BACKEND_URL || 'http://localhost:8080';
-const predictionServiceUrl = process.env.PREDICTION_SERVICE_URL || process.env.MATCH_ENGINE_URL || 'http://localhost:8090';
+const predictionServiceUrl = process.env.PREDICTION_SERVICE_URL || 'http://localhost:8090';
 
 export const setupProxy = (app: Express): void => {
   // Route /api/v1/* to Spring Boot Core

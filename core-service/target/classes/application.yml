@@ -33,7 +33,7 @@ app:
     moderator-password: ${APP_MODERATOR_PASSWORD:ChangeMe123!}
     news-categories: ${APP_SEED_NEWS_CATEGORIES:League News=league-tournament-news;Match Analysis=match-preview-analysis;Transfers=transfer-news;Off the Pitch=off-the-pitch;Opinions=expert-fan-opinions;Football Facts=football-facts-tactical-insights;Others=others}
     forum-categories: ${APP_SEED_FORUM_CATEGORIES:League News=league-tournament-news;Match Analysis=match-preview-analysis;Transfers=transfer-news;Off the Pitch=off-the-pitch;Opinions=expert-fan-opinions;Football Facts=football-facts-tactical-insights;Others=others}
-    news-sources: ${APP_SEED_NEWS_SOURCES:ESPN Soccer=https://www.espn.com/espn/rss/soccer/news;BBC Sport Football=https://feeds.bbci.co.uk/sport/football/rss.xml;Goal.com=https://www.goal.com/feeds/en/news;Transfermarkt=https://www.transfermarkt.co.uk/rss/news;Tribuna.com=https://tribuna.com/rss/news}
+    news-sources: ${APP_SEED_NEWS_SOURCES:ESPN Soccer=https://www.espn.com/espn/rss/soccer/news;BBC Sport Football=https://feeds.bbci.co.uk/sport/football/rss.xml;Transfermarkt=https://www.transfermarkt.co.uk/rss/news;Tribuna.com=https://tribuna.com/rss/news;The Guardian Football=https://www.theguardian.com/football/rss;Mirror Football=https://www.mirror.co.uk/sport/football/rss.xml;The Athletic Football=https://www.nytimes.com/athletic/rss/football/;Daily Mail Football=https://www.dailymail.co.uk/sport/football/index.rss}
   crawl:
     startup-enabled: ${APP_CRAWL_STARTUP_ENABLED:false}
     cron: ${APP_CRAWL_CRON:-}
@@ -48,8 +48,8 @@ app:
     refresh-token-days: ${JWT_REFRESH_TOKEN_DAYS:30}
   google:
     client-id: ${GOOGLE_CLIENT_ID:}
-  match-engine:
-    url: ${MATCH_ENGINE_URL:http://127.0.0.1:8090}
+  prediction-service:
+    url: ${PREDICTION_SERVICE_URL:http://127.0.0.1:8090}
   upload:
     dir: ${APP_UPLOAD_DIR:uploads}
 

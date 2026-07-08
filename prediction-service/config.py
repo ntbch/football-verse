@@ -37,22 +37,5 @@ FOOTBALL_DATA_BASE_URL = os.getenv("FOOTBALL_DATA_BASE_URL", "https://api.footba
 API_KEY = os.getenv("FOOTBALL_API_KEY", "")
 PORT = int(os.getenv("PORT", "8090"))
 CORS_ORIGIN = os.getenv("CORS_ORIGIN", "*")
-
-
-MOCK_FIXTURES = [
-    {
-        "id": "mock-1",
-        "league": "Premier League",
-        "round": "Regular Season - 1",
-        "status": "upcoming",
-        "kickoff": "2026-08-15T14:00:00+00:00",
-        "homeTeam": {"id": "33", "name": "Manchester United", "logo": ""},
-        "awayTeam": {"id": "40", "name": "Liverpool", "logo": ""},
-        "score": {"home": None, "away": None},
-    }
-]
-
-MOCK_STANDINGS = [
-    {"rank": 1, "team": {"id": "50", "name": "Manchester City", "logo": ""}, "points": 0, "played": 0},
-    {"rank": 2, "team": {"id": "42", "name": "Arsenal", "logo": ""}, "points": 0, "played": 0},
-]
+MOCK_FIXTURES = []
+MOCK_STANDINGS = []

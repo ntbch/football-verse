@@ -28,7 +28,6 @@ public class PredictionController {
     private final UserPredictionService predictionService;
     private final ScoringService scoringService;
     private final FixtureService fixtureService;
-    private final MatchEngineClient matchEngineClient;
     private final CurrentUser currentUser;
 
     @GetMapping("/fixtures")

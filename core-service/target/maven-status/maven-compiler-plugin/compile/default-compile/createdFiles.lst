@@ -60,7 +60,6 @@ com\footballverse\common\exception\ResourceNotFoundException.class
 com\footballverse\prediction\ScoringService.class
 com\footballverse\security\SecurityUserDetailsService.class
 com\footballverse\news\dto\NewsArticleRequest.class
-com\footballverse\config\DataSeeder$SeedConsumer.class
 com\footballverse\forum\dto\ReportRequest.class
 com\footballverse\auth\RefreshTokenRepository.class
 com\footballverse\forum\dto\ReportResponse.class
@@ -74,7 +73,6 @@ com\footballverse\prediction\PredictionController.class
 com\footballverse\storage\LocalFileStorage.class
 com\footballverse\news\NewsSourceService.class
 com\footballverse\news\NewsBookmark.class
-com\footballverse\prediction\MatchEngineClient.class
 com\footballverse\forum\dto\ForumCategoryRequest.class
 com\footballverse\user\UserProfile.class
 com\footballverse\forum\dto\ForumCategoryResponse.class
@@ -121,7 +119,6 @@ com\footballverse\news\NewsCommentLikeRepository.class
 com\footballverse\security\JwtService$1.class
 com\footballverse\forum\dto\ThreadResponse.class
 com\footballverse\user\admin\AdminUserResponse.class
-com\footballverse\config\DataSeeder.class
 com\footballverse\user\admin\AdminUserService.class
 com\footballverse\controller\admin\AdminDashboardController.class
 com\footballverse\news\NewsComment.class
@@ -130,6 +127,7 @@ com\footballverse\prediction\PredictionStatsRepository.class
 com\footballverse\news\NewsLikeRepository.class
 com\footballverse\forum\ForumService$1.class
 com\footballverse\search\SearchService.class
+com\footballverse\prediction\PredictionServiceClient.class
 com\footballverse\news\NewsSource.class
 com\footballverse\forum\ForumController.class
 com\footballverse\security\CurrentUser.class

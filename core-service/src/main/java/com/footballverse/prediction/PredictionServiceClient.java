@@ -18,18 +18,18 @@ import java.time.Duration;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class MatchEngineClient {
+public class PredictionServiceClient {
 
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
             .build();
 
-    @Value("${app.match-engine.url:http://localhost:8090}")
-    private String matchEngineUrl;
+    @Value("${app.prediction-service.url:http://localhost:8090}")
+    private String predictionServiceUrl;
 
     public JsonNode fetchPredictions(String leagueSlug, String round) {
-        String url = matchEngineUrl + "/predictions/" + leagueSlug;
+        String url = predictionServiceUrl + "/predictions/" + leagueSlug;
         if (round != null && !round.isEmpty()) {
             url += "?round=" + encode(round);
         }
@@ -37,15 +37,15 @@ public class MatchEngineClient {
     }
 
     public JsonNode fetchRounds(String leagueSlug) {
-        return fetch(matchEngineUrl + "/matches/" + leagueSlug + "/rounds");
+        return fetch(predictionServiceUrl + "/matches/" + leagueSlug + "/rounds");
     }
 
     public JsonNode fetchStandings(String leagueSlug) {
-        return fetch(matchEngineUrl + "/standings/" + leagueSlug);
+        return fetch(predictionServiceUrl + "/standings/" + leagueSlug);
     }
 
     public JsonNode fetchFixtures(String leagueSlug, String round) {
-        String url = matchEngineUrl + "/matches/" + leagueSlug + "/fixtures";
+        String url = predictionServiceUrl + "/matches/" + leagueSlug + "/fixtures";
         if (round != null && !round.isEmpty()) {
             url += "?round=" + encode(round);
         }
@@ -56,7 +56,6 @@ public class MatchEngineClient {
         return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 
-    /** ponytail: simple 2-retry loop. Ok for dev. */
     private JsonNode fetch(String url) {
         for (int attempt = 1; attempt <= 2; attempt++) {
             try {
@@ -68,7 +67,7 @@ public class MatchEngineClient {
                 return objectMapper.readTree(body);
             } catch (Exception e) {
                 if (attempt == 2) {
-                    log.warn("match-engine fetch failed after 2 attempts: {}", url, e);
+                    log.warn("prediction-service fetch failed after 2 attempts: {}", url, e);
                     return null;
                 }
                 try { Thread.sleep(1000); } catch (InterruptedException ignored) {}

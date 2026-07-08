@@ -32,13 +32,13 @@ public class FixtureService {
             .connectTimeout(Duration.ofSeconds(5))
             .build();
 
-    @Value("${app.match-engine.url:http://localhost:8090}")
-    private String matchEngineUrl;
+    @Value("${app.prediction-service.url:http://localhost:8090}")
+    private String predictionServiceUrl;
 
     @Transactional
     public List<Fixture> syncFixtures(String leagueSlug) {
         List<Fixture> synced = new ArrayList<>();
-        String url = matchEngineUrl + "/matches/" + leagueSlug + "/fixtures";
+        String url = predictionServiceUrl + "/matches/" + leagueSlug + "/fixtures";
         tryFetch(url, (fixtures) -> {
             for (JsonNode f : fixtures) {
                 synced.add(upsert(f, leagueSlug, "upcoming"));
@@ -50,7 +50,7 @@ public class FixtureService {
     @Transactional
     public List<Fixture> syncResults(String leagueSlug) {
         List<Fixture> synced = new ArrayList<>();
-        String url = matchEngineUrl + "/matches/" + leagueSlug + "/live";
+        String url = predictionServiceUrl + "/matches/" + leagueSlug + "/live";
         tryFetch(url, (fixtures) -> {
             for (JsonNode f : fixtures) {
                 String status = f.has("status") ? f.get("status").asText() : "upcoming";
@@ -63,7 +63,7 @@ public class FixtureService {
     @Transactional
     public List<Fixture> syncFixturesForLeagueAndRound(String leagueSlug, String round) {
         List<Fixture> synced = new ArrayList<>();
-        String url = matchEngineUrl + "/matches/" + leagueSlug + "/fixtures";
+        String url = predictionServiceUrl + "/matches/" + leagueSlug + "/fixtures";
         if (round != null && !round.isEmpty()) {
             url += "?round=" + URLEncoder.encode(round, StandardCharsets.UTF_8);
         }
@@ -93,7 +93,7 @@ public class FixtureService {
                 return;
             } catch (Exception e) {
                 if (attempt == 2) {
-                    log.warn("match-engine fetch failed after 2 attempts: {}", url, e);
+                    log.warn("prediction-service fetch failed after 2 attempts: {}", url, e);
                 } else {
                     try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
                 }

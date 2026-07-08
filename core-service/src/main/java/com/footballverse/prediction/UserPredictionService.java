@@ -30,7 +30,7 @@ public class UserPredictionService {
     private final FixtureRepository fixtureRepo;
     private final UserPredictionRepository predictionRepo;
     private final FixtureService fixtureService;
-    private final MatchEngineClient matchEngineClient;
+    private final PredictionServiceClient predictionServiceClient;
 
     @Transactional(readOnly = true)
     public List<FixtureResponse> getFixturesWithPredictions(String leagueSlug, UserAccount currentUser) {
@@ -136,7 +136,12 @@ public class UserPredictionService {
     @Transactional(readOnly = true)
     public MatchCentreResponse matchCentre(String leagueSlug, String round, UserAccount currentUser) {
         Long userId = currentUser != null ? currentUser.getId() : null;
-        List<Fixture> allFixtures = fixtureRepo.findByLeagueSlugAndStatusOrderByKickoffAsc(leagueSlug, "upcoming");
+        List<Fixture> allFixtures;
+        if (round != null && !round.isEmpty()) {
+            allFixtures = fixtureRepo.findByLeagueSlugAndRoundOrderByKickoffAsc(leagueSlug, round);
+        } else {
+            allFixtures = fixtureRepo.findByLeagueSlugOrderByKickoffAsc(leagueSlug);
+        }
 
         // Batch-load user predictions
         Map<Long, UserPrediction> predMap = Collections.emptyMap();
@@ -149,13 +154,13 @@ public class UserPredictionService {
 
         // Build fixture ID → PredictionResponse map
         Map<String, PredictionResponse> predByFixtureId = predMap.values().stream()
-                .collect(Collectors.toMap(p -> p.getFixture().getFixtureId(), this::toPredictionResponse, (a, b) -> a));
+                .collect(Collectors.toMap(p -> p.getFixture().getFixtureId(), p -> toPredictionResponse(p), (a, b) -> a));
 
-        // Fetch AI predictions + standings + rounds from match-engine
-        JsonNode fixturesPayload = matchEngineClient.fetchFixtures(leagueSlug, round);
-        JsonNode aiPayload = matchEngineClient.fetchPredictions(leagueSlug, round);
-        JsonNode standingsPayload = matchEngineClient.fetchStandings(leagueSlug);
-        JsonNode roundsPayload = matchEngineClient.fetchRounds(leagueSlug);
+        // Fetch AI predictions + standings + rounds from prediction-service
+        JsonNode fixturesPayload = predictionServiceClient.fetchFixtures(leagueSlug, round);
+        JsonNode aiPayload = predictionServiceClient.fetchPredictions(leagueSlug, round);
+        JsonNode standingsPayload = predictionServiceClient.fetchStandings(leagueSlug);
+        JsonNode roundsPayload = predictionServiceClient.fetchRounds(leagueSlug);
 
         Map<String, JsonNode> aiByFixtureId = indexAiPredictions(aiPayload);
         Map<String, Fixture> dbFixtureByFixtureId = allFixtures.stream()
@@ -163,13 +168,22 @@ public class UserPredictionService {
 
         // Build match-centre fixtures by crossing backend fixtures with AI predictions
         List<MatchCentreFixture> matchFixtures = new ArrayList<>();
-        for (JsonNode aiFixture : getFixturesFromPayload(fixturesPayload, aiPayload)) {
-            String matchId = aiFixture.get("id").asText();
-            Fixture dbFixture = dbFixtureByFixtureId.get(matchId);
-            JsonNode predNode = aiByFixtureId.get(matchId);
-            PredictionResponse userPred = predByFixtureId.get(matchId);
+        List<JsonNode> apiFixtures = getFixturesFromPayload(fixturesPayload, aiPayload);
+        if (apiFixtures.isEmpty()) {
+            for (Fixture dbFixture : allFixtures) {
+                JsonNode predNode = aiByFixtureId.get(dbFixture.getFixtureId());
+                PredictionResponse userPred = predByFixtureId.get(dbFixture.getFixtureId());
+                matchFixtures.add(buildMatchCentreFixture(dbFixture, null, predNode, userPred));
+            }
+        } else {
+            for (JsonNode aiFixture : apiFixtures) {
+                String matchId = aiFixture.get("id").asText();
+                Fixture dbFixture = dbFixtureByFixtureId.get(matchId);
+                JsonNode predNode = aiByFixtureId.get(matchId);
+                PredictionResponse userPred = predByFixtureId.get(matchId);
 
-            matchFixtures.add(buildMatchCentreFixture(dbFixture, aiFixture, predNode, userPred));
+                matchFixtures.add(buildMatchCentreFixture(dbFixture, aiFixture, predNode, userPred));
+            }
         }
 
         return new MatchCentreResponse(

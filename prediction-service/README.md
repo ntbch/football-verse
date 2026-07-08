@@ -1,6 +1,6 @@
-# Match Engine
+# Prediction Service
 
-Small Python service for football fixtures, standings, and later mini-manager simulation.
+Small Python service for fetching real-world football fixtures, standings, and calculating match predictions.
 
 Currently allowed leagues:
 

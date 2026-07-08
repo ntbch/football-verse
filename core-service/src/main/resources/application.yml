@@ -48,8 +48,8 @@ app:
     refresh-token-days: ${JWT_REFRESH_TOKEN_DAYS:30}
   google:
     client-id: ${GOOGLE_CLIENT_ID:}
-  match-engine:
-    url: ${MATCH_ENGINE_URL:http://127.0.0.1:8090}
+  prediction-service:
+    url: ${PREDICTION_SERVICE_URL:http://127.0.0.1:8090}
   upload:
     dir: ${APP_UPLOAD_DIR:uploads}
 
