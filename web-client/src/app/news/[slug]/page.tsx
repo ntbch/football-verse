@@ -61,6 +61,26 @@ function preprocessArticleContent(html: string, coverImageUrl?: string): string 
         }
       }
     });
+
+    // Remove leftover Brightcove / Sky Sports video wrapper elements that are now
+    // empty or contain only whitespace after the <video> was replaced with an <iframe>.
+    // These divs have classes like sdc-site-video__content, sdc-site-video__inner, etc.
+    doc.querySelectorAll(
+      ".sdc-site-video__content, .sdc-site-video__inner, .sdc-site-video__accessibility-message, .sdc-site-video__bridge-message, .sdc-site-video__loader, .sdc-site-video__poster"
+    ).forEach((el) => el.remove());
+
+    // Remove empty <p>, <span>, <div> elements that contribute to whitespace gaps
+    // Repeat twice to catch nested empties
+    for (let pass = 0; pass < 2; pass++) {
+      doc.querySelectorAll("p, span, div, li").forEach((el) => {
+        if (!el.hasChildNodes() || el.textContent?.trim() === "") {
+          // Keep if it's an img or iframe or has media children
+          const hasMedia = el.querySelector("img, iframe, video, audio");
+          if (!hasMedia) el.remove();
+        }
+      });
+    }
+
     return doc.body.innerHTML;
   } catch (e) {
     return html;

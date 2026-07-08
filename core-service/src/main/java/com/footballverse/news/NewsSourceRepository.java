@@ -15,5 +15,7 @@ public interface NewsSourceRepository extends JpaRepository<NewsSource, Long> {
 
     boolean existsByFeedUrl(String feedUrl);
 
+    boolean existsByName(String name);
+
     java.util.Optional<NewsSource> findByFeedUrl(String feedUrl);
 }

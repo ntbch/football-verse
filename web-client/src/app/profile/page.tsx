@@ -20,6 +20,7 @@ import {
 
 export default function ProfilePage() {
   const auth = useAuthStore((state) => state.auth);
+  const ready = useAuthStore((state) => state.ready);
   const router = useRouter();
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -32,10 +33,10 @@ export default function ProfilePage() {
 
   // Redirect to login if user is not authenticated
   React.useEffect(() => {
-    if (!auth) {
+    if (ready && !auth) {
       router.push("/login");
     }
-  }, [auth, router]);
+  }, [auth, ready, router]);
 
   // 1. Fetch profile details
   const { data: profile, isLoading: isProfileLoading } = useQuery({
@@ -103,10 +104,10 @@ export default function ProfilePage() {
     }
   };
 
-  if (!auth) {
+  if (!ready || !auth) {
     return (
       <PublicShell>
-        <LoadingBlock label="Redirecting to Login" />
+        <LoadingBlock label={!ready ? "Initializing Session..." : "Redirecting to Login"} />
       </PublicShell>
     );
   }

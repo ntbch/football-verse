@@ -78,15 +78,15 @@ public class DataSeeder implements CommandLineRunner {
     private void seedCustomNewsSources() {
         // Sitemap source: Football Italia
         String sitemapUrl = "https://football-italia.net/post-sitemap.xml";
-        if (!newsSources.existsByFeedUrl(sitemapUrl)) {
-            NewsSource source = new NewsSource("Football Italia ", sitemapUrl);
+        if (!newsSources.existsByFeedUrl(sitemapUrl) && !newsSources.existsByName("Football Italia")) {
+            NewsSource source = new NewsSource("Football Italia", sitemapUrl);
             source.setSourceType(NewsSourceType.SITEMAP);
             newsSources.save(source);
         }
 
         // Sitemap source: Goal.com (Google News XML)
         String goalSitemapUrl = "https://www.goal.com/en/sitemap/google-news.xml";
-        if (!newsSources.existsByFeedUrl(goalSitemapUrl)) {
+        if (!newsSources.existsByFeedUrl(goalSitemapUrl) && !newsSources.existsByName("Goal.com")) {
             NewsSource source = new NewsSource("Goal.com", goalSitemapUrl);
             source.setSourceType(NewsSourceType.SITEMAP);
             newsSources.save(source);
@@ -94,7 +94,7 @@ public class DataSeeder implements CommandLineRunner {
 
         // Homepage scrape source: Sky Sports Football
         String homepageUrl = "https://www.skysports.com/football";
-        if (!newsSources.existsByFeedUrl(homepageUrl)) {
+        if (!newsSources.existsByFeedUrl(homepageUrl) && !newsSources.existsByName("Sky Sports Football")) {
             NewsSource source = new NewsSource("Sky Sports Football", homepageUrl);
             source.setSourceType(NewsSourceType.HOMEPAGE);
             source.setCssSelector(".sdc-site-tile__headline a");
@@ -153,7 +153,7 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedNewsSource(String name, String feedUrl) {
-        if (!newsSources.existsByFeedUrl(feedUrl)) {
+        if (!newsSources.existsByFeedUrl(feedUrl) && !newsSources.existsByName(name)) {
             newsSources.save(new NewsSource(name, feedUrl));
         }
     }

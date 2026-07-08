@@ -40,6 +40,7 @@ services:
       - MATCH_ENGINE_URL=http://prediction-service:8090
       - APP_GATEWAY_URL=http://gateway-service:8000
       - INTERNAL_TOKEN=${INTERNAL_TOKEN:-dev-internal-token}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
     depends_on:
       - postgres
       - redis
@@ -61,7 +62,10 @@ services:
       - core-service
 
   web-client:
-    build: ./web-client
+    build:
+      context: ./web-client
+      args:
+        - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
     ports:
       - "3000:3000"
     depends_on:

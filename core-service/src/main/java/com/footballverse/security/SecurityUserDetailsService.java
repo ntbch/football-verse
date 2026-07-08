@@ -23,7 +23,7 @@ public class SecurityUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         return User.withUsername(user.getEmail())
-                .password(user.getPasswordHash())
+                .password(user.getPasswordHash() != null ? user.getPasswordHash() : "")
                 .disabled(user.getStatus() == UserStatus.BANNED)
                 .authorities(user.getRoles().stream()
                         .map(UserRole::name)

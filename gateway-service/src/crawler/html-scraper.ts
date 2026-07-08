@@ -147,6 +147,74 @@ export async function scrapeArticle(
         }
       });
 
+      // Convert video elements (Brightcove/Sky Sports iframe embed or direct stream to iframe fallback)
+      container.find('video').each((_, elem) => {
+        const video = $(elem);
+        const src = video.attr('src');
+        const videoId = video.attr('id');
+
+        // Sky Sports / Brightcove: empty <video id="id_{uuid}"> -> convert to iframe embed
+        if (!src && videoId && videoId.startsWith('id_')) {
+          const uuid = videoId.substring(3); // strip "id_"
+          const iframe = $('<iframe>')
+            .attr('src', `https://players.brightcove.net/6057984924001/DESF5xFjJ_default/index.html?videoId=ref:${uuid}`)
+            .attr('width', '100%')
+            .attr('height', '400')
+            .attr('allowfullscreen', 'true')
+            .attr('allow', 'autoplay; fullscreen; picture-in-picture')
+            .attr('style', 'border:0;border-radius:12px;display:block;margin:1.5rem 0;');
+          video.replaceWith(iframe);
+          return;
+        }
+
+        if (src) {
+          const isDirect = src.toLowerCase().endsWith('.mp4')
+            || src.toLowerCase().endsWith('.webm')
+            || src.toLowerCase().endsWith('.ogg')
+            || src.toLowerCase().endsWith('.mov')
+            || src.toLowerCase().endsWith('.m3u8')
+            || src.toLowerCase().includes('.mp4?')
+            || src.toLowerCase().includes('.m3u8?');
+            
+          if (!isDirect) {
+            const iframe = $('<iframe>')
+              .attr('src', src)
+              .attr('width', '100%')
+              .attr('height', '400')
+              .attr('allowfullscreen', 'true');
+            const klass = video.attr('class');
+            if (klass) iframe.attr('class', klass);
+            video.replaceWith(iframe);
+          }
+        }
+      });
+
+      // Remove leftover Brightcove / Sky Sports video wrapper elements that are now
+      // empty or contain only whitespace after the <video> was replaced with an <iframe>.
+      container.find([
+        '.sdc-site-video__content',
+        '.sdc-site-video__inner',
+        '.sdc-site-video__accessibility-message',
+        '.sdc-site-video__bridge-message',
+        '.sdc-site-video__loader',
+        '.sdc-site-video__poster'
+      ].join(',')).remove();
+
+      // Remove empty <p>, <span>, <div>, <li> elements that contribute to whitespace gaps
+      // Repeat twice to catch nested empties
+      for (let pass = 0; pass < 2; pass++) {
+        container.find('p, span, div, li').each((_, elem) => {
+          const el = $(elem);
+          if (!el.contents().length || el.text().trim() === '') {
+            // Keep if it's an img or iframe or has media children
+            const hasMedia = el.find('img, iframe, video, audio').length > 0;
+            if (!hasMedia) {
+              el.remove();
+            }
+          }
+        });
+      }
+
       content = container.html() || '';
     }
 
