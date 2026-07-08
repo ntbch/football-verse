@@ -36,6 +36,7 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class ForumService {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ForumService.class);
     private final ForumCategoryRepository categories;
     private final ForumThreadRepository threads;
     private final ForumPostRepository posts;
@@ -205,9 +206,19 @@ public class ForumService {
 
     @Transactional(readOnly = true)
     public List<ThreadResponse> followedThreads() {
-        return follows.findByUserOrderByThreadLastActivityAtDesc(currentUser.get()).stream()
+        UserAccount current = currentUser.get();
+        log.info("[ForumService] Fetching followed threads for user: id={}, username={}", current.getId(), current.getUsername());
+        List<ForumThreadFollow> userFollows = follows.findByUserOrderByThreadLastActivityAtDesc(current);
+        log.info("[ForumService] Found {} follow records for user {}", userFollows.size(), current.getId());
+        return userFollows.stream()
                 .map(ForumThreadFollow::getThread)
-                .filter(thread -> !thread.isHidden())
+                .filter(thread -> {
+                    boolean visible = !thread.isHidden();
+                    if (!visible) {
+                        log.info("[ForumService] Thread id={} is hidden, filtering out", thread.getId());
+                    }
+                    return visible;
+                })
                 .map(this::toThread)
                 .toList();
     }
@@ -248,17 +259,29 @@ public class ForumService {
     }
 
     private void notifyReplySubscribers(ForumThread thread, UserAccount replier) {
+        log.info("[ForumService] notifyReplySubscribers for thread: id={}, title={}, author={}, replier={}", 
+                thread.getId(), thread.getTitle(), thread.getAuthor().getUsername(), replier.getUsername());
         Set<Long> notified = new HashSet<>();
         String link = "/forum/threads/" + thread.getSlug();
         String message = replier.getUsername() + " replied to " + thread.getTitle();
         if (!thread.getAuthor().getId().equals(replier.getId())) {
+            log.info("[ForumService] Creating reply notification for thread author: id={}, username={}", 
+                    thread.getAuthor().getId(), thread.getAuthor().getUsername());
             notifications.create(thread.getAuthor(), NotificationType.FORUM_REPLY, message, link);
             notified.add(thread.getAuthor().getId());
+        } else {
+            log.info("[ForumService] Replier is the thread author, skipping author notification");
         }
-        follows.findByThreadId(thread.getId()).forEach(follow -> {
+        List<ForumThreadFollow> threadFollows = follows.findByThreadId(thread.getId());
+        log.info("[ForumService] Found {} followers for thread id={}", threadFollows.size(), thread.getId());
+        threadFollows.forEach(follow -> {
             UserAccount user = follow.getUser();
+            log.info("[ForumService] Checking follower user: id={}, username={}", user.getId(), user.getUsername());
             if (!user.getId().equals(replier.getId()) && notified.add(user.getId())) {
+                log.info("[ForumService] Creating reply notification for follower: id={}, username={}", user.getId(), user.getUsername());
                 notifications.create(user, NotificationType.FORUM_REPLY, message, link);
+            } else {
+                log.info("[ForumService] Follower id={} already notified or is the replier", user.getId());
             }
         });
     }

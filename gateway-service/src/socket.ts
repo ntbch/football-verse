@@ -35,18 +35,23 @@ export const setupSocket = (server: HttpServer): void => {
   redisSub.subscribe('realtime:matches', 'realtime:leaderboard', (err) => {
     if (err) {
       console.error('Failed to subscribe to Redis channels:', err);
+    } else {
+      console.log('Successfully subscribed to Redis channels (matches, leaderboard)');
     }
   });
 
   // Pattern subscribe to user notifications
   redisSub.psubscribe('realtime:notifications:*', (err) => {
     if (err) {
-      console.error('Failed to psubscribe to Redis pattern:', err);
+      console.error('Failed to psubscribe to Redis pattern realtime:notifications:*:', err);
+    } else {
+      console.log('Successfully pattern-subscribed to realtime:notifications:*');
     }
   });
 
   // Handle standard messages
   redisSub.on('message', (channel: string, message: string) => {
+    console.log(`[Socket Gateway] Received Redis message on channel "${channel}":`, message);
     try {
       const data: unknown = JSON.parse(message);
       io.emit(channel, data);
@@ -57,6 +62,7 @@ export const setupSocket = (server: HttpServer): void => {
 
   // Handle pattern-matched messages
   redisSub.on('pmessage', (pattern: string, channel: string, message: string) => {
+    console.log(`[Socket Gateway] Received Redis pmessage on channel "${channel}" (pattern "${pattern}"):`, message);
     try {
       const data: unknown = JSON.parse(message);
       
@@ -65,7 +71,11 @@ export const setupSocket = (server: HttpServer): void => {
       const userId = parts[2];
       
       if (userId) {
-        io.to(`room:user:${userId}`).emit('notification', data);
+        const room = `room:user:${userId}`;
+        console.log(`[Socket Gateway] Forwarding notification to room: ${room}`);
+        io.to(room).emit('notification', data);
+      } else {
+        console.warn('[Socket Gateway] userId not found in channel name:', channel);
       }
     } catch (error: unknown) {
       console.error(`Error parsing pmessage on channel ${channel}:`, error);

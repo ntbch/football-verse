@@ -3,6 +3,8 @@ package com.footballverse.notification;
 import com.footballverse.notification.dto.NotificationResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
+import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -48,7 +50,7 @@ public class SseNotificationService {
         return emitter;
     }
 
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleNotificationCreated(NotificationCreatedEvent event) {
         Notification notification = event.getNotification();
         Long userId = notification.getUser().getId();

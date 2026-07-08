@@ -88,6 +88,7 @@ export default function ForumPage() {
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: qk.forum.threads(activeCategorySlug || "") });
+      queryClient.invalidateQueries({ queryKey: qk.user.followingThreads() });
       toast({ body: "Thread created successfully!", type: "info", autoHideDuration: 4000 });
       setShowCreateModal(false);
       setNewTitle("");
