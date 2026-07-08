@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,7 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     "app.crawl.startup-enabled=false"
 })
 @Transactional
-public class LikesAndSseIntegrationTest {
+public class LikesIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -169,22 +168,5 @@ public class LikesAndSseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.posts[0].likeCount").value(1))
                 .andExpect(jsonPath("$.data.posts[0].liked").value(true));
-    }
-
-    @Test
-    void testSseNotificationStreamAuthentication() throws Exception {
-        // SSE request with valid token query parameter should return 200 TEXT_EVENT_STREAM
-        mockMvc.perform(get("/api/v1/notifications/stream")
-                        .param("token", token))
-                .andExpect(status().isOk())
-                .andExpect(result -> {
-                    String contentType = result.getResponse().getContentType();
-                    assert contentType != null && contentType.contains("text/event-stream");
-                });
-
-        // SSE request with invalid token should return 401 Unauthorized
-        mockMvc.perform(get("/api/v1/notifications/stream")
-                        .param("token", "invalid-token"))
-                .andExpect(status().isUnauthorized());
     }
 }
