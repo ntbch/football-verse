@@ -24,11 +24,13 @@ public interface FixtureRepository extends JpaRepository<Fixture, Long> {
     @Query("select f from Fixture f where " +
            "(:status is null or f.status = :status) and " +
            "(:leagueSlug is null or f.leagueSlug = :leagueSlug) and " +
+           "(:round is null or f.round = :round) and " +
            "(:scored is null or f.scored = :scored) " +
-           "order by f.kickoff desc")
+           "order by f.kickoff asc")
     org.springframework.data.domain.Page<Fixture> findAdminFixtures(
             @Param("status") String status,
             @Param("leagueSlug") String leagueSlug,
+            @Param("round") String round,
             @Param("scored") Boolean scored,
             org.springframework.data.domain.Pageable pageable);
 }

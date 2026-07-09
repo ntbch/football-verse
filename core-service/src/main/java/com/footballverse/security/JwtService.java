@@ -25,6 +25,13 @@ public class JwtService {
             @Value("${app.jwt.secret}") String secret,
             @Value("${app.jwt.access-token-minutes}") long accessTokenMinutes
     ) {
+        if (secret == null || secret.trim().isEmpty()) {
+            throw new IllegalArgumentException("FATAL: app.jwt.secret configuration is missing or empty!");
+        }
+        if (secret.equals("dev-secret-change-me-dev-secret-change-me")) {
+            // Log warning or throw if profile is prod (but here we can throw or just log a warning for dev)
+            System.err.println("WARNING: Using default development JWT secret. Replace in production!");
+        }
         this.objectMapper = objectMapper;
         this.secret = secret.getBytes(StandardCharsets.UTF_8);
         this.accessTokenSeconds = accessTokenMinutes * 60;
