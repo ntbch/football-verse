@@ -96,6 +96,10 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <argLine>-Dnet.bytebuddy.experimental=true</argLine>
+                    <environmentVariables>
+                        <INTERNAL_TOKEN>test-internal-token-12345</INTERNAL_TOKEN>
+                        <JWT_SECRET>test-jwt-secret-key-for-unit-testing-only-12345</JWT_SECRET>
+                    </environmentVariables>
                 </configuration>
             </plugin>
         </plugins>

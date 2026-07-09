@@ -28,13 +28,22 @@ public class PredictionScoreLog {
     private UserAccount user;
 
     private int points;
+
+    @Column(name = "outcome_points")
     private int outcomePoints;
+
+    @Column(name = "exact_score_points")
     private int exactScorePoints;
+
+    @Column(name = "ou25_points")
     private int ou25Points;
+
+    @Column(name = "btts_points")
     private int bttsPoints;
 
     @Column(columnDefinition = "TEXT")
     private String reason;
 
+    @Column(name = "scored_at")
     private Instant scoredAt;
 }

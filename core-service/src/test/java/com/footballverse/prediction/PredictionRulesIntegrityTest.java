@@ -124,10 +124,10 @@ class PredictionRulesIntegrityTest {
         PredictionScoreLog log = logs.get(0);
         assertEquals(user.getId(), log.getUser().getId());
         assertEquals(fixture.getId(), log.getFixture().getId());
-        assertEquals(8, log.getPoints(), "3 outcome + 5 exact = 8");
+        assertEquals(12, log.getPoints(), "3 outcome + 5 exact + 2 ou2.5 + 2 btts = 12");
         assertEquals(3, log.getOutcomePoints());
         assertEquals(5, log.getExactScorePoints());
-        assertEquals(0, log.getOu25Points());
-        assertEquals(0, log.getBttsPoints());
+        assertEquals(2, log.getOu25Points());
+        assertEquals(2, log.getBttsPoints());
     }
 }

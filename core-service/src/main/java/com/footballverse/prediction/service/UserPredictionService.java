@@ -74,10 +74,16 @@ public class UserPredictionService {
                 .orElseThrow(() -> new BadRequestException("Fixture not found"));
 
         if (fixture.getKickoff().isBefore(Instant.now())) {
-            throw new BadRequestException("Match already started, predictions closed");
+            throw new BadRequestException("PREDICTION_CLOSED");
         }
         if (!"upcoming".equals(fixture.getStatus())) {
-            throw new BadRequestException("Match not open for predictions");
+            throw new BadRequestException("PREDICTION_CLOSED");
+        }
+        if (request.homeScore() != null && (request.homeScore() < 0 || request.homeScore() > 20)) {
+            throw new BadRequestException("Invalid home score");
+        }
+        if (request.awayScore() != null && (request.awayScore() < 0 || request.awayScore() > 20)) {
+            throw new BadRequestException("Invalid away score");
         }
 
         UserPrediction pred = predictionRepo.findByUserIdAndFixtureId(user.getId(), fixtureId)
