@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface PredictionScoreLogRepository extends JpaRepository<PredictionScoreLog, Long> {
     List<PredictionScoreLog> findByUserIdOrderByScoredAtDesc(Long userId);
+    List<PredictionScoreLog> findByFixtureId(Long fixtureId);
 }

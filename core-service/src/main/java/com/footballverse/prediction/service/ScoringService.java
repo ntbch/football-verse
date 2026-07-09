@@ -268,4 +268,40 @@ public class ScoringService {
                 ))
                 .collect(Collectors.toList());
     }
+
+    @Transactional
+    @CacheEvict(value = "leaderboard", allEntries = true)
+    public void rescoreFixture(Long fixtureId) {
+        Fixture fixture = fixtureRepo.findByIdForUpdate(fixtureId)
+                .orElseThrow(() -> new IllegalArgumentException("Fixture not found"));
+        if (!fixture.isScored()) return;
+
+        List<PredictionScoreLog> logs = scoreLogRepo.findByFixtureId(fixtureId);
+        for (PredictionScoreLog log : logs) {
+            UserPrediction pred = log.getPrediction();
+            pred.setPoints(0);
+            pred.setCorrect(false);
+            pred.setCorrectOutcome(false);
+            pred.setCorrectExactScore(false);
+            pred.setCorrectOu25(false);
+            pred.setCorrectBtts(false);
+            predictionRepo.save(pred);
+
+            PredictionStats stats = getOrCreateStats(log.getUser());
+            stats.setTotalPoints(Math.max(0, stats.getTotalPoints() - log.getPoints()));
+            stats.setTotalPicks(Math.max(0, stats.getTotalPicks() - 1));
+            if (log.getOutcomePoints() > 0 || log.getExactScorePoints() > 0) {
+                stats.setCorrectPicks(Math.max(0, stats.getCorrectPicks() - 1));
+            }
+            statsRepo.save(stats);
+
+            scoreLogRepo.delete(log);
+        }
+
+        fixture.setScored(false);
+        fixture.setScoredAt(null);
+        fixtureRepo.save(fixture);
+
+        scoreFixture(fixtureId);
+    }
 }

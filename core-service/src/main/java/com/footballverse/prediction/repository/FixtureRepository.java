@@ -20,4 +20,15 @@ public interface FixtureRepository extends JpaRepository<Fixture, Long> {
     List<Fixture> findByStatusAndScoredFalse(String status);
     List<Fixture> findByLeagueSlugOrderByKickoffAsc(String leagueSlug);
     List<Fixture> findByLeagueSlugAndRoundOrderByKickoffAsc(String leagueSlug, String round);
+
+    @Query("select f from Fixture f where " +
+           "(:status is null or f.status = :status) and " +
+           "(:leagueSlug is null or f.leagueSlug = :leagueSlug) and " +
+           "(:scored is null or f.scored = :scored) " +
+           "order by f.kickoff desc")
+    org.springframework.data.domain.Page<Fixture> findAdminFixtures(
+            @Param("status") String status,
+            @Param("leagueSlug") String leagueSlug,
+            @Param("scored") Boolean scored,
+            org.springframework.data.domain.Pageable pageable);
 }
