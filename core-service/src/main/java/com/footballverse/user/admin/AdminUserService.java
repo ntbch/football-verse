@@ -1,8 +1,8 @@
 package com.footballverse.user.admin;
 
 import com.footballverse.common.exception.ResourceNotFoundException;
-import com.footballverse.user.UserAccount;
-import com.footballverse.user.UserAccountRepository;
+import com.footballverse.user.model.UserAccount;
+import com.footballverse.user.repository.UserAccountRepository;
 import com.footballverse.user.admin.AdminUserResponse;
 import com.footballverse.user.admin.dto.UpdateUserStatusRequest;
 import lombok.RequiredArgsConstructor;

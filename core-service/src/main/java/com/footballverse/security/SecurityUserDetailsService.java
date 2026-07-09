@@ -1,9 +1,9 @@
 package com.footballverse.security;
 
-import com.footballverse.user.UserAccount;
-import com.footballverse.user.UserAccountRepository;
-import com.footballverse.user.UserRole;
-import com.footballverse.user.UserStatus;
+import com.footballverse.user.model.UserAccount;
+import com.footballverse.user.repository.UserAccountRepository;
+import com.footballverse.user.model.UserRole;
+import com.footballverse.user.model.UserStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;

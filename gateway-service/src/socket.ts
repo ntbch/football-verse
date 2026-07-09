@@ -1,15 +1,34 @@
 import { Server, Socket } from 'socket.io';
 import Redis from 'ioredis';
 import { Server as HttpServer } from 'http';
+import { verifySocketToken } from './auth';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
 
 export const setupSocket = (server: HttpServer): void => {
   const io = new Server(server, {
     cors: {
-      origin: '*',
+      origin: corsOrigin,
       methods: ['GET', 'POST'],
+      credentials: true,
     },
+  });
+
+  io.use((socket, next) => {
+    try {
+      const token = socket.handshake.auth?.token;
+      const payload = verifySocketToken(token);
+
+      socket.data.userId = payload.uid.toString();
+      socket.data.email = payload.sub;
+      socket.data.roles = payload.roles ?? [];
+
+      next();
+    } catch (err) {
+      console.warn('Socket.io authentication failed:', err instanceof Error ? err.message : err);
+      next(new Error('Unauthorized'));
+    }
   });
 
   const redisSub = new Redis(redisUrl);
@@ -19,11 +38,11 @@ export const setupSocket = (server: HttpServer): void => {
   });
 
   io.on('connection', (socket: Socket) => {
-    const userId = socket.handshake.query.userId;
-    if (userId && typeof userId === 'string') {
+    const userId = socket.data.userId;
+    if (userId) {
       const room = `room:user:${userId}`;
       socket.join(room);
-      console.log(`Socket ${socket.id} joined user room: ${room}`);
+      console.log(`Socket ${socket.id} joined user room: ${room} (email: ${socket.data.email})`);
     }
 
     socket.on('join_thread', (data: { slug: string }) => {

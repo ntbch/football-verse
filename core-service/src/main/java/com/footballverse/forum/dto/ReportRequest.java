@@ -1,6 +1,6 @@
 package com.footballverse.forum.dto;
 
-import com.footballverse.forum.ForumReportTarget;
+import com.footballverse.forum.model.ForumReportTarget;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

@@ -1,8 +1,8 @@
 package com.footballverse.security;
 
 import com.footballverse.common.exception.ResourceNotFoundException;
-import com.footballverse.user.UserAccount;
-import com.footballverse.user.UserAccountRepository;
+import com.footballverse.user.model.UserAccount;
+import com.footballverse.user.repository.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;

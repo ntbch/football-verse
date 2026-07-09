@@ -1,6 +1,6 @@
 package com.footballverse;
 
-import com.footballverse.auth.AuthService;
+import com.footballverse.auth.service.AuthService;
 import com.footballverse.auth.dto.LoginRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

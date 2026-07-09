@@ -1,8 +1,8 @@
 package com.footballverse;
 
 import com.footballverse.security.JwtService;
-import com.footballverse.user.UserAccount;
-import com.footballverse.user.UserAccountRepository;
+import com.footballverse.user.model.UserAccount;
+import com.footballverse.user.repository.UserAccountRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

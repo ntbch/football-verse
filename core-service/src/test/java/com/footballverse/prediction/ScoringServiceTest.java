@@ -1,8 +1,17 @@
 package com.footballverse.prediction;
+import com.footballverse.prediction.model.Fixture;
+import com.footballverse.prediction.model.PredictionStats;
+import com.footballverse.prediction.model.UserBadge;
+import com.footballverse.prediction.model.UserPrediction;
+import com.footballverse.prediction.repository.FixtureRepository;
+import com.footballverse.prediction.repository.PredictionStatsRepository;
+import com.footballverse.prediction.repository.UserBadgeRepository;
+import com.footballverse.prediction.repository.UserPredictionRepository;
+import com.footballverse.prediction.service.ScoringService;
 
 import com.footballverse.prediction.dto.LeaderboardEntryResponse;
-import com.footballverse.user.UserAccount;
-import com.footballverse.user.UserAccountRepository;
+import com.footballverse.user.model.UserAccount;
+import com.footballverse.user.repository.UserAccountRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

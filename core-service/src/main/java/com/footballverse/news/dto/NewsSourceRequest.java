@@ -1,6 +1,6 @@
 package com.footballverse.news.dto;
 
-import com.footballverse.news.NewsSourceType;
+import com.footballverse.news.model.NewsSourceType;
 import jakarta.validation.constraints.NotBlank;
 import org.hibernate.validator.constraints.URL;
 

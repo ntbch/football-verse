@@ -1,7 +1,7 @@
 package com.footballverse.forum.dto;
 
-import com.footballverse.forum.ForumReportStatus;
-import com.footballverse.forum.ForumReportTarget;
+import com.footballverse.forum.model.ForumReportStatus;
+import com.footballverse.forum.model.ForumReportTarget;
 
 public record ReportResponse(
         Long id,

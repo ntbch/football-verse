@@ -1,6 +1,6 @@
 package com.footballverse.auth.dto;
 
-import com.footballverse.user.UserRole;
+import com.footballverse.user.model.UserRole;
 
 import java.util.Set;
 

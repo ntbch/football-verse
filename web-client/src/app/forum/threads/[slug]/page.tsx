@@ -29,6 +29,7 @@ export default function ThreadDetailPage() {
 
   // Real-time reply update via WebSockets
   useEffect(() => {
+    if (!auth?.accessToken) return;
     let socketUrl = "http://localhost:8000";
     try {
       socketUrl = new URL(apiBaseUrl).origin;
@@ -37,8 +38,8 @@ export default function ThreadDetailPage() {
     }
 
     const socket: Socket = io(socketUrl, {
-      query: {
-        userId: auth?.userId?.toString() || "",
+      auth: {
+        token: auth.accessToken,
       },
       transports: ["polling", "websocket"],
     });
@@ -65,7 +66,7 @@ export default function ThreadDetailPage() {
       socket.emit("leave_thread", { slug });
       socket.disconnect();
     };
-  }, [slug, auth?.userId, auth?.username, queryClient, toast]);
+  }, [slug, auth?.accessToken, auth?.username, queryClient, toast]);
 
   // 1. Fetch thread details
   const { data: detail, isLoading, error } = useQuery({

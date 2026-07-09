@@ -1,4 +1,5 @@
 package com.footballverse.common.text;
+import com.footballverse.news.service.CrawlService;
 
 import java.text.Normalizer;
 import java.util.Locale;

@@ -28,8 +28,8 @@ function useNotificationsSSE() {
     }
 
     const socket: Socket = io(socketUrl, {
-      query: {
-        userId: auth.userId.toString(),
+      auth: {
+        token: auth.accessToken,
       },
       transports: ["polling", "websocket"],
     });
@@ -48,6 +48,10 @@ function useNotificationsSSE() {
 
         // Invalidate notifications query to trigger navbar update
         queryClient.invalidateQueries({ queryKey: qk.user.notifications() });
+
+        if (data.type === "PREDICTION_SCORED") {
+          queryClient.invalidateQueries({ queryKey: ["predictions"] });
+        }
       } catch (err) {
         console.error("Failed to parse Socket.io notification", err);
       }
@@ -60,7 +64,7 @@ function useNotificationsSSE() {
     return () => {
       socket.disconnect();
     };
-  }, [auth?.accessToken, auth?.userId, queryClient, toast]);
+  }, [auth?.accessToken, queryClient, toast]);
 }
 
 // 1. Public Shell (Editorial Magazine layout wrapper)

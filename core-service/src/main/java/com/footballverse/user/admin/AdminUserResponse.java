@@ -1,7 +1,7 @@
 package com.footballverse.user.admin;
 
-import com.footballverse.user.UserRole;
-import com.footballverse.user.UserStatus;
+import com.footballverse.user.model.UserRole;
+import com.footballverse.user.model.UserStatus;
 
 import java.util.Set;
 

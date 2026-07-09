@@ -1,6 +1,6 @@
 package com.footballverse.news.dto;
 
-import com.footballverse.news.ArticleStatus;
+import com.footballverse.news.model.ArticleStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 

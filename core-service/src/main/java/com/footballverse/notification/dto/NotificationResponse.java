@@ -1,6 +1,6 @@
 package com.footballverse.notification.dto;
 
-import com.footballverse.notification.NotificationType;
+import com.footballverse.notification.model.NotificationType;
 
 import java.time.Instant;
 

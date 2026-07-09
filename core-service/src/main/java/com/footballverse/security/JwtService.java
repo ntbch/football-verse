@@ -2,7 +2,7 @@ package com.footballverse.security;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.footballverse.user.UserAccount;
+import com.footballverse.user.model.UserAccount;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
