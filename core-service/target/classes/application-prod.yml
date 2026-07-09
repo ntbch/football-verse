@@ -1,3 +1,0 @@
-app:
-  seed:
-    enabled: ${APP_SEED_ENABLED:false}

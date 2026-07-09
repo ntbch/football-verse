@@ -1,14 +1,25 @@
-.idea/
-.vscode/
+# Java
+core-service/target/
+*.class
 
-backend/target/
-web-client/.next/
-web-client/node_modules/
-gateway-service/node_modules/
-gateway-service/dist/
+# Node / Next
+node_modules/
+.next/
+dist/
+build/
+*.tsbuildinfo
 
-*.log
+# Python
 __pycache__/
+*.pyc
+.venv/
 .env
 .env.*
 !.env.example
+
+# IDE
+.idea/
+.vscode/
+
+# Local scratch
+scratch/
