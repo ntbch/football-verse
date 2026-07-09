@@ -41,7 +41,7 @@ public class FixtureService {
         String url = predictionServiceUrl + "/matches/" + leagueSlug + "/fixtures";
         tryFetch(url, (fixtures) -> {
             for (JsonNode f : fixtures) {
-                synced.add(upsert(f, leagueSlug, "upcoming"));
+                synced.add(upsert(f, leagueSlug, statusOf(f)));
             }
         });
         return synced;
@@ -53,8 +53,7 @@ public class FixtureService {
         String url = predictionServiceUrl + "/matches/" + leagueSlug + "/live";
         tryFetch(url, (fixtures) -> {
             for (JsonNode f : fixtures) {
-                String status = f.has("status") ? f.get("status").asText() : "upcoming";
-                synced.add(upsert(f, leagueSlug, status));
+                synced.add(upsert(f, leagueSlug, statusOf(f)));
             }
         });
         return synced;
@@ -69,10 +68,23 @@ public class FixtureService {
         }
         tryFetch(url, (fixtures) -> {
             for (JsonNode f : fixtures) {
-                synced.add(upsert(f, leagueSlug, "upcoming"));
+                synced.add(upsert(f, leagueSlug, statusOf(f)));
             }
         });
         return synced;
+    }
+
+    /**
+     * Resolve fixture status from the external payload so finished matches are stored
+     * as "result" (and live as "live") instead of always defaulting to "upcoming".
+     * Without this, ScoringScheduler never picks them up and predictions stay unscored.
+     */
+    private String statusOf(JsonNode fixture) {
+        JsonNode status = fixture.get("status");
+        if (status == null || status.isNull() || status.asText().isBlank()) {
+            return "upcoming";
+        }
+        return status.asText();
     }
 
     /* ponytail: simple 2-retry loop with sleep. Ok for dev; use resilience4j when this becomes critical. */
