@@ -26,10 +26,11 @@ public class AdminFixtureController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String league,
+            @RequestParam(required = false) String round,
             @RequestParam(required = false) Boolean scored
     ) {
         Pageable pageable = PageRequest.of(page, size);
-        return ApiResponse.ok(PageResponse.from(fixtureRepo.findAdminFixtures(status, league, scored, pageable)));
+        return ApiResponse.ok(PageResponse.from(fixtureRepo.findAdminFixtures(status, league, round, scored, pageable)));
     }
 
     @PostMapping("/sync")

@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
@@ -39,6 +40,13 @@ public class CrawlService {
 
     @Value("${app.gateway.url:http://realtime-gateway:8000}")
     private String gatewayUrl;
+
+    @PostConstruct
+    public void init() {
+        if (internalToken == null || internalToken.trim().isEmpty()) {
+            throw new IllegalArgumentException("FATAL: app.internal.token configuration is missing or empty!");
+        }
+    }
 
     @Transactional
     public CrawlResult crawl() {

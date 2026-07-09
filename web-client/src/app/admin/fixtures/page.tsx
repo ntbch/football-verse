@@ -38,18 +38,30 @@ export default function AdminFixturesPage() {
   // Filters & Pagination state
   const [page, setPage] = useState(0);
   const [league, setLeague] = useState("");
+  const [round, setRound] = useState("");
   const [status, setStatus] = useState("");
   const [scored, setScored] = useState<string>("");
 
+  // Query rounds for the selected league
+  const { data: matchCentre } = useQuery({
+    queryKey: ["admin-rounds", league],
+    queryFn: () => {
+      const targetLeague = league || "premier-league";
+      return data<{ rounds: string[] }>(http.get(`/predictions/match-centre?league=${targetLeague}`));
+    },
+  });
+  const rounds = matchCentre?.rounds ?? [];
+
   // Query fixtures
   const { data: pageData, isLoading, isPlaceholderData } = useQuery({
-    queryKey: ["admin-fixtures", page, league, status, scored],
+    queryKey: ["admin-fixtures", page, league, round, status, scored],
     queryFn: () => {
       const params = new URLSearchParams({
         page: page.toString(),
         size: "15",
       });
       if (league) params.set("league", league);
+      if (round) params.set("round", round);
       if (status) params.set("status", status);
       if (scored !== "") params.set("scored", scored);
 
@@ -116,13 +128,13 @@ export default function AdminFixturesPage() {
       </div>
 
       {/* Filters Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background-surface)]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background-surface)]">
         {/* League Slug Select */}
         <div className="flex flex-col gap-1">
           <label className="text-[9px] font-black uppercase tracking-wider" style={{ color: "var(--color-text-secondary)" }}>Filter by League</label>
           <select
             value={league}
-            onChange={(e) => { setLeague(e.target.value); setPage(0); }}
+            onChange={(e) => { setLeague(e.target.value); setRound(""); setPage(0); }}
             className="w-full px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--color-border)] bg-[var(--color-background-body)] text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
           >
             <option value="">All Leagues</option>
@@ -130,6 +142,23 @@ export default function AdminFixturesPage() {
             <option value="laliga">La Liga</option>
             <option value="serie-a">Serie A</option>
             <option value="bundesliga">Bundesliga</option>
+          </select>
+        </div>
+
+        {/* Round Select */}
+        <div className="flex flex-col gap-1">
+          <label className="text-[9px] font-black uppercase tracking-wider" style={{ color: "var(--color-text-secondary)" }}>Filter by Round</label>
+          <select
+            value={round}
+            onChange={(e) => { setRound(e.target.value); setPage(0); }}
+            className="w-full px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--color-border)] bg-[var(--color-background-body)] text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
+          >
+            <option value="">All Rounds</option>
+            {rounds.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
           </select>
         </div>
 

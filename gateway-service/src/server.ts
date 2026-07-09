@@ -9,6 +9,14 @@ const server = createServer(app);
 
 const port = process.env.PORT || 8000;
 
+// Validate critical security environment variables
+if (!process.env.INTERNAL_TOKEN || process.env.INTERNAL_TOKEN.trim() === '') {
+  throw new Error('FATAL: INTERNAL_TOKEN environment variable is not configured!');
+}
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.trim() === '') {
+  throw new Error('FATAL: JWT_SECRET environment variable is not configured!');
+}
+
 // Setup API Gateway Routing
 setupProxy(app);
 
