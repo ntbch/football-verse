@@ -2,11 +2,19 @@ package com.footballverse.prediction.repository;
 import com.footballverse.prediction.model.Fixture;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface FixtureRepository extends JpaRepository<Fixture, Long> {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select f from Fixture f where f.id = :id")
+    Optional<Fixture> findByIdForUpdate(@Param("id") Long id);
+
     Optional<Fixture> findByFixtureId(String fixtureId);
     List<Fixture> findByLeagueSlugAndStatusOrderByKickoffAsc(String leagueSlug, String status);
     List<Fixture> findByStatusAndScoredFalse(String status);

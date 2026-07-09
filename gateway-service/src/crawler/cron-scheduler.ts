@@ -4,7 +4,10 @@ import { extractLinks } from './link-extractor';
 import { scrapeArticle } from './html-scraper';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
-const INTERNAL_TOKEN = process.env.INTERNAL_TOKEN || 'dev-internal-token';
+const INTERNAL_TOKEN = process.env.INTERNAL_TOKEN;
+if (!INTERNAL_TOKEN) {
+  throw new Error('INTERNAL_TOKEN environment variable is not defined');
+}
 const CRAWL_CRON = process.env.CRAWL_CRON || '*/15 * * * *';
 
 const feedCache = new Map<string, { etag?: string; lastModified?: string }>();

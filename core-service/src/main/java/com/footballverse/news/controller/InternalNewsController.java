@@ -28,7 +28,7 @@ public class InternalNewsController {
     private final NewsSourceRepository sources;
     private final CrawlService crawlService;
 
-    @Value("${app.internal.token:dev-internal-token}")
+    @Value("${app.internal.token}")
     private String internalToken;
 
     private boolean checkToken(String tokenHeader) {

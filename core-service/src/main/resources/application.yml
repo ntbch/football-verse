@@ -22,7 +22,7 @@ spring:
 
 app:
   internal:
-    token: ${INTERNAL_TOKEN:dev-internal-token}
+    token: ${INTERNAL_TOKEN}
   gateway:
     url: ${APP_GATEWAY_URL:http://localhost:8000}
   seed:

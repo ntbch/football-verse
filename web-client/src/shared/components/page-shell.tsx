@@ -51,6 +51,8 @@ function useNotificationsSSE() {
 
         if (data.type === "PREDICTION_SCORED") {
           queryClient.invalidateQueries({ queryKey: ["predictions"] });
+          queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
+          queryClient.invalidateQueries({ queryKey: ["match-centre"] });
         }
       } catch (err) {
         console.error("Failed to parse Socket.io notification", err);

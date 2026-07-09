@@ -53,6 +53,9 @@ public class Fixture {
     @Column(nullable = false)
     private boolean scored = false;
 
+    @Column(name = "scored_at")
+    private Instant scoredAt;
+
     @jakarta.persistence.Version
     private long version;
 }

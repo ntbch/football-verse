@@ -34,7 +34,7 @@ public class CrawlService {
     private final NewsCategoryRepository categoryRepository;
     private final RichTextSanitizer sanitizer;
 
-    @Value("${app.internal.token:dev-internal-token}")
+    @Value("${app.internal.token}")
     private String internalToken;
 
     @Value("${app.gateway.url:http://realtime-gateway:8000}")

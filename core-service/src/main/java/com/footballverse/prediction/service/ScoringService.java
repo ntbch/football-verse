@@ -3,18 +3,23 @@ import com.footballverse.prediction.model.Fixture;
 import com.footballverse.prediction.model.PredictionStats;
 import com.footballverse.prediction.model.UserBadge;
 import com.footballverse.prediction.model.UserPrediction;
+import com.footballverse.prediction.model.PredictionScoreLog;
 import com.footballverse.prediction.repository.FixtureRepository;
 import com.footballverse.prediction.repository.PredictionStatsRepository;
 import com.footballverse.prediction.repository.UserBadgeRepository;
 import com.footballverse.prediction.repository.UserPredictionRepository;
+import com.footballverse.prediction.repository.PredictionScoreLogRepository;
 
 import com.footballverse.prediction.dto.BadgeResponse;
 import com.footballverse.prediction.dto.LeaderboardEntryResponse;
 import com.footballverse.prediction.dto.StatsResponse;
+import com.footballverse.prediction.dto.PredictionScoreLogResponse;
 import com.footballverse.user.model.UserAccount;
 import com.footballverse.user.repository.UserAccountRepository;
 import com.footballverse.user.model.UserProfile;
 import com.footballverse.user.repository.UserProfileRepository;
+import com.footballverse.notification.model.NotificationType;
+import com.footballverse.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -38,6 +43,8 @@ public class ScoringService {
     private final UserBadgeRepository badgeRepo;
     private final UserProfileRepository profileRepo;
     private final UserAccountRepository userAccountRepo;
+    private final PredictionScoreLogRepository scoreLogRepo;
+    private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
     public StatsResponse stats(Long userId) {
@@ -116,11 +123,16 @@ public class ScoringService {
     @Transactional
     @CacheEvict(value = "leaderboard", allEntries = true)
     public void scoreFixture(Long fixtureId) {
-        Fixture fixture = fixtureRepo.findById(fixtureId).orElseThrow();
+        Fixture fixture = fixtureRepo.findByIdForUpdate(fixtureId)
+                .orElseThrow(() -> new IllegalArgumentException("Fixture not found"));
         if (fixture.isScored()) return;
+        if (!"result".equals(fixture.getStatus())) return;
         if (fixture.getHomeScore() == null || fixture.getAwayScore() == null) return;
 
         fixture.setScored(true);
+        fixture.setScoredAt(Instant.now());
+        fixtureRepo.save(fixture);
+
         int homeScore = fixture.getHomeScore();
         int awayScore = fixture.getAwayScore();
 
@@ -132,11 +144,11 @@ public class ScoringService {
             boolean ou25Correct = isOu25Correct(pred.getPickOu25(), homeScore, awayScore);
             boolean bttsCorrect = isBttsCorrect(pred.getPickBtts(), homeScore, awayScore);
 
-            int points = 0;
-            if (outcomeCorrect) points += 3;
-            if (scoreExact) points += 5;
-            if (ou25Correct) points += 2;
-            if (bttsCorrect) points += 2;
+            int outcomePts = outcomeCorrect ? 3 : 0;
+            int exactScorePts = scoreExact ? 5 : 0;
+            int ou25Pts = ou25Correct ? 2 : 0;
+            int bttsPts = bttsCorrect ? 2 : 0;
+            int points = outcomePts + exactScorePts + ou25Pts + bttsPts;
 
             pred.setPoints(points);
             pred.setCorrect(outcomeCorrect || scoreExact || ou25Correct || bttsCorrect);
@@ -145,6 +157,35 @@ public class ScoringService {
             pred.setCorrectOu25(ou25Correct);
             pred.setCorrectBtts(bttsCorrect);
             predictionRepo.save(pred);
+
+            // Log detailed breakdown
+            PredictionScoreLog logEntity = new PredictionScoreLog();
+            logEntity.setPrediction(pred);
+            logEntity.setFixture(fixture);
+            logEntity.setUser(pred.getUser());
+            logEntity.setPoints(points);
+            logEntity.setOutcomePoints(outcomePts);
+            logEntity.setExactScorePoints(exactScorePts);
+            logEntity.setOu25Points(ou25Pts);
+            logEntity.setBttsPoints(bttsPts);
+            logEntity.setScoredAt(Instant.now());
+            StringBuilder reasonBuilder = new StringBuilder();
+            if (outcomeCorrect) reasonBuilder.append("Outcome Correct (+3). ");
+            if (scoreExact) reasonBuilder.append("Exact Score Correct (+5). ");
+            if (ou25Correct) reasonBuilder.append("O/U 2.5 Correct (+2). ");
+            if (bttsCorrect) reasonBuilder.append("BTTS Correct (+2). ");
+            if (points == 0) reasonBuilder.append("No correct markets.");
+            logEntity.setReason(reasonBuilder.toString().trim());
+            scoreLogRepo.save(logEntity);
+
+            // Send notification
+            notificationService.create(
+                    pred.getUser(),
+                    NotificationType.PREDICTION_SCORED,
+                    "Your prediction for " + fixture.getHomeTeam() + " vs " + fixture.getAwayTeam()
+                            + " has been scored. You earned " + points + " points.",
+                    "/predictions"
+            );
 
             PredictionStats stats = getOrCreateStats(pred.getUser());
             stats.setTotalPoints(stats.getTotalPoints() + points);
@@ -204,5 +245,27 @@ public class ScoringService {
             badge.setAwardedAt(Instant.now());
             badgeRepo.save(badge);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<PredictionScoreLogResponse> getScoreLogs(Long userId) {
+        return scoreLogRepo.findByUserIdOrderByScoredAtDesc(userId).stream()
+                .map(log -> new PredictionScoreLogResponse(
+                        log.getId(),
+                        log.getPrediction().getId(),
+                        log.getFixture().getId(),
+                        log.getFixture().getHomeTeam(),
+                        log.getFixture().getAwayTeam(),
+                        log.getFixture().getHomeScore(),
+                        log.getFixture().getAwayScore(),
+                        log.getPoints(),
+                        log.getOutcomePoints(),
+                        log.getExactScorePoints(),
+                        log.getOu25Points(),
+                        log.getBttsPoints(),
+                        log.getReason(),
+                        log.getScoredAt() != null ? log.getScoredAt().toString() : null
+                ))
+                .collect(Collectors.toList());
     }
 }

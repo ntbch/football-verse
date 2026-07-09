@@ -10,6 +10,7 @@ import com.footballverse.prediction.dto.MatchCentreResponse;
 import com.footballverse.prediction.dto.PredictionRequest;
 import com.footballverse.prediction.dto.PredictionResponse;
 import com.footballverse.prediction.dto.StatsResponse;
+import com.footballverse.prediction.dto.PredictionScoreLogResponse;
 import com.footballverse.security.CurrentUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -58,6 +59,11 @@ public class PredictionController {
     @GetMapping("/stats")
     public ApiResponse<StatsResponse> stats() {
         return ApiResponse.ok(scoringService.stats(currentUser.get().getId()));
+    }
+
+    @GetMapping("/score-logs")
+    public ApiResponse<List<PredictionScoreLogResponse>> scoreLogs() {
+        return ApiResponse.ok(scoringService.getScoreLogs(currentUser.get().getId()));
     }
 
     @GetMapping("/leaderboard")
