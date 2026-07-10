@@ -1,8 +1,10 @@
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { Express } from 'express';
+import { authenticateGameRequest } from './game-auth';
 
 const backendUrl = process.env.BACKEND_URL || 'http://localhost:8080';
 const predictionServiceUrl = process.env.PREDICTION_SERVICE_URL || 'http://localhost:8090';
+const gameServiceUrl = process.env.GAME_SERVICE_URL || 'http://localhost:8081';
 
 export const setupProxy = (app: Express): void => {
   // Route /api/v1/* to Spring Boot Core
@@ -35,11 +37,12 @@ export const setupProxy = (app: Express): void => {
     })
   );
 
-  // Route /game/* to Python Prediction Service
+  // Route authenticated /game/* requests to the Game Service.
   app.use(
     '/game',
+    authenticateGameRequest,
     createProxyMiddleware({
-      target: predictionServiceUrl,
+      target: gameServiceUrl,
       changeOrigin: true,
       pathRewrite: (path) => `/game${path}`,
     })

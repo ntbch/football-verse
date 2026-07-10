@@ -203,10 +203,10 @@ export function Navbar() {
               { href: "/news", label: "News" },
               { href: "/forum", label: "Forum" },
               { href: "/predictions", label: "Predictions" },
-              { href: "/matches", label: "Tactics Arena" },
+              { href: "/career", label: "Career" },
             ].map(({ href, label }) => {
               const active = isActive(href);
-              if (href === "/matches") {
+              if (href === "/career") {
                 return (
                   <Link
                     key={href}
@@ -420,10 +420,10 @@ export function Navbar() {
               { href: "/news", label: "News" },
               { href: "/forum", label: "Forum" },
               { href: "/predictions", label: "Predictions" },
-              { href: "/matches", label: "Tactics Arena" },
+              { href: "/career", label: "Career" },
             ].map(({ href, label }) => {
               const active = isActive(href);
-              if (href === "/matches") {
+              if (href === "/career") {
                 return (
                   <Link
                     key={href}

@@ -13,7 +13,7 @@ This document specifies the architecture and implementation plan for moving the 
   * Inter-service event communication using Redis Pub/Sub.
 * **Core Responsibilities**:
   * Route `/api/v1/*` HTTP traffic to Spring Boot Core.
-  * Route `/matches/*`, `/standings/*`, `/game/*` HTTP traffic to Python Match/Game.
+  * Route `/matches/*` and `/standings/*` to Prediction Service; route `/game/*` to Spring Game Service.
   * Accept WebSockets connection under `/socket.io/*` and push realtime events (scores, leaderboards, notifications).
 * **Non-Goals**: Re-writing authentication, modifying prediction databases, or implementing game simulation.
 
@@ -22,7 +22,7 @@ This document specifies the architecture and implementation plan for moving the 
 ## 2. Major Assumptions
 
 1. **Redis Event Broker**: A Redis container is running in local Docker Compose. All services (Spring Boot, Python, Node) can connect to it.
-2. **Pass-Through Authentication**: The gateway is NOT responsible for verifying JWT signatures. It passes the `Authorization: Bearer <JWT>` header unchanged down to Spring Boot for validation.
+2. **Authentication**: Core routes pass JWT through. Game routes validate JWT at the gateway, then receive trusted internal identity headers in Game Service.
 3. **WebSocket Authentication**: The Next.js frontend will supply the JWT token during the WebSocket connection handshake (e.g., via query string parameter `token` or initial handshake payload).
 4. **Low Scale Dev Mode**: Designed for local development and learning purposes, optimized for low overhead and rapid startup.
 
@@ -47,10 +47,9 @@ This document specifies the architecture and implementation plan for moving the 
 * **Alternatives Considered**: Server-Sent Events (SSE).
 * **Rationale**: WebSockets support bidirectional communication, which will support future PvP features, real-time match room chat, and game commands without requiring another protocol switch.
 
-### Decision 4: JWT Pass-through
-* **Description**: Gateway forwards HTTP Authorization header downstream without local validation.
-* **Alternatives Considered**: Validate JWT at the Gateway using a shared secret.
-* **Rationale**: Keep gateway logic simple and avoid duplicating JWT parsing code. Spring Security in the backend already works perfectly.
+### Decision 4: Route-specific JWT handling
+* **Description**: Core routes pass JWT through; `/game/*` validates JWT at Gateway and forwards trusted identity headers to Game Service.
+* **Rationale**: Core keeps existing Spring Security while Game Service avoids coupling to `core_db`.
 
 ---
 
@@ -74,9 +73,9 @@ realtime-gateway/
 | Request Path | Downstream URL | Service |
 |---|---|---|
 | `/api/v1/*` | `http://backend:8080/api/v1/*` | Spring Boot Core |
-| `/matches/*` | `http://match-engine:8090/matches/*` | Python Match/Game |
-| `/standings/*` | `http://match-engine:8090/standings/*` | Python Match/Game |
-| `/game/*` | `http://match-engine:8090/game/*` | Python Match/Game |
+| `/matches/*` | `http://prediction-service:8090/matches/*` | Prediction Service |
+| `/standings/*` | `http://prediction-service:8090/standings/*` | Prediction Service |
+| `/game/*` | `http://game-service:8081/game/*` | Spring Game Service |
 | `/socket.io/*` | Local handler | Node Realtime Gateway |
 
 ---
@@ -88,6 +87,6 @@ realtime-gateway/
 * Run unit tests verifying that Redis message triggers Socket.io emission.
 
 ### Manual Verification
-* Start PostgreSQL, Redis, Spring Boot, Python Match Engine, and Realtime Gateway via Docker Compose.
+* Start both PostgreSQL databases, Core, Prediction Service, Game Service, Match Engine, Redis, and Gateway via Docker Compose.
 * Verify `/api/v1/auth/me` returns correct user data via Gateway port 8000.
 * Connect a WebSocket client to Gateway, publish a test payload to `realtime:matches` via Redis CLI, and verify the client receives the event.

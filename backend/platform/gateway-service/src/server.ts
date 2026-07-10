@@ -8,6 +8,23 @@ const app = express();
 const server = createServer(app);
 
 const port = process.env.PORT || 8000;
+const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin === corsOrigin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.header('Vary', 'Origin');
+  }
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(204);
+    return;
+  }
+  next();
+});
 
 // Setup API Gateway Routing
 setupProxy(app);

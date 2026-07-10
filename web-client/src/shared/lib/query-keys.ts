@@ -34,4 +34,11 @@ export const qk = {
     leaderboard: (period: string) => ["predictions", "leaderboard", period] as const,
     matchCentre: (league: string, round?: string) => ["predictions", "match-centre", league, round ?? ""] as const,
   },
+  game: {
+    saves: () => ["game", "saves"] as const,
+    save: (id: string) => ["game", "save", id] as const,
+    squad: (saveId: string, clubId: string) => ["game", "squad", saveId, clubId] as const,
+    match: (saveId: string, matchId: string) => ["game", "match", saveId, matchId] as const,
+    standings: (saveId: string) => ["game", "standings", saveId] as const,
+  },
 } as const;

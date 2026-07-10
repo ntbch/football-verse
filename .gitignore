@@ -1,5 +1,6 @@
 # Java
-core-service/target/
+backend/platform/core-service/target/
+backend/game/game-service/target/
 *.class
 
 # Node / Next

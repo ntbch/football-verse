@@ -69,3 +69,19 @@ Public like, bookmark, and comment endpoints only accept published news articles
 - `GET /notifications` lists notifications for the current user.
 - `PATCH /notifications/{id}/read` marks one current-user notification read.
 - `PATCH /notifications/read-all` marks all current-user notifications read.
+
+## Career game
+
+Career routes use the gateway prefix `/game` and require the normal bearer token.
+
+- `POST /game/saves` creates a Career with 4 fictional clubs, squads, and a six-fixture season.
+- `GET /game/saves` and `GET /game/saves/{saveId}` return owned saves, current-season fixtures, season summary, and history.
+- `GET /game/saves/{saveId}/clubs/{clubId}/squad` returns an owned Career squad, including attributes, availability, fitness, morale, and form.
+- `POST /game/saves/{saveId}/advance-day` moves the Career date forward one day.
+- `POST /game/saves/{saveId}/next-season` starts a fresh season after the current one is finished.
+- `GET /game/saves/{saveId}/standings` derives the league table from completed stored matches.
+- `POST /game/saves/{saveId}/fixtures/{fixtureId}/play` accepts `seed`, `homeLineup` with starters/bench, and `homeTactic`, then returns `matchId` and the stored result.
+- `GET /game/saves/{saveId}/matches/{matchId}` reloads the deterministic result snapshot.
+- `GET /game/saves/{saveId}/matches/{matchId}/events` returns its ordered timeline.
+
+The gateway overwrites identity headers. Clients must not send `X-User-Id` or call `game-service` directly.

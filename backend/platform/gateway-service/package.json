@@ -7,6 +7,7 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "dev:crawler": "ts-node-dev --respawn --transpile-only src/crawler-worker.ts",
     "build": "tsc",
+    "test": "npm run build && node --test test/*.test.js",
     "start": "node dist/server.js",
     "start:crawler": "node dist/crawler-worker.js"
   },

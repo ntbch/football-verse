@@ -10,8 +10,50 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  match-game-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${MATCH_GAME_DB_NAME:-match_game_db}
+      POSTGRES_USER: ${MATCH_GAME_DB_USER:-match_game}
+      POSTGRES_PASSWORD: ${MATCH_GAME_DB_PASSWORD:-match_game}
+    ports:
+      - "127.0.0.1:${MATCH_GAME_DB_PORT:-55433}:5432"
+    volumes:
+      - match_game_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  match-engine:
+    build: ./backend/game/match-engine
+    expose:
+      - "8091"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8091/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  game-service:
+    build: ./backend/game/game-service
+    environment:
+      - MATCH_GAME_DB_URL=jdbc:postgresql://match-game-postgres:5432/match_game_db
+      - MATCH_GAME_DB_USER=${MATCH_GAME_DB_USER:-match_game}
+      - MATCH_GAME_DB_PASSWORD=${MATCH_GAME_DB_PASSWORD:-match_game}
+      - MATCH_ENGINE_URL=http://match-engine:8091
+      - INTERNAL_TOKEN=${INTERNAL_TOKEN}
+    expose:
+      - "8081"
+    depends_on:
+      match-game-postgres:
+        condition: service_healthy
+      match-engine:
+        condition: service_started
+
   prediction-service:
-    build: ./prediction-service
+    build: ./backend/platform/prediction-service
     environment:
       FOOTBALL_API_KEY: ${FOOTBALL_API_KEY:-}
       FOOTBALL_PROVIDER: ${FOOTBALL_PROVIDER:-football-data}
@@ -24,7 +66,7 @@ services:
     image: redis:7-alpine
 
   core-service:
-    build: ./core-service
+    build: ./backend/platform/core-service
     environment:
       - DB_URL=jdbc:postgresql://postgres:5432/football_verse
       - DB_USERNAME=football_verse
@@ -34,30 +76,34 @@ services:
       - PREDICTION_SERVICE_URL=http://prediction-service:8090
       - APP_GATEWAY_URL=http://gateway-service:8000
       - INTERNAL_TOKEN=${INTERNAL_TOKEN}
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me-dev-secret-change-me}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
     depends_on:
       - postgres
       - redis
 
   gateway-service:
-    build: ./gateway-service
+    build: ./backend/platform/gateway-service
     ports:
       - "8000:8000"
     environment:
       - PORT=8000
       - BACKEND_URL=http://core-service:8080
       - PREDICTION_SERVICE_URL=http://prediction-service:8090
+      - GAME_SERVICE_URL=http://game-service:8081
       - REDIS_URL=redis://redis:6379
       - INTERNAL_TOKEN=${INTERNAL_TOKEN}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3000}
       - ENABLE_CRAWLER=false
-      - JWT_SECRET=${JWT_SECRET}
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me-dev-secret-change-me}
     depends_on:
       - redis
       - prediction-service
+      - game-service
       - core-service
 
   crawler-service:
-    build: ./gateway-service
+    build: ./backend/platform/gateway-service
     command: npm run start:crawler
     environment:
       - REDIS_URL=redis://redis:6379
@@ -80,3 +126,4 @@ services:
 
 volumes:
   postgres_data:
+  match_game_postgres_data:
