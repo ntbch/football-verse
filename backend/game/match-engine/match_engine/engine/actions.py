@@ -1,4 +1,5 @@
 import random
+import ast
 from dataclasses import dataclass
 from enum import StrEnum
 from collections.abc import Iterable, Sequence
@@ -28,8 +29,14 @@ class ActionOutcome:
 
 
 class MatchRandom:
-    def __init__(self, seed: int):
+    def __init__(self, seed: int, state: str | None = None):
         self._random = random.Random(seed)
+        if state is not None:
+            self._random.setstate(ast.literal_eval(state))
+
+    @property
+    def state(self) -> str:
+        return repr(self._random.getstate())
 
     def uniform(self, low: float, high: float) -> float:
         return self._random.uniform(low, high)
@@ -44,9 +51,14 @@ class MatchRandom:
 def select_player(team: TeamSnapshot, positions: Iterable[Position], rng: MatchRandom) -> PlayerSnapshot:
     wanted = set(positions)
     starter_ids = {slot.player_id for slot in team.lineup.starters if slot.position in wanted}
-    candidates = sorted((player for player in team.players if player.id in starter_ids), key=lambda player: str(player.id))
+    candidates = sorted((player for player in team.players
+                         if player.id in starter_ids and player.id not in team.inactive_player_ids),
+                        key=lambda player: str(player.id))
     if not candidates:
-        raise ValueError("No eligible starter for requested positions")
+        active_ids = {slot.player_id for slot in team.lineup.starters} - team.inactive_player_ids
+        candidates = sorted((player for player in team.players if player.id in active_ids), key=lambda player: str(player.id))
+    if not candidates:
+        raise ValueError("No active starter available")
     return rng.choice(candidates)
 
 

@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from match_engine.domain import (
     FORMATION_POSITIONS,
+    Duty,
     Formation,
     Lineup,
     LineupSlot,
@@ -81,6 +82,14 @@ def test_lineup_requires_exact_formation_positions():
 def test_role_must_match_position():
     with pytest.raises(ValidationError, match="not valid for position"):
         LineupSlot(player_id=uuid4(), position=Position.GK, role=PlayerRole.POACHER)
+
+
+def test_all_formations_have_eleven_slots_and_duties_are_validated():
+    assert len(FORMATION_POSITIONS) == 15
+    assert all(len(positions) == 11 for positions in FORMATION_POSITIONS.values())
+    assert LineupSlot(player_id=uuid4(), position=Position.GK, role=PlayerRole.GOALKEEPER).duty == Duty.DEFEND
+    with pytest.raises(ValidationError, match="not valid for role"):
+        LineupSlot(player_id=uuid4(), position=Position.ST, role=PlayerRole.POACHER, duty=Duty.SUPPORT)
 
 
 def test_selected_player_must_be_available():

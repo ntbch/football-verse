@@ -1,3 +1,14 @@
+const gamePrincipal = () => {
+  if (typeof window === "undefined") return "anonymous";
+  try {
+    const auth = JSON.parse(window.localStorage.getItem("football-verse-auth") ?? "null") as { userId?: number } | null;
+    return String(auth?.userId ?? "anonymous");
+  } catch {
+    return "anonymous";
+  }
+};
+const gameKey = (...parts: (string | number)[]) => ["game", gamePrincipal(), ...parts] as const;
+
 export const qk = {
   news: {
     list: () => ["news"] as const,
@@ -35,10 +46,11 @@ export const qk = {
     matchCentre: (league: string, round?: string) => ["predictions", "match-centre", league, round ?? ""] as const,
   },
   game: {
-    saves: () => ["game", "saves"] as const,
-    save: (id: string) => ["game", "save", id] as const,
-    squad: (saveId: string, clubId: string) => ["game", "squad", saveId, clubId] as const,
-    match: (saveId: string, matchId: string) => ["game", "match", saveId, matchId] as const,
-    standings: (saveId: string) => ["game", "standings", saveId] as const,
+    key: gameKey,
+    saves: () => gameKey("saves"),
+    save: (id: string) => gameKey("save", id),
+    squad: (saveId: string, clubId: string) => gameKey("squad", saveId, clubId),
+    match: (saveId: string, matchId: string) => gameKey("match", saveId, matchId),
+    standings: (saveId: string) => gameKey("standings", saveId),
   },
 } as const;

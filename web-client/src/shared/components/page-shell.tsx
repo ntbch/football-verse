@@ -82,13 +82,13 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
 }
 
 // 2. Sports Shell (Command Center style wrapper)
-export function SportsShell({ children }: { children: React.ReactNode }) {
+export function SportsShell({ children, game = false }: { children: React.ReactNode; game?: boolean }) {
   useNotificationsSSE();
 
   return (
     <div className="theme-magazine min-h-screen flex flex-col bg-[var(--color-background-body)] text-[var(--color-text-primary)] transition-all">
-      <Navbar />
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-8 animate-fade-in">{children}</main>
+      {!game && <Navbar />}
+      <main className={game ? "flex-1 w-full animate-fade-in" : "flex-1 max-w-7xl w-full mx-auto p-4 md:p-8 animate-fade-in"}>{children}</main>
     </div>
   );
 }

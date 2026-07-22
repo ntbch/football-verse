@@ -12,6 +12,7 @@ public record PlayerSnapshot(
     Position primaryPosition,
     Set<Position> secondaryPositions,
     PlayerAttributes attributes,
+    int age,
     PlayerAvailability availability,
     double fitness,
     double morale,

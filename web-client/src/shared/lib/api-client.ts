@@ -12,7 +12,7 @@ export interface ApiEnvelope<T> {
 
 export const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 
-export const http = axios.create({ baseURL: apiBaseUrl });
+export const http = axios.create({ baseURL: apiBaseUrl, timeout: 15_000 });
 
 type RetryConfig = InternalAxiosRequestConfig & { _retry?: boolean };
 
@@ -59,6 +59,12 @@ http.interceptors.response.use(
           window.location.href = "/login";
         }
       }
+    }
+    const method = original?.method?.toUpperCase();
+    if (typeof window !== "undefined" && method && method !== "GET" && ![401, 403].includes(error.response?.status ?? 0)) {
+      window.dispatchEvent(new CustomEvent("football-verse:api-error", {
+        detail: error.response?.data.message ?? (error.response ? "Action failed. Please try again." : "Server is unavailable. Please try again."),
+      }));
     }
     return Promise.reject(error);
   }

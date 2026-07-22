@@ -1,219 +1,174 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { SportsShell } from "@/shared/components/page-shell";
 import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import { useAuthStore } from "@/shared/lib/auth-store";
-import { useAdvanceDay, useCareer, useCareerSaves, useCreateCareer, useNextSeason, usePlayFixture, useSquad, useStandings } from "./_api";
-import type { Formation, LineupSlot, Player, PlayerRole, Position, Tactic } from "./_types";
-
-const FORMATIONS: Record<Formation, Position[]> = {
-  "4-3-3": ["GK", "LB", "CB", "CB", "RB", "CM", "CM", "CM", "LW", "RW", "ST"],
-  "4-4-2": ["GK", "LB", "CB", "CB", "RB", "LM", "CM", "CM", "RM", "ST", "ST"],
-  "3-5-2": ["GK", "CB", "CB", "CB", "LWB", "CM", "CM", "CM", "RWB", "ST", "ST"],
-  "4-2-3-1": ["GK", "LB", "CB", "CB", "RB", "DM", "DM", "LW", "AM", "RW", "ST"],
-};
-
-const ROLES: Partial<Record<Position, PlayerRole[]>> = {
-  GK: ["GOALKEEPER"], LB: ["FULL_BACK", "WING_BACK"], RB: ["FULL_BACK", "WING_BACK"],
-  LWB: ["WING_BACK"], RWB: ["WING_BACK"], CB: ["CENTRAL_DEFENDER"],
-  DM: ["BALL_WINNER", "CENTRAL_MIDFIELDER"], CM: ["CENTRAL_MIDFIELDER", "BALL_WINNER", "ADVANCED_PLAYMAKER"],
-  AM: ["ADVANCED_PLAYMAKER"], LM: ["WINGER"], RM: ["WINGER"], LW: ["WINGER", "INSIDE_FORWARD"],
-  RW: ["WINGER", "INSIDE_FORWARD"], ST: ["POACHER", "TARGET_FORWARD", "PRESSING_FORWARD"],
-};
-
-const DEFAULT_TACTIC: Tactic = {
-  mentality: "BALANCED", tempo: "NORMAL", width: "NORMAL", passing_style: "MIXED",
-  pressing: "STANDARD", defensive_line: "STANDARD", transition: "BALANCED", time_wasting: "OFF",
-};
-
-const overall = (player: Player) => Math.round(Object.values(player.attributes).reduce((sum, value) => sum + value, 0) /
-  Math.max(1, Object.keys(player.attributes).length));
-const label = (player: Player) =>
-  `${player.name} · ${player.primary_position} · OVR ${overall(player)} · Fit ${Math.round(player.fitness)} · Form ${Math.round(player.form)}${player.availability === "AVAILABLE" ? "" : ` · ${player.availability}`}`;
-
-function Instruction({ label, value, values, onChange }: {
-  label: string; value: string; values: string[]; onChange: (value: string) => void;
-}) {
-  return <label className="flex flex-col gap-1 text-[10px] font-black uppercase tracking-wider">
-    {label}
-    <select className="input !py-2 !text-xs" value={value} onChange={(event) => onChange(event.target.value)}>
-      {values.map((option) => <option key={option}>{option}</option>)}
-    </select>
-  </label>;
-}
+import type { Player } from "./_types";
+import { PlayerInspector } from "./_components/player-inspector";
+import { SubTabs } from "./_components/sub-tabs";
+import { CareerLauncher } from "./_components/career-launcher";
+import { CareerSidebar } from "./_components/career-sidebar";
+import { CareerContextHeader } from "./_components/career-context-header";
+import { FixtureDetail, MarketDetail } from "./_components/career-detail-panels";
+import { FormationPreview } from "./_components/formation-preview";
+import { FixturesTab } from "./_components/fixtures-tab";
+import { HistoryTab } from "./_components/history-tab";
+import { ManagerTab } from "./_components/manager-tab";
+import { OverviewTab } from "./_components/overview-tab";
+import { SquadTab } from "./_components/squad-tab";
+import { TableTab } from "./_components/table-tab";
+import { TacticsTab } from "./_components/tactics-tab";
+import { TransfersTab } from "./_components/transfers-tab";
+import { SUB_TABS, TABS, type SubTab } from "./_navigation";
+import { useCareerLocation } from "./_hooks/use-career-location";
+import { useCareerData } from "./_hooks/use-career-data";
+import { useTacticsDraft } from "./_hooks/use-tactics-draft";
 
 export default function CareerPage() {
+  const router = useRouter();
   const auth = useAuthStore((state) => state.auth);
-  const saves = useCareerSaves(Boolean(auth));
-  const create = useCreateCareer();
   const [saveId, setSaveId] = useState("");
   const [name, setName] = useState("My Career");
-  const [formation, setFormation] = useState<Formation>("4-3-3");
-  const [slots, setSlots] = useState<LineupSlot[]>([]);
-  const [bench, setBench] = useState<string[]>([]);
-  const [tactic, setTactic] = useState<Tactic>(DEFAULT_TACTIC);
-
-  useEffect(() => {
-    if (!saveId && saves.data?.[0]) setSaveId(saves.data[0].id);
-  }, [saveId, saves.data]);
-
-  const career = useCareer(saveId);
-  const fixture = career.data?.fixtures.find((item) =>
-    item.status === "SCHEDULED" && item.matchDate <= career.data.save.gameDate);
-  const nextFixture = career.data?.fixtures.find((item) => item.status === "SCHEDULED");
-  const squad = useSquad(saveId, fixture?.homeClubId ?? "");
-  const play = usePlayFixture(saveId, fixture?.id ?? "");
-  const advance = useAdvanceDay(saveId);
-  const nextSeason = useNextSeason(saveId);
-  const standings = useStandings(saveId);
+  const [rename, setRename] = useState("");
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const tacticsDirtyRef = useRef(false);
+  const location = useCareerLocation(tacticsDirtyRef);
+  const { tab, subTab, mobileNavOpen, setMobileNavOpen, selectedFixtureId, selectedMarketId, query,
+    queryInput, setQueryInput, page, selectTab, selectSubTab, setDetail, submitQuery, clearQuery, selectPage } = location;
+  const data = useCareerData({ saveId, tab, subTab, page, query, selectedFixtureId, selectedMarketId, authEnabled: Boolean(auth) });
+  const { saves, create, career, managedClubId, fixture, nextFixture, squad, savedTactics, saveTactics,
+    playerAnalysis, standings, playerStats, manager, managerDecisions, managerJobs, acceptManagerJob, market,
+    offers, activeSession, startSession, advance, nextSeason, training, renameCareer, deleteCareer, scout,
+    submitOffer, offerTerms, completeTransfer, setTransferStatus, visibleFixtures, selectedFixture, selectedMarket } = data;
+  useEffect(() => setRename(career.data?.save.name ?? ""), [career.data?.save.name]);
+  const draft = useTacticsDraft({ saveId, squad: squad.data, saved: savedTactics.data, loading: savedTactics.isLoading, dirtyRef: tacticsDirtyRef });
+  const { formation, slots, setSlots, bench, setBench, tactic, setTactic, pending: pendingFormation,
+    setPending: setPendingFormation, error: formationError, valid: validLineup, dirty: tacticsDirty } = draft;
   const seasonFinished = career.data?.save.status === "SEASON_FINISHED";
-
-  useEffect(() => {
-    if (!squad.data?.length) return;
-    const unused = squad.data.filter((player) => player.availability === "AVAILABLE");
-    setSlots(FORMATIONS[formation].map((position) => {
-      const index = Math.max(0, unused.findIndex((player) => player.primary_position === position));
-      const [player] = unused.splice(index, 1);
-      return { player_id: player.id, position, role: ROLES[position]?.[0] ?? "CENTRAL_MIDFIELDER" };
-    }));
-    setBench(unused.slice(0, 7).map((player) => player.id));
-  }, [formation, squad.data]);
-
-  const validLineup = useMemo(() => {
-    const starterIds = slots.map((slot) => slot.player_id);
-    const unavailable = new Set(squad.data?.filter((player) => player.availability !== "AVAILABLE").map((player) => player.id));
-    return starterIds.length === 11 && new Set(starterIds).size === 11
-      && bench.every((id) => !starterIds.includes(id))
-      && [...starterIds, ...bench].every((id) => !unavailable.has(id));
-  }, [bench, slots, squad.data]);
+  const clubName = manager.data?.clubName ?? "Football Verse FC";
+  const clubMark = clubName.split(/\s+/).map((part) => part[0]).join("").slice(0, 3).toUpperCase();
+  const nextOpponent = nextFixture
+    ? nextFixture.homeClubId === managedClubId ? nextFixture.awayClubName : nextFixture.homeClubName
+    : "No fixture";
 
   const submitCreate = (event: FormEvent) => {
     event.preventDefault();
     if (!name.trim()) return;
-    create.mutate(name.trim(), { onSuccess: (created) => setSaveId(created.id) });
+    create.mutate(name.trim(), { onSuccess: (created) => {
+      draft.reset();
+      setSaveId(created.id);
+    } });
+  };
+  const submitRename = (event: FormEvent) => {
+    event.preventDefault();
+    if (rename.trim()) renameCareer.mutate(rename.trim());
+  };
+  const removeSave = () => {
+    if (!career.data || !window.confirm(`Delete "${career.data.save.name}"?`)) return;
+    deleteCareer.mutate(undefined, { onSuccess: () => setSaveId("") });
+  };
+  const openSession = (sessionId: string) => router.push(`/matches?saveId=${saveId}&sessionId=${sessionId}`);
+  const startMatchday = () => {
+    if (!fixture || !validLineup) return;
+    saveTactics.mutate({ lineup: { formation, starters: slots, bench }, tactic }, {
+      onSuccess: () => startSession.mutate({
+        requestId: crypto.randomUUID(), seed: Date.now(), lineup: { formation, starters: slots, bench }, tactic,
+      }, {
+        onSuccess: (session) => openSession(session.id),
+      }),
+    });
   };
 
   if (!auth) return <SportsShell><div className="card p-8 text-center">
     <p className="mb-4">Log in to start a Career.</p><Link className="btn btn-primary" href="/login">Login</Link>
   </div></SportsShell>;
 
-  return <SportsShell><div className="flex flex-col gap-5">
-    <header><p className="eyebrow">Football Manager Lite</p><h1 className="text-3xl font-black font-serif">Career</h1></header>
+  if (!saveId) return <SportsShell game><CareerLauncher saves={saves.data} name={name} loading={saves.isLoading}
+    error={Boolean(saves.error)} creating={create.isPending} onNameChange={setName} onCreate={submitCreate}
+    onOpen={(id) => { draft.reset(); setSaveId(id); }} /></SportsShell>;
 
-    <section className="card p-4 flex flex-col md:flex-row gap-3">
-      <form onSubmit={submitCreate} className="flex flex-1 gap-2">
-        <input className="input flex-1" value={name} maxLength={100} onChange={(event) => setName(event.target.value)} aria-label="Career name" />
-        <button className="btn btn-primary" disabled={create.isPending}>Create</button>
-      </form>
-      <select className="input md:w-64" value={saveId} onChange={(event) => setSaveId(event.target.value)} aria-label="Career save">
-        <option value="">Select Career</option>
-        {saves.data?.map((save) => <option key={save.id} value={save.id}>{save.name}</option>)}
-      </select>
-    </section>
+  return <SportsShell game><div className="career-workspace">
+    <CareerSidebar tab={tab} open={mobileNavOpen} clubMark={clubMark} clubName={clubName}
+      dirty={tab === "tactics" && tacticsDirty} onClose={() => setMobileNavOpen(false)} onSelect={selectTab} />
+    <main className="career-main flex flex-col gap-5">
+    <CareerContextHeader tab={tab} career={career.data} clubMark={clubMark} clubName={clubName}
+      nextOpponent={nextOpponent} nextFixture={nextFixture} mobileOpen={mobileNavOpen}
+      continuePending={advance.isPending || nextSeason.isPending || startSession.isPending}
+      hasSession={Boolean(activeSession.data)} fixtureDue={Boolean(fixture)} seasonFinished={seasonFinished}
+      dirty={tab === "tactics" && tacticsDirty} onMobileOpen={() => setMobileNavOpen(true)} onExit={() => setSaveId("")}
+      onContinue={() => { if (activeSession.data) openSession(activeSession.data.id); else if (seasonFinished) nextSeason.mutate(); else if (fixture) selectTab("tactics"); else advance.mutate(); }} />
+
+    {SUB_TABS[tab] && <SubTabs items={SUB_TABS[tab]!} value={(subTab || SUB_TABS[tab]![0].id) as SubTab}
+      onChange={selectSubTab} label={`${TABS.find((item) => item.id === tab)?.label} sections`} />}
 
     {(saves.isLoading || career.isLoading || squad.isLoading || standings.isLoading) && <LoadingBlock label="Loading Career" />}
     {(saves.error || career.error || squad.error || standings.error) && <ErrorBlock message="Could not load Career data." />}
+    {tab === "transfers" && (market.isLoading || (subTab === "negotiations" && offers.isLoading)) && !market.data && <LoadingBlock label="Loading Transfers" />}
+    {tab === "transfers" && (market.error || (subTab === "negotiations" && offers.error)) && <ErrorBlock message="Could not load transfer data." />}
+    {tab === "table" && subTab === "player-stats" && playerStats.isLoading && !playerStats.data && <LoadingBlock label="Loading Player Stats" />}
+    {tab === "table" && subTab === "player-stats" && playerStats.error && <ErrorBlock message="Could not load player statistics." />}
 
-    {career.data && <section className="card p-4 flex items-center justify-between gap-3">
-      <div><span className="text-xs text-[var(--color-text-secondary)]">Season</span><strong className="block">{career.data.save.seasonNumber}</strong></div>
-      <div><span className="text-xs text-[var(--color-text-secondary)]">Career date</span><strong className="block">{career.data.save.gameDate}</strong></div>
-      {seasonFinished ? <button className="btn btn-primary" disabled={nextSeason.isPending} onClick={() => nextSeason.mutate()}>
-        {nextSeason.isPending ? "Starting..." : "Start next season"}
-      </button> : <button className="btn btn-secondary" disabled={advance.isPending || !nextFixture} onClick={() => advance.mutate()}>
-        {advance.isPending ? "Advancing..." : "Advance day"}
-      </button>}
-    </section>}
+    {career.data && <>
+      {activeSession.data && <section className="card p-4 flex flex-wrap items-center justify-between gap-3 border-emerald-500/40">
+        <div><p className="eyebrow">Matchday in progress</p><strong>Paused at {activeSession.data.minute}&apos; · {activeSession.data.pauseReason.replaceAll("_", " ").toLowerCase()}</strong></div>
+        <button className="btn btn-primary" onClick={() => openSession(activeSession.data!.id)}>Resume Matchday</button>
+      </section>}
+      {tab === "overview" && <OverviewTab career={career.data} fixture={fixture} nextFixture={nextFixture}
+        seasonFinished={seasonFinished} clubMark={clubMark} clubName={clubName} nextOpponent={nextOpponent}
+        managedClubId={managedClubId} manager={manager.data} standings={standings.data} rename={rename}
+        renamePending={renameCareer.isPending} deletePending={deleteCareer.isPending} advancePending={advance.isPending}
+        nextSeasonPending={nextSeason.isPending} onRenameChange={setRename} onRename={submitRename} onDelete={removeSave}
+        onTraining={(focus) => training.mutate(focus)} onAdvance={() => advance.mutate()} onNextSeason={() => nextSeason.mutate()}
+        onOpenTab={(next) => selectTab(next)} />}
 
-    {career.data?.seasonSummary && <section className="card p-5 text-center">
-      <p className="eyebrow">Season {career.data.seasonSummary.seasonNumber} champion</p>
-      <h2 className="text-2xl font-black font-serif">{career.data.seasonSummary.championClubName}</h2>
-    </section>}
+      {(tab === "fixtures" || tab === "tactics") && <>
+        {tab === "fixtures" && <FixturesTab fixtures={visibleFixtures} total={career.data.fixtures.length} subTab={subTab}
+          query={queryInput} onQueryChange={setQueryInput} onSubmit={submitQuery} onClear={clearQuery}
+          onSelect={(id) => setDetail("fixture", id)} />}
+        {tab === "tactics" && <TacticsTab subTab={subTab} squad={squad.data}
+          fixtureTitle={fixture ? `${fixture.homeClubName} vs ${fixture.awayClubName}` : undefined}
+          formation={formation} formationError={formationError} slots={slots} bench={bench} tactic={tactic}
+          validLineup={validLineup} dirty={tacticsDirty} savePending={saveTactics.isPending} saveSuccess={saveTactics.isSuccess}
+          saveError={Boolean(saveTactics.error)} startPending={startSession.isPending} startError={Boolean(startSession.error)}
+          activeSession={activeSession.data} onFormationChange={draft.preview}
+          onSlotsChange={setSlots} onBenchChange={setBench} onTacticChange={setTactic} onSelectPlayer={setSelectedPlayer}
+          onSave={() => saveTactics.mutate({ lineup: { formation, starters: slots, bench }, tactic })}
+          onResume={() => activeSession.data && openSession(activeSession.data.id)} onStart={startMatchday} />}
+      </>}
 
-    {standings.data && <section className="card p-5 overflow-x-auto">
-      <h2 className="font-black mb-3">League table</h2>
-      <table className="w-full text-sm text-center"><thead className="text-[10px] uppercase text-[var(--color-text-secondary)]"><tr>
-        <th className="text-left py-2">Club</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th>
-      </tr></thead><tbody>{standings.data.map((club, index) => <tr key={club.clubId} className="border-t border-[var(--color-border)]/50">
-        <td className="text-left py-2 font-semibold">{index + 1}. {club.clubName}</td><td>{club.played}</td><td>{club.wins}</td><td>{club.draws}</td><td>{club.losses}</td><td>{club.goalDifference}</td><td className="font-black">{club.points}</td>
-      </tr>)}</tbody></table>
-    </section>}
+      {tab === "squad" && <SquadTab subTab={subTab} squad={squad.data} analysis={playerAnalysis.data}
+        compareIds={compareIds} onSelect={setSelectedPlayer}
+        onList={(playerId) => setTransferStatus.mutate({ playerId, status: "LISTED" })}
+        onCompareChange={(index, playerId) => setCompareIds((current) => { const next = [...current]; next[index] = playerId; return next; })} />}
 
-    {!!career.data?.history?.length && <section className="card p-5">
-      <h2 className="font-black mb-3">History</h2>
-      <div className="divide-y divide-[var(--color-border)]">
-        {career.data.history.map((record) => <div key={record.seasonNumber} className="py-2 flex items-center justify-between">
-          <span>Season {record.seasonNumber}</span><strong>{record.championClubName}</strong>
-        </div>)}
-      </div>
-    </section>}
+      {tab === "transfers" && market.data && <TransfersTab subTab={subTab} market={market.data} offers={offers.data}
+        managedClubId={managedClubId} query={queryInput} scoutPending={scout.isPending} offerPending={submitOffer.isPending}
+        actionError={Boolean(scout.error || submitOffer.error || offerTerms.error || completeTransfer.error)}
+        onQueryChange={setQueryInput} onSubmit={submitQuery} onClear={clearQuery} onPage={selectPage}
+        onSelect={(id) => setDetail("market", id)} onScout={(id) => scout.mutate(id)}
+        onBid={(playerId, fee) => submitOffer.mutate({ playerId, fee })}
+        onTerms={(offer) => offerTerms.mutate({ offerId: offer.id, wage: Math.round(offer.wage ?? 20000), contractYears: 3, squadRole: "STARTER" })}
+        onComplete={(id) => completeTransfer.mutate(id)} />}
 
-    {career.data && !seasonFinished && !fixture && nextFixture && <section className="card p-5 text-center">
-      <p>Next fixture: <strong>{nextFixture.homeClubName} vs {nextFixture.awayClubName}</strong> on {nextFixture.matchDate}.</p>
-      <p className="text-sm text-[var(--color-text-secondary)]">Advance the Career date to prepare the match.</p>
-    </section>}
+      {tab === "manager" && manager.data && <ManagerTab subTab={subTab} manager={manager.data}
+        decisions={managerDecisions.data} jobs={managerJobs.data} onAcceptJob={(clubId) => acceptManagerJob.mutate(clubId)} />}
 
-    {fixture && squad.data && <>
-      <section className="card p-5 flex items-center justify-between gap-4">
-        <div><span className="text-xs text-[var(--color-text-secondary)]">{fixture.matchDate}</span>
-          <h2 className="text-xl font-black">{fixture.homeClubName} vs {fixture.awayClubName}</h2></div>
-        <span className="badge">{fixture.status}</span>
-      </section>
+      {tab === "table" && <TableTab subTab={subTab} standings={standings.data} stats={playerStats.data}
+        managedClubId={managedClubId} query={queryInput} onQueryChange={setQueryInput} onSubmit={submitQuery}
+        onClear={clearQuery} onPage={selectPage} />}
 
-      <div className="grid lg:grid-cols-[1.5fr_1fr] gap-5 items-start">
-        <section className="card p-5">
-          <label className="block text-xs font-black uppercase mb-3">Formation
-            <select className="input ml-3" value={formation} onChange={(event) => setFormation(event.target.value as Formation)}>
-              {Object.keys(FORMATIONS).map((item) => <option key={item}>{item}</option>)}
-            </select>
-          </label>
-          <div className="divide-y divide-[var(--color-border)]">
-            {slots.map((slot, index) => <div key={`${slot.position}-${index}`} className="grid grid-cols-[3rem_1fr_1fr] gap-2 py-2 items-center">
-              <strong className="text-xs">{slot.position}</strong>
-              <select className="input !py-2 !text-xs" value={slot.player_id} onChange={(event) => setSlots((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, player_id: event.target.value } : item))}>
-                {squad.data.map((player) => <option key={player.id} value={player.id} disabled={player.availability !== "AVAILABLE"}>
-                  {label(player)}
-                </option>)}
-              </select>
-              <select className="input !py-2 !text-xs" value={slot.role} onChange={(event) => setSlots((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, role: event.target.value as PlayerRole } : item))}>
-                {ROLES[slot.position]?.map((role) => <option key={role}>{role}</option>)}
-              </select>
-            </div>)}
-          </div>
-          <label className="block text-xs font-black uppercase mt-4 mb-2">Bench
-            <select multiple className="input mt-2 min-h-32 w-full" value={bench} onChange={(event) =>
-              setBench(Array.from(event.currentTarget.selectedOptions).map((option) => option.value).slice(0, 7))}>
-              {squad.data.filter((player) => !slots.some((slot) => slot.player_id === player.id)).map((player) =>
-                <option key={player.id} value={player.id} disabled={player.availability !== "AVAILABLE"}>{label(player)}</option>)}
-            </select>
-          </label>
-          {!validLineup && <p className="text-xs text-red-500 mt-3">Pick 11 unique available starters and up to 7 bench players.</p>}
-        </section>
-
-        <section className="card p-5 flex flex-col gap-4">
-          <h2 className="font-black">Team instructions</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <Instruction label="Mentality" value={tactic.mentality} values={["DEFENSIVE", "CAUTIOUS", "BALANCED", "POSITIVE", "ATTACKING"]} onChange={(value) => setTactic({ ...tactic, mentality: value as Tactic["mentality"] })} />
-            <Instruction label="Tempo" value={tactic.tempo} values={["SLOW", "NORMAL", "FAST"]} onChange={(value) => setTactic({ ...tactic, tempo: value as Tactic["tempo"] })} />
-            <Instruction label="Width" value={tactic.width} values={["NARROW", "NORMAL", "WIDE"]} onChange={(value) => setTactic({ ...tactic, width: value as Tactic["width"] })} />
-            <Instruction label="Passing" value={tactic.passing_style} values={["SHORT", "MIXED", "DIRECT"]} onChange={(value) => setTactic({ ...tactic, passing_style: value as Tactic["passing_style"] })} />
-            <Instruction label="Pressing" value={tactic.pressing} values={["LOW", "STANDARD", "HIGH"]} onChange={(value) => setTactic({ ...tactic, pressing: value as Tactic["pressing"] })} />
-            <Instruction label="Defensive line" value={tactic.defensive_line} values={["LOW", "STANDARD", "HIGH"]} onChange={(value) => setTactic({ ...tactic, defensive_line: value as Tactic["defensive_line"] })} />
-            <Instruction label="Transition" value={tactic.transition} values={["HOLD_SHAPE", "BALANCED", "COUNTER"]} onChange={(value) => setTactic({ ...tactic, transition: value as Tactic["transition"] })} />
-            <Instruction label="Time wasting" value={tactic.time_wasting} values={["OFF", "MODERATE", "HIGH"]} onChange={(value) => setTactic({ ...tactic, time_wasting: value as Tactic["time_wasting"] })} />
-          </div>
-          <button className="btn btn-primary w-full" disabled={!validLineup || play.isPending} onClick={() => play.mutate({
-            seed: Date.now(), homeLineup: { formation, starters: slots, bench }, homeTactic: tactic,
-          })}>{play.isPending ? "Simulating..." : "Play fixture"}</button>
-          {play.error && <ErrorBlock message="Lineup or tactics were rejected." />}
-          {play.data && <div className="rounded-xl bg-emerald-500/10 p-4 text-center">
-            <strong>{play.data.result.home_score}–{play.data.result.away_score}</strong>
-            <p className="text-xs mt-1">Match saved: {play.data.matchId}</p>
-            <Link className="btn btn-secondary mt-3 inline-block" href={`/matches?saveId=${saveId}&matchId=${play.data.matchId}`}>Open Match Centre</Link>
-          </div>}
-        </section>
-      </div>
+      {tab === "history" && <HistoryTab history={career.data.history} />}
     </>}
-  </div></SportsShell>;
+      {pendingFormation && <FormationPreview current={formation} result={pendingFormation} onCancel={() => setPendingFormation(null)} onApply={draft.apply} />}
+      {selectedFixture && <FixtureDetail fixture={selectedFixture} due={selectedFixture.id === fixture?.id}
+        onClose={() => setDetail("fixture")} onPrepare={() => selectTab("tactics")} />}
+      {selectedMarket && <MarketDetail player={selectedMarket} scoutPending={scout.isPending} offerPending={submitOffer.isPending}
+        onClose={() => setDetail("market")} onScout={() => scout.mutate(selectedMarket.playerId)}
+        onBid={() => submitOffer.mutate({ playerId: selectedMarket.playerId, fee: Math.round(selectedMarket.valueMax) })} />}
+      {selectedPlayer && <PlayerInspector player={selectedPlayer} stats={playerStats.data?.items.find((item) => item.playerId === selectedPlayer.id)} onClose={() => setSelectedPlayer(null)} onCompare={() => { setCompareIds((current) => [selectedPlayer.id, current.find((id) => id !== selectedPlayer.id) ?? ""]); selectTab("squad", "compare"); setSelectedPlayer(null); }} />}
+  </main></div></SportsShell>;
 }

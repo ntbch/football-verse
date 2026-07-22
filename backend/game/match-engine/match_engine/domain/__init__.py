@@ -2,6 +2,7 @@ from .base import Attribute, Percentage, Name, Version, DomainModel
 from .enums import (
     Position,
     PlayerRole,
+    Duty,
     Zone,
     Mentality,
     Tempo,
@@ -15,10 +16,10 @@ from .enums import (
     PlayerAvailability,
     EventType,
 )
-from .mappings import FORMATION_POSITIONS, ROLE_POSITIONS
+from .mappings import FORMATION_POSITIONS, ROLE_DUTIES, ROLE_POSITIONS
 from .player import PlayerAttributes, PlayerSnapshot
-from .team import LineupSlot, Lineup, Tactic, TeamSnapshot
-from .match import MatchInput, MatchEvent, TeamStats, PlayerStats, MatchStats, MatchResult
+from .team import LineupSlot, Lineup, Tactic, ManagerPlan, TeamSnapshot
+from .match import MatchInput, MatchEvent, TeamStats, PlayerStats, MatchStats, MatchResult, TeamSimulationState, MatchSimulationState
 
 __all__ = [
     "Attribute",
@@ -28,6 +29,7 @@ __all__ = [
     "DomainModel",
     "Position",
     "PlayerRole",
+    "Duty",
     "Zone",
     "Mentality",
     "Tempo",
@@ -42,11 +44,13 @@ __all__ = [
     "EventType",
     "FORMATION_POSITIONS",
     "ROLE_POSITIONS",
+    "ROLE_DUTIES",
     "PlayerAttributes",
     "PlayerSnapshot",
     "LineupSlot",
     "Lineup",
     "Tactic",
+    "ManagerPlan",
     "TeamSnapshot",
     "MatchInput",
     "MatchEvent",
@@ -54,4 +58,6 @@ __all__ = [
     "PlayerStats",
     "MatchStats",
     "MatchResult",
+    "TeamSimulationState",
+    "MatchSimulationState",
 ]

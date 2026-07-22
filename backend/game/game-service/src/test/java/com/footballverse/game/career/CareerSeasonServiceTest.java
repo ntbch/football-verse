@@ -20,7 +20,34 @@ import static org.mockito.Mockito.*;
 
 class CareerSeasonServiceTest {
     @Test
-    void newCareerCreatesSixFixturesForFourClubRoundRobin() {
+    void circleScheduleHasEveryPairHomeAndAwayExactlyOnce() {
+        var clubs = java.util.stream.IntStream.range(0, 8).mapToObj(index -> UUID.randomUUID()).toList();
+        var schedule = CareerGameService.schedule(clubs);
+
+        assertThat(schedule).hasSize(56);
+        for (var club : clubs) {
+            assertThat(schedule).filteredOn(pair -> pair.home().equals(club)).hasSize(7);
+            assertThat(schedule).filteredOn(pair -> pair.away().equals(club)).hasSize(7);
+        }
+        assertThat(schedule.stream().map(pair -> pair.home() + ":" + pair.away())).doesNotHaveDuplicates();
+        assertThat(schedule).allSatisfy(pair -> assertThat(pair.home()).isNotEqualTo(pair.away()));
+    }
+
+    @Test
+    void managedAwayTeamIsPlacedOnAwaySide() {
+        var career = UUID.randomUUID(); var homeId = UUID.randomUUID(); var managedId = UUID.randomUUID();
+        var fixture = new FixtureEntity(career, homeId, managedId, LocalDate.now(), 1, 1);
+        var managed = new com.footballverse.game.dto.TeamSnapshot(managedId, "Managed", List.of(), null, null);
+        var opponent = new com.footballverse.game.dto.TeamSnapshot(homeId, "Opponent", List.of(), null, null);
+
+        var input = CareerGameService.orderTeams(fixture, managed, opponent, 7L);
+
+        assertThat(input.home().id()).isEqualTo(homeId);
+        assertThat(input.away().id()).isEqualTo(managedId);
+    }
+
+    @Test
+    void newCareerCreatesFourteenBalancedMatchdaysForEightClubs() {
         var careers = mock(CareerSaveRepository.class);
         var fixtures = mock(FixtureRepository.class);
         var matches = mock(SimulatedMatchRepository.class);
@@ -33,9 +60,12 @@ class CareerSeasonServiceTest {
         var career = service.create(42L, "Season");
 
         var captured = ArgumentCaptor.forClass(FixtureEntity.class);
-        verify(fixtures, times(6)).save(captured.capture());
+        verify(fixtures, times(56)).save(captured.capture());
         assertThat(captured.getAllValues()).allSatisfy(fixture -> assertThat(fixture.getCareerSaveId()).isEqualTo(career.getId()));
-        assertThat(new HashSet<>(captured.getAllValues().stream().map(FixtureEntity::getMatchDate).toList())).hasSize(6);
+        assertThat(new HashSet<>(captured.getAllValues().stream().map(FixtureEntity::getMatchDate).toList())).hasSize(14);
+        assertThat(captured.getAllValues()).extracting(FixtureEntity::getMatchdayNumber).containsOnly(1,2,3,4,5,6,7,8,9,10,11,12,13,14);
+        assertThat(captured.getAllValues().stream().collect(java.util.stream.Collectors.groupingBy(FixtureEntity::getMatchdayNumber)))
+            .allSatisfy((round, values) -> assertThat(values).hasSize(4));
     }
 
     @Test
@@ -77,7 +107,7 @@ class CareerSeasonServiceTest {
         var next = service.nextSeason(42L, career.getId());
 
         var captured = ArgumentCaptor.forClass(FixtureEntity.class);
-        verify(fixtures, times(6)).save(captured.capture());
+        verify(fixtures, times(12)).save(captured.capture());
         assertThat(next.getSeasonNumber()).isEqualTo(2);
         assertThat(next.getStatus()).isEqualTo("ACTIVE");
         assertThat(captured.getAllValues()).allSatisfy(fixture -> assertThat(fixture.getSeasonNumber()).isEqualTo(2));

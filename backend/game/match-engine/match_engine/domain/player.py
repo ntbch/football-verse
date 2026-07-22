@@ -30,6 +30,7 @@ class PlayerSnapshot(DomainModel):
     primary_position: Position
     secondary_positions: frozenset[Position] = frozenset()
     attributes: PlayerAttributes
+    age: int = 24
     availability: PlayerAvailability = PlayerAvailability.AVAILABLE
     fitness: Percentage = 100
     morale: Percentage = 50

@@ -8,5 +8,14 @@ import java.util.UUID;
 public record LineupSlot(
     UUID playerId,
     Position position,
-    PlayerRole role
-) {}
+    PlayerRole role,
+    Duty duty
+) {
+    public LineupSlot(UUID playerId, Position position, PlayerRole role) {
+        this(playerId, position, role, switch (role) {
+            case GOALKEEPER, ANCHOR -> Duty.DEFEND;
+            case POACHER -> Duty.ATTACK;
+            default -> Duty.SUPPORT;
+        });
+    }
+}

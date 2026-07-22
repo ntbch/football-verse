@@ -110,3 +110,32 @@ class MatchResult(DomainModel):
         if [event.sequence for event in self.events] != list(range(1, len(self.events) + 1)):
             raise ValueError("Event sequence must be contiguous and start at 1")
         return self
+
+
+class TeamSimulationState(DomainModel):
+    possessions: int = 0
+    goals: int = 0
+    shots: int = 0
+    shots_on_target: int = 0
+    xg: float = 0
+    passes_attempted: int = 0
+    passes_completed: int = 0
+    fouls: int = 0
+    yellow_cards: int = 0
+    red_cards: int = 0
+
+
+class MatchSimulationState(DomainModel):
+    minute: Annotated[int, Field(ge=1, le=131)] = 1
+    rng_state: str
+    home: TeamSimulationState = Field(default_factory=TeamSimulationState)
+    away: TeamSimulationState = Field(default_factory=TeamSimulationState)
+    current_home: TeamSnapshot
+    current_away: TeamSnapshot
+    player_data: dict[str, dict[str, int]] = Field(default_factory=dict)
+    minutes: dict[str, int] = Field(default_factory=dict)
+    events: tuple[MatchEvent, ...] = ()
+    reacted: tuple[str, ...] = ()
+    half_time_added: bool = False
+    substitutions_added: bool = False
+    completed: bool = False

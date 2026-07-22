@@ -7,6 +7,18 @@ const predictionServiceUrl = process.env.PREDICTION_SERVICE_URL || 'http://local
 const gameServiceUrl = process.env.GAME_SERVICE_URL || 'http://localhost:8081';
 
 export const setupProxy = (app: Express): void => {
+  // Route authenticated /api/v1/game/* requests to the Game Service before
+  // the broad /api/v1 core proxy can catch them.
+  app.use(
+    '/api/v1/game',
+    authenticateGameRequest,
+    createProxyMiddleware({
+      target: gameServiceUrl,
+      changeOrigin: true,
+      pathRewrite: (path) => `/game${path}`,
+    })
+  );
+
   // Route /api/v1/* to Spring Boot Core
   app.use(
     '/api/v1',

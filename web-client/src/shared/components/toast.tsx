@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useRef } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 
 type ToastPayload = {
   body: string;
@@ -31,6 +31,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       timerRef.current = null;
     }, duration);
   }, []);
+
+  useEffect(() => {
+    const showApiError = (event: Event) => showToast({ body: (event as CustomEvent<string>).detail, type: "error", autoHideDuration: 6000 });
+    window.addEventListener("football-verse:api-error", showApiError);
+    return () => window.removeEventListener("football-verse:api-error", showApiError);
+  }, [showToast]);
 
   return (
     <ToastContext.Provider value={showToast}>

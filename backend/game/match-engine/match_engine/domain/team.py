@@ -4,8 +4,8 @@ from uuid import UUID
 from pydantic import Field, model_validator
 
 from .base import DomainModel, Percentage, Name
-from .enums import Position, PlayerRole, Formation, PlayerAvailability, Mentality, Tempo, Width, PassingStyle, Pressing, DefensiveLine, Transition, TimeWasting
-from .mappings import FORMATION_POSITIONS, ROLE_POSITIONS
+from .enums import Duty, Position, PlayerRole, Formation, PlayerAvailability, Mentality, Tempo, Width, PassingStyle, Pressing, DefensiveLine, Transition, TimeWasting
+from .mappings import FORMATION_POSITIONS, ROLE_DUTIES, ROLE_POSITIONS
 from .player import PlayerSnapshot
 
 
@@ -13,11 +13,23 @@ class LineupSlot(DomainModel):
     player_id: UUID
     position: Position
     role: PlayerRole
+    duty: Duty
+
+    @model_validator(mode="before")
+    @classmethod
+    def default_compatible_duty(cls, value):
+        if isinstance(value, dict) and "duty" not in value:
+            value = dict(value)
+            allowed = ROLE_DUTIES[PlayerRole(value["role"])]
+            value["duty"] = Duty.SUPPORT if Duty.SUPPORT in allowed else sorted(allowed)[0]
+        return value
 
     @model_validator(mode="after")
     def role_matches_position(self):
         if self.position not in ROLE_POSITIONS[self.role]:
             raise ValueError(f"Role {self.role} is not valid for position {self.position}")
+        if self.duty not in ROLE_DUTIES[self.role]:
+            raise ValueError(f"Duty {self.duty} is not valid for role {self.role}")
         return self
 
 
@@ -53,12 +65,22 @@ class Tactic(DomainModel):
     time_wasting: TimeWasting = TimeWasting.OFF
 
 
+class ManagerPlan(DomainModel):
+    manager_id: UUID
+    manager_name: str
+    adaptability: Annotated[int, Field(ge=1, le=100)]
+    risk: Annotated[int, Field(ge=1, le=100)]
+    checkpoints: tuple[Annotated[int, Field(ge=1, le=90)], ...] = (30, 45, 60, 75)
+
+
 class TeamSnapshot(DomainModel):
     id: UUID
     name: Name
     players: tuple[PlayerSnapshot, ...]
     lineup: Lineup
     tactic: Tactic = Tactic()
+    manager_plan: ManagerPlan | None = None
+    inactive_player_ids: frozenset[UUID] = frozenset()
 
     @model_validator(mode="after")
     def valid_roster(self):

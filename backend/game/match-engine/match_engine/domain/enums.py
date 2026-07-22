@@ -42,6 +42,12 @@ class PlayerRole(StrEnum):
     COMPLETE_FORWARD = "COMPLETE_FORWARD"
 
 
+class Duty(StrEnum):
+    DEFEND = "DEFEND"
+    SUPPORT = "SUPPORT"
+    ATTACK = "ATTACK"
+
+
 class Zone(StrEnum):
     DEFENSIVE = "DEFENSIVE"
     MIDDLE = "MIDDLE"
@@ -104,6 +110,17 @@ class Formation(StrEnum):
     FOUR_FOUR_TWO = "4-4-2"
     THREE_FIVE_TWO = "3-5-2"
     FOUR_TWO_THREE_ONE = "4-2-3-1"
+    FOUR_ONE_FOUR_ONE = "4-1-4-1"
+    FOUR_THREE_TWO_ONE = "4-3-2-1"
+    FOUR_TWO_TWO_TWO = "4-2-2-2"
+    FOUR_FOUR_ONE_ONE = "4-4-1-1"
+    FOUR_FIVE_ONE = "4-5-1"
+    FOUR_TWO_FOUR = "4-2-4"
+    THREE_FOUR_THREE = "3-4-3"
+    THREE_FOUR_TWO_ONE = "3-4-2-1"
+    THREE_ONE_FOUR_TWO = "3-1-4-2"
+    FIVE_THREE_TWO = "5-3-2"
+    FIVE_TWO_THREE = "5-2-3"
 
 
 class PlayerAvailability(StrEnum):
@@ -128,3 +145,4 @@ class EventType(StrEnum):
     SUBSTITUTION = "SUBSTITUTION"
     HALF_TIME = "HALF_TIME"
     FULL_TIME = "FULL_TIME"
+    MANAGER_DECISION = "MANAGER_DECISION"

@@ -1,4 +1,4 @@
-from .enums import Position, Formation, PlayerRole
+from .enums import Duty, Formation, PlayerRole, Position
 
 FORMATION_POSITIONS: dict[Formation, tuple[Position, ...]] = {
     Formation.FOUR_THREE_THREE: (
@@ -53,6 +53,17 @@ FORMATION_POSITIONS: dict[Formation, tuple[Position, ...]] = {
         Position.RW,
         Position.ST,
     ),
+    Formation.FOUR_ONE_FOUR_ONE: (Position.GK, Position.LB, Position.CB, Position.CB, Position.RB, Position.DM, Position.LM, Position.CM, Position.CM, Position.RM, Position.ST),
+    Formation.FOUR_THREE_TWO_ONE: (Position.GK, Position.LB, Position.CB, Position.CB, Position.RB, Position.CM, Position.CM, Position.CM, Position.AM, Position.AM, Position.ST),
+    Formation.FOUR_TWO_TWO_TWO: (Position.GK, Position.LB, Position.CB, Position.CB, Position.RB, Position.DM, Position.DM, Position.AM, Position.AM, Position.ST, Position.ST),
+    Formation.FOUR_FOUR_ONE_ONE: (Position.GK, Position.LB, Position.CB, Position.CB, Position.RB, Position.LM, Position.CM, Position.CM, Position.RM, Position.AM, Position.ST),
+    Formation.FOUR_FIVE_ONE: (Position.GK, Position.LB, Position.CB, Position.CB, Position.RB, Position.LM, Position.CM, Position.CM, Position.CM, Position.RM, Position.ST),
+    Formation.FOUR_TWO_FOUR: (Position.GK, Position.LB, Position.CB, Position.CB, Position.RB, Position.CM, Position.CM, Position.LW, Position.RW, Position.ST, Position.ST),
+    Formation.THREE_FOUR_THREE: (Position.GK, Position.CB, Position.CB, Position.CB, Position.LM, Position.CM, Position.CM, Position.RM, Position.LW, Position.ST, Position.RW),
+    Formation.THREE_FOUR_TWO_ONE: (Position.GK, Position.CB, Position.CB, Position.CB, Position.LM, Position.CM, Position.CM, Position.RM, Position.AM, Position.AM, Position.ST),
+    Formation.THREE_ONE_FOUR_TWO: (Position.GK, Position.CB, Position.CB, Position.CB, Position.DM, Position.LM, Position.CM, Position.CM, Position.RM, Position.ST, Position.ST),
+    Formation.FIVE_THREE_TWO: (Position.GK, Position.LWB, Position.CB, Position.CB, Position.CB, Position.RWB, Position.CM, Position.CM, Position.CM, Position.ST, Position.ST),
+    Formation.FIVE_TWO_THREE: (Position.GK, Position.LWB, Position.CB, Position.CB, Position.CB, Position.RWB, Position.CM, Position.CM, Position.LW, Position.ST, Position.RW),
 }
 
 
@@ -79,3 +90,13 @@ ROLE_POSITIONS: dict[PlayerRole, frozenset[Position]] = {
     PlayerRole.PRESSING_FORWARD: frozenset({Position.ST}),
     PlayerRole.COMPLETE_FORWARD: frozenset({Position.ST}),
 }
+
+ROLE_DUTIES: dict[PlayerRole, frozenset[Duty]] = {
+    role: frozenset({Duty.DEFEND, Duty.SUPPORT, Duty.ATTACK}) for role in PlayerRole
+}
+ROLE_DUTIES.update({
+    PlayerRole.GOALKEEPER: frozenset({Duty.DEFEND}),
+    PlayerRole.ANCHOR: frozenset({Duty.DEFEND}),
+    PlayerRole.POACHER: frozenset({Duty.ATTACK}),
+    PlayerRole.TARGET_FORWARD: frozenset({Duty.SUPPORT, Duty.ATTACK}),
+})

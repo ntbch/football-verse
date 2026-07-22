@@ -253,6 +253,8 @@ Future stack:
 - Pandas
 - Pydantic
 - Uvicorn
+- mplsoccer
+- seaborn
 
 Python is only for future simulation, statistics, AI behavior, and data jobs. It must not handle authentication, users, news, forum, or admin logic.
 

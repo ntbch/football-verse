@@ -74,13 +74,27 @@ Public like, bookmark, and comment endpoints only accept published news articles
 
 Career routes use the gateway prefix `/game` and require the normal bearer token.
 
-- `POST /game/saves` creates a Career with 4 fictional clubs, squads, and a six-fixture season.
+- `POST /game/saves` creates a Career with 8 fictional clubs, squads, and a 56-fixture double round-robin season.
 - `GET /game/saves` and `GET /game/saves/{saveId}` return owned saves, current-season fixtures, season summary, and history.
+- `PATCH /game/saves/{saveId}` renames an owned Career save.
+- `DELETE /game/saves/{saveId}` deletes an owned Career save and cascades its game data.
 - `GET /game/saves/{saveId}/clubs/{clubId}/squad` returns an owned Career squad, including attributes, availability, fitness, morale, and form.
 - `POST /game/saves/{saveId}/advance-day` moves the Career date forward one day.
+- `POST /game/saves/{saveId}/training-focus` stores `BALANCED`, `FITNESS`, `ATTACK`, `DEFENSE`, or `MORALE`.
 - `POST /game/saves/{saveId}/next-season` starts a fresh season after the current one is finished.
 - `GET /game/saves/{saveId}/standings` derives the league table from completed stored matches.
-- `POST /game/saves/{saveId}/fixtures/{fixtureId}/play` accepts `seed`, `homeLineup` with starters/bench, and `homeTactic`, then returns `matchId` and the stored result.
+- `GET /game/saves/{saveId}/player-stats` derives current-season player stats from stored match player stats.
+- `GET /game/saves/{saveId}/manager` returns the player manager profile, traits, record, objectives, and board pressure.
+- `GET /game/saves/{saveId}/clubs/{clubId}/manager` returns an opponent manager profile.
+- `GET /game/saves/{saveId}/manager/decisions` returns recent explained lineup/training decisions.
+- `GET /game/saves/{saveId}/jobs` lists filled and vacant manager jobs; `POST /jobs/{clubId}/accept` appoints an unemployed player manager.
+- `GET /game/saves/{saveId}/clubs/{clubId}/market` returns budgets, window state, and scouting-limited candidates.
+- `POST /game/saves/{saveId}/clubs/{clubId}/scouting/{playerId}` starts or advances a scouting report.
+- `GET|POST /game/saves/{saveId}/clubs/{clubId}/offers` lists negotiations or submits a bid.
+- `POST /game/saves/{saveId}/clubs/{clubId}/offers/{offerId}/respond|terms|complete` advances a transfer state machine.
+- `PATCH /game/saves/{saveId}/clubs/{clubId}/players/{playerId}/transfer-status` lists, delists, or protects a player.
+- `POST /game/saves/{saveId}/fixtures/{fixtureId}/play` accepts the managed club lineup/tactic for its home or away fixture, stores that result, then completes the other full-engine AI fixtures in the same matchday.
+- `POST /game/saves/{saveId}/matchdays/{matchdayNumber}/complete` retries only scheduled AI fixtures in an incomplete round.
 - `GET /game/saves/{saveId}/matches/{matchId}` reloads the deterministic result snapshot.
 - `GET /game/saves/{saveId}/matches/{matchId}/events` returns its ordered timeline.
 

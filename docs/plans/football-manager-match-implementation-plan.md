@@ -179,6 +179,61 @@ it internally, persists results, and exposes authenticated `/game/*` APIs.
   - Engine can emit injury events; Spring marks injured players unavailable.
   - `advance-day` recovers players whose unavailable date has passed.
 
+- [x] **M20 — Season player stats**
+  - Derive goals, assists, minutes, appearances, and average rating from `match_player_stats`.
+  - Return current-season player stats through the Career API.
+  - Show a compact player stats table in Career.
+
+- [x] **M21 — Minimal player development**
+  - Age players by one year when starting the next season.
+  - Adjust attributes from season minutes/form.
+  - Reset form after development is applied.
+
+- [x] **M22 — Club identity and balance**
+  - Seed and backfill basic club budgets.
+  - Award end-of-season prize money from final standings.
+  - Use existing `clubs.balance`; no extra finance ledger yet.
+
+- [x] **M23 — Minimal transfers**
+  - Add a simple transfer market from other clubs in the same Career.
+  - Buy player by moving `club_id` and updating buyer/seller balances.
+  - Show budget and buy buttons in Career.
+
+- [x] **M24 — Daily training focus**
+  - Store Career `training_focus`.
+  - Apply small daily fitness, morale, or form effects on `advance-day`.
+  - Show a native select control in Career.
+
+- [x] **M25 — Career dashboard**
+  - Split `/career` into Overview, Fixtures, Squad, Table, and History tabs.
+  - Reuse existing Career APIs; no new gameplay feature.
+  - Improve empty/loading/error states.
+
+- [x] **M26 — Match centre polish**
+  - Improve timeline readability.
+  - Add goals/cards/subs event filters.
+  - Show team stats comparison and full player ratings.
+
+- [x] **M27 — Save UX**
+  - Rename Career save.
+  - Delete Career save.
+  - Confirm destructive delete.
+
+- [x] **M28 — Balance pass**
+  - Add `scripts/career_smoke.py --seasons N` balance report.
+  - Report goals/match, cards, injuries, and table spread.
+  - Keep AI unchanged until report data says otherwise.
+
+- [x] **M29 — E2E smoke**
+  - Add API smoke script: login, create Career, advance, play, view match.
+  - Document required Docker services.
+  - Cleanup smoke save by default.
+
+- [x] **M30 — Cleanup docs and release notes**
+  - Update API and database docs.
+  - Add smoke instructions.
+  - Record V1 release notes and service boundaries.
+
 ## Validation gates
 
 ### Phase 0
