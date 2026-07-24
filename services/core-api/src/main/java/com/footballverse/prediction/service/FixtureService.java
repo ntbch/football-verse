@@ -37,15 +37,21 @@ public class FixtureService {
     @Value("${app.prediction-service.url:http://localhost:8090}")
     private String predictionServiceUrl;
 
+    @Value("${app.football-api-key:${FOOTBALL_API_KEY:}}")
+    private String footballApiKey;
+
     @Transactional
     public List<Fixture> syncFixtures(String leagueSlug) {
         List<Fixture> synced = new ArrayList<>();
         String url = predictionServiceUrl + "/matches/" + leagueSlug + "/fixtures";
-        tryFetch(url, (fixtures) -> {
+        boolean fetched = tryFetch(url, (fixtures) -> {
             for (JsonNode f : fixtures) {
                 synced.add(upsert(f, leagueSlug, statusOf(f)));
             }
         });
+        if (!fetched && footballApiKey != null && !footballApiKey.isBlank()) {
+            syncFromFootballDataOrg(leagueSlug, synced);
+        }
         return synced;
     }
 
@@ -90,7 +96,7 @@ public class FixtureService {
     }
 
     /* ponytail: simple 2-retry loop with sleep. Ok for dev; use resilience4j when this becomes critical. */
-    private void tryFetch(String url, java.util.function.Consumer<JsonNode> handler) {
+    private boolean tryFetch(String url, java.util.function.Consumer<JsonNode> handler) {
         for (int attempt = 1; attempt <= 2; attempt++) {
             try {
                 HttpRequest req = HttpRequest.newBuilder(URI.create(url))
@@ -100,11 +106,11 @@ public class FixtureService {
                 String body = httpClient.send(req, HttpResponse.BodyHandlers.ofString()).body();
                 JsonNode root = objectMapper.readTree(body);
                 JsonNode fixtures = root.get("fixtures");
-                if (fixtures != null && fixtures.isArray()) {
+                if (fixtures != null && fixtures.isArray() && fixtures.size() > 0) {
                     handler.accept(fixtures);
-                    return;
+                    return true;
                 }
-                return;
+                return false;
             } catch (Exception e) {
                 if (attempt == 2) {
                     log.warn("prediction-service fetch failed after 2 attempts: {}", url, e);
@@ -112,6 +118,56 @@ public class FixtureService {
                     try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
                 }
             }
+        }
+        return false;
+    }
+
+    private void syncFromFootballDataOrg(String leagueSlug, List<Fixture> synced) {
+        String code = "PL";
+        if ("la-liga".equals(leagueSlug)) code = "PD";
+        if ("champions-league".equals(leagueSlug)) code = "CL";
+        if ("serie-a".equals(leagueSlug)) code = "SA";
+        if ("bundesliga".equals(leagueSlug)) code = "BL1";
+
+        String url = "https://api.football-data.org/v4/competitions/" + code + "/matches";
+        try {
+            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
+                    .header("X-Auth-Token", footballApiKey)
+                    .GET()
+                    .timeout(Duration.ofSeconds(10))
+                    .build();
+            String body = httpClient.send(req, HttpResponse.BodyHandlers.ofString()).body();
+            JsonNode root = objectMapper.readTree(body);
+            JsonNode matches = root.get("matches");
+            if (matches != null && matches.isArray()) {
+                for (JsonNode m : matches) {
+                    String fixtureId = "fd_" + m.get("id").asText();
+                    Fixture fixture = fixtureRepo.findByFixtureId(fixtureId).orElse(new Fixture());
+                    fixture.setFixtureId(fixtureId);
+                    fixture.setLeagueSlug(leagueSlug);
+                    fixture.setHomeTeam(m.get("homeTeam").get("name").asText());
+                    fixture.setAwayTeam(m.get("awayTeam").get("name").asText());
+                    if (m.has("matchday") && !m.get("matchday").isNull()) {
+                        fixture.setRound("Matchday " + m.get("matchday").asText());
+                    }
+                    if (m.has("utcDate") && !m.get("utcDate").isNull()) {
+                        fixture.setKickoff(Instant.parse(m.get("utcDate").asText()));
+                    }
+                    String status = m.has("status") && !m.get("status").isNull() ? m.get("status").asText().toLowerCase() : "upcoming";
+                    if ("finished".equals(status)) status = "result";
+                    if ("in_play".equals(status) || "paused".equals(status)) status = "live";
+                    fixture.setStatus(status);
+
+                    if (m.has("score") && !m.get("score").isNull() && m.get("score").has("fullTime")) {
+                        JsonNode ft = m.get("score").get("fullTime");
+                        if (ft.has("home") && !ft.get("home").isNull()) fixture.setHomeScore(ft.get("home").asInt());
+                        if (ft.has("away") && !ft.get("away").isNull()) fixture.setAwayScore(ft.get("away").asInt());
+                    }
+                    synced.add(fixtureRepo.save(fixture));
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch matches directly from Football-Data.org: {}", e.getMessage());
         }
     }
 
