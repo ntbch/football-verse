@@ -1,0 +1,44 @@
+name: Football-Verse Auto Crawl News (Option 2B)
+
+on:
+  schedule:
+    # Tự động cào tin mỗi 2 tiếng 1 lần
+    - cron: '0 */2 * * *'
+  workflow_dispatch: # Cho phép nhấn nút 'Run workflow' thủ công từ tab Actions trên GitHub
+
+jobs:
+  crawl-and-sync:
+    name: Crawl News & Push to Render Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'services/content-ingestion/package-lock.json'
+
+      - name: Install Ingestion Dependencies
+        run: |
+          cd services/content-ingestion
+          npm ci
+
+      - name: Run News Crawler Once
+        env:
+          BACKEND_URL: "https://football-verse-backend.onrender.com"
+          INTERNAL_TOKEN: ${{ secrets.INTERNAL_TOKEN || 'dev-secret-change-me-dev-secret-change-me' }}
+          INGESTION_MODE: "legacy"
+          RUN_CRAWL_ON_STARTUP: "true"
+        run: |
+          cd services/content-ingestion
+          echo "Starting Football-Verse RSS Crawler for https://football-verse-backend.onrender.com..."
+          # Đợi backend Render tỉnh ngủ (Ping health endpoint)
+          curl -s -o /dev/null "$BACKEND_URL/actuator/health" || true
+          
+          # Chạy crawler cào tin trong 45 giây rồi hoàn thành
+          timeout 45s npm run start || true
+          echo "Crawl cycle completed successfully."
