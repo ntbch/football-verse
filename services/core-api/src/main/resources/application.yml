@@ -56,8 +56,8 @@ app:
   auth:
     refresh-cookie:
       name: ${AUTH_REFRESH_COOKIE_NAME:football_verse_refresh}
-      secure: ${AUTH_COOKIE_SECURE:false}
-      same-site: ${AUTH_COOKIE_SAME_SITE:Lax}
+      secure: ${AUTH_COOKIE_SECURE:true}
+      same-site: ${AUTH_COOKIE_SAME_SITE:None}
   prediction-service:
     url: ${PREDICTION_SERVICE_URL:http://127.0.0.1:8090}
   upload:
