@@ -79,7 +79,7 @@ VALUES
 ON CONFLICT (slug) DO NOTHING;
 
 -- Seed Initial Demo Forum Threads
-INSERT INTO forum_threads (created_at, updated_at, title, slug, category_id, author_id, pinned, locked, hidden)
+INSERT INTO forum_threads (created_at, updated_at, title, slug, category_id, author_id, pinned, locked, hidden, last_activity_at)
 VALUES 
 (
     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 
@@ -87,7 +87,7 @@ VALUES
     'who-will-win-premier-league-title-this-season', 
     (SELECT id FROM forum_categories WHERE slug = 'league-tournament-news'), 
     (SELECT id FROM users WHERE username = 'admin'), 
-    true, false, false
+    true, false, false, CURRENT_TIMESTAMP
 ),
 (
     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 
@@ -95,7 +95,7 @@ VALUES
     'summer-transfer-window-2026-official-megathread', 
     (SELECT id FROM forum_categories WHERE slug = 'transfer-news'), 
     (SELECT id FROM users WHERE username = 'admin'), 
-    true, false, false
+    true, false, false, CURRENT_TIMESTAMP
 ),
 (
     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 
@@ -103,7 +103,7 @@ VALUES
     'tactical-discussion-is-3-4-2-1-making-comeback', 
     (SELECT id FROM forum_categories WHERE slug = 'football-facts-tactical-insights'), 
     (SELECT id FROM users WHERE username = 'admin'), 
-    false, false, false
+    false, false, false, CURRENT_TIMESTAMP
 )
 ON CONFLICT (slug) DO NOTHING;
 
