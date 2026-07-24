@@ -68,8 +68,12 @@ public class AuthService {
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
-        UserAccount user = users.findByEmail(request.email().toLowerCase())
-                .orElseThrow(() -> new BadRequestException("Invalid credentials"));
+        String input = request.email().trim();
+        UserAccount user = users.findByEmail(input.toLowerCase())
+                .orElseGet(() -> users.findByUsername(input).orElse(null));
+        if (user == null) {
+            throw new BadRequestException("Invalid credentials");
+        }
         if (user.getPasswordHash() == null || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new BadRequestException("Invalid credentials");
         }
