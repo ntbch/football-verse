@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
-    "@types/node": "^20.14.9",
+    "@types/node": "^26.1.1",
     "playwright": "^1.61.1",
     "socket.io-client": "^4.8.3",
     "ts-node-dev": "^2.0.0",
