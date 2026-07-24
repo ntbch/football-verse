@@ -14,9 +14,9 @@ VALUES
 ((SELECT id FROM users WHERE email = 'moderator@footballverse.local'), 'MODERATOR')
 ON CONFLICT DO NOTHING;
 
--- Explicitly update password hashes for existing admin and moderator accounts
-UPDATE users 
-SET password_hash = '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xd00DMxs.AQubh4a',
-    updated_at = CURRENT_TIMESTAMP
-WHERE email IN ('admin@footballverse.local', 'moderator@footballverse.local');
-
+-- Ensure User Profiles
+INSERT INTO user_profiles (user_id, display_name)
+VALUES 
+((SELECT id FROM users WHERE email = 'admin@footballverse.local'), 'Admin'),
+((SELECT id FROM users WHERE email = 'moderator@footballverse.local'), 'Moderator')
+ON CONFLICT (user_id) DO NOTHING;
