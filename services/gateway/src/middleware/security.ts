@@ -21,8 +21,14 @@ export function corsMiddleware(req: Request, res: Response, next: NextFunction):
   const { corsOrigin } = getConfig();
   const origin = req.headers.origin;
 
-  if (origin === corsOrigin) {
-    res.header('Access-Control-Allow-Origin', origin);
+  if (
+    !origin ||
+    origin === corsOrigin ||
+    origin.endsWith('.pages.dev') ||
+    origin.endsWith('.onrender.com') ||
+    origin.startsWith('http://localhost:')
+  ) {
+    res.header('Access-Control-Allow-Origin', origin || '*');
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Headers', 'Authorization, Content-Type, Cache-Control, X-Request-Id');
     res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
