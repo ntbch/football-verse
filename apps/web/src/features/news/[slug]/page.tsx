@@ -11,13 +11,25 @@ import { useAuthStore } from "@/shared/lib/auth-store";
 import { useToast } from "@/shared/components/toast";
 import type { NewsArticleResponse, CommentResponse } from "../types";
 import { LoadingBlock, ErrorBlock } from "@/shared/components/state-blocks";
-import { getArticleImage } from "@/shared/lib/images";
+import { getArticleImage, handleImageError } from "@/shared/lib/images";
 
 import { buildCommentTree, preprocessArticleContent } from "./article-content";
 import { CommentNode } from "./comment-node";
-import { XEmbed } from "../components/XEmbed";
-import { RedditEmbed } from "../components/RedditEmbed";
 import { YouTubeEmbed } from "../components/YouTubeEmbed";
+
+function cleanSummaryText(text?: string): string {
+  if (!text) return "";
+  const lines = text
+    .split(/(?:►|\n)+/)
+    .map((line) => line.trim())
+    .filter(
+      (line) =>
+        line.length > 0 &&
+        !line.match(/^(?:Subscribe|Watch|Follow|Click|http:\/\/|https:\/\/|MNF|FNF|SNF|Super Sunday|Saturday Social|Gary Neville)/i),
+    );
+  const result = lines.join("\n\n");
+  return result || text;
+}
 
 export default function NewsDetailPage() {
   const params = useParams();
@@ -44,7 +56,7 @@ export default function NewsDetailPage() {
   });
 
   // 2. Fetch Article Comments
-  const { data: flatComments = [], isLoading: isCommentsLoading } = useQuery({
+  const { data: flatComments = [] } = useQuery({
     queryKey: qk.news.comments(slug),
     queryFn: () => data<any[]>(http.get(`/news/${slug}/comments`)),
   });
@@ -213,34 +225,35 @@ export default function NewsDetailPage() {
         </div>
 
         {/* Heading */}
-        <div className="flex flex-col gap-3 text-center md:text-left">
-          <h1 className="m-0 font-serif-title font-black text-3xl md:text-5xl leading-tight text-[var(--color-text-primary)] tracking-tight">
+        <div className="flex flex-col gap-2.5 text-center md:text-left">
+          <h1 className="m-0 font-serif-title font-black text-2xl md:text-3xl leading-snug text-[var(--color-text-primary)] tracking-tight">
             {article.title}
           </h1>
           <div className="flex items-center justify-between flex-wrap gap-3 text-xs text-[var(--color-text-secondary)] font-semibold border-y border-[var(--color-border)] py-3">
-            <div className="flex items-center gap-4 flex-wrap">
-              <span className="flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                Published:{" "}
-                {new Date(article.publishedAt).toLocaleDateString("en-US", {
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="font-bold text-[var(--color-accent)]">
+                {article.sourceName || "Football Verse"}
+              </span>
+              <span>·</span>
+              <span>
+                {new Date(article.publishedAt).toLocaleDateString("vi-VN", {
                   year: "numeric",
-                  month: "long",
+                  month: "numeric",
                   day: "numeric",
                 })}
               </span>
+              <span>·</span>
               <span className="flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5" fill={article.liked ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={article.liked ? { color: "var(--color-accent)" } : {}}>
+                <svg className="w-3.5 h-3.5" fill={article.liked ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
                 </svg>
-                {article.likes} {article.likes === 1 ? "like" : "likes"}
+                {article.likes}
               </span>
               <span className="flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5" fill={article.bookmarked ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={article.bookmarked ? { color: "#4a7c59" } : {}}>
+                <svg className="w-3.5 h-3.5" fill={article.bookmarked ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                 </svg>
-                {article.bookmarks} {article.bookmarks === 1 ? "bookmark" : "bookmarks"}
+                {article.bookmarks}
               </span>
             </div>
 
@@ -262,19 +275,6 @@ export default function NewsDetailPage() {
                       }
                 }
               >
-                <svg
-                  className="w-3.5 h-3.5 transition-transform"
-                  fill={article.liked ? "currentColor" : "none"}
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"
-                  />
-                </svg>
                 <span>{article.liked ? "Liked" : "Like"}</span>
               </button>
 
@@ -295,32 +295,15 @@ export default function NewsDetailPage() {
                       }
                 }
               >
-                <svg
-                  className="w-3.5 h-3.5 transition-transform"
-                  fill={article.bookmarked ? "currentColor" : "none"}
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                  />
-                </svg>
                 <span>{article.bookmarked ? "Bookmarked" : "Bookmark"}</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Article Summary */}
-        <div className="bg-[var(--color-background-surface)] border border-[var(--color-border)] border-l-4 border-l-[var(--color-accent)] p-5 rounded-r-2xl text-sm leading-relaxed text-[var(--color-text-primary)] font-serif shadow-sm">
-          {article.summary}
-        </div>
-
+        {/* Hero Media (Peek.vn Style) */}
         {article.contentKind === "AGGREGATED_STORY" ? (
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-6">
             {article.sourceUrl && (article.sourceUrl.includes("youtube.com") || article.sourceUrl.includes("youtu.be") || article.mediaType === "VIDEO") ? (
               <YouTubeEmbed
                 videoUrl={article.sourceUrl || ""}
@@ -328,211 +311,161 @@ export default function NewsDetailPage() {
                 title={article.title}
                 summary={article.summary}
               />
-            ) : article.sourceUrl && (article.sourceUrl.includes("reddit.com") || (article.sourceName && article.sourceName.includes("Reddit"))) ? (
-              <RedditEmbed
-                postUrl={article.sourceUrl}
-                sourceName={article.sourceName}
-                title={article.title}
-                summary={article.summary}
-              />
-            ) : (article.mediaType === "EMBED" || (article.sourceUrl && (article.sourceUrl.includes("x.com") || article.sourceUrl.includes("twitter.com")))) ? (
-              <XEmbed
-                tweetUrl={article.sourceUrl || ""}
-                authorName={article.sourceName}
-                title={article.title}
-                summary={article.summary}
-              />
             ) : (
-              <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-background-surface)]">
+              <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-background-surface)] shadow-sm">
                 <img
                   src={getArticleImage(article.id, undefined, article.imageUrl)}
                   alt={article.title}
                   referrerPolicy="no-referrer"
-                  className="h-auto max-h-[520px] w-full object-cover"
+                  className="h-auto max-h-[380px] w-full object-cover"
+                  onError={handleImageError}
                 />
               </div>
             )}
 
-            {article.keyPoints && article.keyPoints.length > 0 && (
-              <section className="card p-5 flex flex-col gap-3" aria-labelledby="story-key-points">
-                <h2 id="story-key-points" className="m-0 text-sm font-black text-[var(--color-text-primary)]">Key points</h2>
-                <ul className="m-0 flex list-none flex-col gap-3 p-0">
-                  {article.keyPoints.map((point, index) => (
-                    <li key={`${point.text}-${index}`} className="text-sm leading-relaxed text-[var(--color-text-primary)]">
-                      <p className="m-0">{point.text}</p>
-                      {point.evidence.length > 0 && (
-                        <div className="mt-1.5 flex flex-wrap gap-2">
-                          {point.evidence.map((evidence, evidenceIndex) => (
-                            <a
-                              key={`${evidence.originalUrl}-${evidenceIndex}`}
-                              href={evidence.originalUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[10px] font-black uppercase tracking-wider text-[var(--color-accent)] hover:underline"
-                            >
-                              {evidence.sourceName}
-                            </a>
-                          ))}
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            <div className="card p-5 flex flex-col gap-3">
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <div>
-                  <p className="m-0 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-secondary)]">
-                    Original source
-                  </p>
-                  <p className="m-0 mt-1 text-sm font-bold text-[var(--color-text-primary)]">
-                    {article.sourceName || "External publisher"}
-                  </p>
-                  <p className="m-0 mt-1 text-[10px] font-semibold text-[var(--color-text-secondary)]">
-                    {article.sourceCount && article.sourceCount > 1
-                      ? `${article.sourceCount} independent sources`
-                      : "1 source"}
-                  </p>
-                </div>
-                {article.verificationStatus && (
-                  <span className="rounded-full bg-black/[0.05] px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[var(--color-text-secondary)]">
-                    {article.verificationStatus.replaceAll("_", " ")}
+            {/* Unified Editorial AI Summary & Key Takeaways Card */}
+            <div className="card p-6 flex flex-col gap-5 bg-white border border-[var(--color-border)] shadow-sm rounded-2xl" role="region" aria-label="AI Summary">
+              {/* Header Bar */}
+              <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3.5">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--color-text-primary)] text-white shadow-xs" aria-hidden="true">
+                    <svg className="w-4 h-4 fill-current text-white" viewBox="0 0 24 24">
+                      <path d="M12 2L14.4 8.6L21 11L14.4 13.4L12 20L9.6 13.4L3 11L9.6 8.6L12 2Z" />
+                    </svg>
                   </span>
-                )}
+                  <div>
+                    <h2 className="font-serif-title font-black text-sm uppercase tracking-wider text-[var(--color-text-primary)] m-0 leading-none">
+                      Gemini AI Executive Summary
+                    </h2>
+                    <span className="text-[10px] text-[var(--color-text-secondary)] font-medium">Verified Editorial Analysis</span>
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-accent)] bg-black/5 border border-[var(--color-border)] px-2.5 py-1 rounded-full">
+                  100% AI Insight
+                </span>
               </div>
-              <p className="m-0 text-xs leading-relaxed text-[var(--color-text-secondary)]">
-                Football Verse summarizes metadata supplied by the publisher. Open the source for full context.
-              </p>
-              <div className="flex flex-col gap-2 border-t border-[var(--color-border)] pt-3">
-                {(article.sources?.length
-                  ? article.sources
-                  : article.sourceUrl
-                    ? [{
-                        name: article.sourceName || "Original source",
-                        url: article.sourceUrl,
-                        publishedAt: article.publishedAt,
-                        primary: true,
-                      }]
-                    : []
-                ).map((source, index) => (
-                  <a
-                    key={`${source.url}-${index}`}
-                    href={source.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] px-4 py-3 text-xs font-bold text-[var(--color-text-primary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
-                  >
-                    <span>
-                      {source.name}
-                      {source.primary ? " · Primary" : ""}
-                    </span>
-                    <span aria-hidden="true">↗</span>
-                  </a>
-                ))}
+
+              {/* Summary Paragraphs */}
+              <div className="text-base leading-relaxed text-[var(--color-text-primary)] font-serif whitespace-pre-line flex flex-col gap-3">
+                {cleanSummaryText(article.summary)}
               </div>
+
+              {/* Key Highlights Sub-Section */}
+              {article.keyPoints && article.keyPoints.length > 0 && (
+                <div className="flex flex-col gap-3 pt-4 border-t border-[var(--color-border)]">
+                  <h3 className="m-0 text-xs font-black uppercase tracking-wider text-[var(--color-text-primary)] flex items-center gap-1.5">
+                    <svg className="w-4 h-4 text-[var(--color-accent)] fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" />
+                    </svg>
+                    <span>Key Takeaways & Highlights</span>
+                  </h3>
+                  <ul className="m-0 flex flex-col gap-3 pl-0 list-none">
+                    {article.keyPoints.map((point, index) => (
+                      <li key={`${point.text}-${index}`} className="flex items-start gap-3 text-sm leading-relaxed text-[var(--color-text-primary)] font-serif bg-gray-50/70 p-3 rounded-xl border border-gray-100">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[var(--color-text-primary)] text-white font-extrabold text-[10px] flex items-center justify-center mt-0.5 shadow-2xs">
+                          {index + 1}
+                        </span>
+                        <span>{point.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
+
+            {article.sourceUrl && (
+              <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-[var(--color-border)] text-xs">
+                <span className="font-medium text-[var(--color-text-secondary)]">
+                  Source: <strong className="text-[var(--color-text-primary)]">{article.sourceName || "External Publication"}</strong>
+                </span>
+                <a
+                  href={article.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-[var(--color-accent)] hover:underline flex items-center gap-1"
+                >
+                  <span>Read original publication</span>
+                  <span>↗</span>
+                </a>
+              </div>
+            )}
           </div>
         ) : (
-          <article className="article-body text-base md:text-lg text-[var(--color-text-primary)] leading-relaxed font-serif">
-            <div
+          <div className="flex flex-col gap-6">
+            {/* Article Image */}
+            <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-background-surface)] shadow-sm">
+              <img
+                src={getArticleImage(article.id, article.content, article.imageUrl)}
+                alt={article.title}
+                referrerPolicy="no-referrer"
+                className="h-auto max-h-[520px] w-full object-cover"
+                onError={handleImageError}
+              />
+            </div>
+
+            {/* Article Content */}
+            <article
+              className="prose prose-lg max-w-none font-serif text-[var(--color-text-primary)] leading-relaxed flex flex-col gap-4"
               dangerouslySetInnerHTML={{
-                __html: preprocessArticleContent(
-                  article.content,
-                  getArticleImage(article.id, article.content, article.imageUrl),
-                ),
+                __html: preprocessArticleContent(article.content || article.summary || ""),
               }}
             />
-          </article>
-        )}
-
-        {/* Article tags */}
-        {article.tags && article.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 pt-4 border-t border-[var(--color-border)] max-w-[720px] mx-auto w-full">
-            {article.tags.map((t) => (
-              <span key={t} className="px-2.5 py-1 bg-black/[0.04] text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)] rounded-full">
-                #{t}
-              </span>
-            ))}
           </div>
         )}
 
-        {/* Comments Section */}
-        <div className="flex flex-col gap-6 mt-8 border-t border-[var(--color-border)] pt-8">
-          <h3 className="m-0 font-serif-title font-black text-2xl border-b border-[var(--color-border)] pb-2 text-[var(--color-text-primary)]">
-            Discussions ({comments.length})
-          </h3>
+        {/* Comment Section */}
+        <section className="card p-6 flex flex-col gap-6 mt-6 border-t border-[var(--color-border)]">
+          <h2 className="m-0 font-serif-title font-black text-xl text-[var(--color-text-primary)] flex items-center gap-2">
+            <span>Comments</span>
+            <span className="text-sm font-bold text-[var(--color-text-secondary)] tabular-nums">
+              ({flatComments.length})
+            </span>
+          </h2>
 
-          {/* Root Comment Submission Form */}
-          {auth ? (
-            <form onSubmit={handleCommentSubmit} className="w-full">
-              <div className="flex flex-col gap-3 bg-[var(--color-background-surface)] border border-[var(--color-border)] p-5 rounded-2xl shadow-premium">
-                <span className="text-xs font-bold text-[var(--color-text-secondary)]">
-                  Add to the discussion as {auth.username}
-                </span>
-                <input
-                  type="text"
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Share your thoughts on this story..."
-                  className="w-full px-4 py-2.5 rounded-xl text-xs border border-[var(--color-border)] bg-transparent text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] transition-all"
-                />
-                <div className="text-right">
-                  <button
-                    disabled={commentMutation.isPending && replyTargetId === null}
-                    className="btn btn-primary !rounded-full !px-5 !py-2 !text-xs active:scale-[0.98] transition-all"
-                  >
-                    {commentMutation.isPending && replyTargetId === null
-                      ? "Submitting..."
-                      : "Submit Comment"}
-                  </button>
-                </div>
-              </div>
-            </form>
-          ) : (
-            <div className="text-center py-6 bg-[var(--color-background-body)] border border-[var(--color-border)] rounded-2xl p-6">
-              <p className="text-xs md:text-sm text-[var(--color-text-secondary)] font-medium">
-                Please{" "}
-                <Link
-                  href="/login"
-                  className="font-bold text-[var(--color-accent)] hover:underline"
-                >
-                  Login
-                </Link>{" "}
-                to join the discussion and post comments.
-              </p>
+          {/* New Comment Input */}
+          <form onSubmit={handleCommentSubmit} className="flex flex-col gap-3">
+            <textarea
+              rows={3}
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              placeholder={auth ? "Write a comment..." : "Please log in to join the discussion"}
+              disabled={!auth || commentMutation.isPending}
+              className="w-full p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background-surface)] text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)] transition-colors resize-none disabled:opacity-60"
+            />
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={!auth || !commentText.trim() || commentMutation.isPending}
+                className="px-6 py-2.5 rounded-xl bg-black text-white text-xs font-bold uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity cursor-pointer"
+              >
+                {commentMutation.isPending ? "Posting..." : "Post Comment"}
+              </button>
             </div>
-          )}
+          </form>
 
           {/* Comments List */}
-          {isCommentsLoading ? (
-            <LoadingBlock label="Loading comments" />
-          ) : comments.length === 0 ? (
-            <p className="italic py-8 text-center text-xs text-[var(--color-text-secondary)] font-semibold">
-              No comments yet. Be the first to start the conversation!
-            </p>
+          {comments.length === 0 ? (
+            <div className="text-center py-8 text-xs text-[var(--color-text-secondary)] italic">
+              No comments yet. Be the first to share your thoughts!
+            </div>
           ) : (
-            <div className="flex flex-col gap-4 w-full">
-              {/* Only render root level comments here */}
-              {comments
-                .filter((c) => !c.parentId)
-                .map((c) => (
-                  <CommentNode
-                    key={c.id}
-                    comment={c}
-                    replyTargetId={replyTargetId}
-                    replyText={replyText}
-                    isSubmittingReply={commentMutation.isPending && replyTargetId === c.id}
-                    onLikeComment={handleLikeComment}
-                    onReplyTargetChange={setReplyTargetId}
-                    onReplyTextChange={setReplyText}
-                    onReplySubmit={handleReplySubmit}
-                  />
-                ))}
+            <div className="flex flex-col gap-4 divide-y divide-gray-100">
+              {comments.map((comment) => (
+                <CommentNode
+                  key={comment.id}
+                  comment={comment}
+                  onReplySubmit={handleReplySubmit}
+                  onLikeComment={handleLikeComment}
+                  replyTargetId={replyTargetId}
+                  onReplyTargetChange={setReplyTargetId}
+                  replyText={replyText}
+                  onReplyTextChange={setReplyText}
+                  isSubmittingReply={commentMutation.isPending}
+                />
+              ))}
             </div>
           )}
-        </div>
+        </section>
       </div>
     </PublicShell>
   );

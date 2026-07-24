@@ -37,6 +37,16 @@ export default function AdminUsersPage() {
     onError: (err) => toast({ body: apiErrorMessage(err, "Failed to update status."), type: "error" }),
   });
 
+  const updateRoleMutation = useMutation({
+    mutationFn: ({ id, roles }: { id: number; roles: string[] }) =>
+      data<AdminUser>(http.patch(`/admin/users/${id}/roles`, { roles })),
+    onSuccess: (u) => {
+      queryClient.invalidateQueries({ queryKey: qk.admin.users() });
+      toast({ body: `@${u.username} roles updated: ${u.roles.join(", ")}`, type: "info", autoHideDuration: 2500 });
+    },
+    onError: (err) => toast({ body: apiErrorMessage(err, "Failed to update roles."), type: "error" }),
+  });
+
   const counts = useMemo(() => ({
     ADMIN: users.filter((u) => u.roles.includes("ADMIN")).length,
     MODERATOR: users.filter((u) => u.roles.includes("MODERATOR") && !u.roles.includes("ADMIN")).length,
@@ -118,7 +128,10 @@ export default function AdminUsersPage() {
               <tr><td colSpan={7} className="py-10 text-center text-xs italic" style={{ color: "var(--color-text-secondary)" }}>No users in this group.</td></tr>
             ) : filtered.map((user, i) => {
               const st = STATUS_STYLES[user.status] ?? STATUS_STYLES.ACTIVE;
-              const highestRole = user.roles.includes("ADMIN") ? "ADMIN" : user.roles.includes("MODERATOR") ? "MODERATOR" : "USER";
+              const isAdmin = user.roles.includes("ADMIN");
+              const isMod = user.roles.includes("MODERATOR");
+              const highestRole = isAdmin ? "ADMIN" : isMod ? "MODERATOR" : "USER";
+
               return (
                 <tr key={user.id} className="hover:bg-black/[0.02] transition-colors" style={{ borderBottom: i < filtered.length - 1 ? "1px solid var(--color-border)" : undefined }}>
                   <td className="py-3 px-4 font-mono text-[10px]" style={{ color: "var(--color-text-secondary)" }}>{user.id}</td>
@@ -141,6 +154,36 @@ export default function AdminUsersPage() {
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-1.5 justify-end">
+                      {/* Role management buttons */}
+                      {!isAdmin ? (
+                        <button
+                          onClick={() => updateRoleMutation.mutate({ id: user.id, roles: ["USER", "MODERATOR", "ADMIN"] })}
+                          disabled={updateRoleMutation.isPending}
+                          className="px-2.5 py-1 rounded text-[9px] font-black uppercase transition-colors hover:opacity-80 bg-amber-500/10 text-amber-700 border border-amber-500/20 cursor-pointer"
+                        >
+                          Make Admin
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => updateRoleMutation.mutate({ id: user.id, roles: ["USER"] })}
+                          disabled={updateRoleMutation.isPending}
+                          className="px-2.5 py-1 rounded text-[9px] font-black uppercase transition-colors hover:opacity-80 bg-gray-500/10 text-gray-700 border border-gray-500/20 cursor-pointer"
+                        >
+                          Demote
+                        </button>
+                      )}
+
+                      {!isMod && !isAdmin && (
+                        <button
+                          onClick={() => updateRoleMutation.mutate({ id: user.id, roles: ["USER", "MODERATOR"] })}
+                          disabled={updateRoleMutation.isPending}
+                          className="px-2.5 py-1 rounded text-[9px] font-black uppercase transition-colors hover:opacity-80 bg-blue-500/10 text-blue-700 border border-blue-500/20 cursor-pointer"
+                        >
+                          Make Mod
+                        </button>
+                      )}
+
+                      {/* Status management buttons */}
                       {user.status !== "ACTIVE" && (
                         <button onClick={() => updateStatusMutation.mutate({ id: user.id, status: "ACTIVE" })}
                           className="px-2.5 py-1 rounded text-[9px] font-black uppercase transition-colors hover:opacity-80"

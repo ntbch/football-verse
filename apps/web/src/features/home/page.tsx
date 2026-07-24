@@ -10,7 +10,7 @@ import type { PageResponse } from "@/shared/lib/api-types";
 import type { NewsArticleResponse } from "@/features/news/types";
 import type { LeaderboardEntryResponse } from "@/features/predictions/types";
 import type { ForumCategoryResponse, ThreadResponse } from "@/features/forum/types";
-import { getArticleImage } from "@/shared/lib/images";
+import { getArticleImage, handleImageError } from "@/shared/lib/images";
 import { LoadingBlock } from "@/shared/components/state-blocks";
 import { LeaderboardWidget, CommunityWidget, EditorsPickWidget } from "./_components";
 
@@ -87,10 +87,7 @@ export default function HomePage() {
                 alt={hero.title}
                 loading="eager"
                 fetchPriority="high"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src =
-                    "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=800&auto=format&fit=crop";
-                }}
+                onError={handleImageError}
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
@@ -123,10 +120,7 @@ export default function HomePage() {
                     src={getArticleImage(art.id, art.content, art.imageUrl)}
                     alt={art.title}
                     loading="eager"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "https://images.unsplash.com/photo-1540747737956-3787293a9fc1?q=80&w=800&auto=format&fit=crop";
-                    }}
+                    onError={handleImageError}
                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
@@ -188,10 +182,7 @@ export default function HomePage() {
                           src={getArticleImage(art.id, art.content, art.imageUrl)}
                           alt={art.title}
                           loading="lazy"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=800&auto=format&fit=crop";
-                          }}
+                          onError={handleImageError}
                           className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500 ease-out"
                         />
                         <div className="absolute top-3 left-3">

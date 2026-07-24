@@ -3,6 +3,7 @@ package com.footballverse.user.controller.admin;
 import com.footballverse.common.response.ApiResponse;
 import com.footballverse.user.admin.AdminUserResponse;
 import com.footballverse.user.admin.AdminUserService;
+import com.footballverse.user.admin.dto.UpdateUserRoleRequest;
 import com.footballverse.user.admin.dto.UpdateUserStatusRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,5 +30,10 @@ public class AdminUserController {
     @PatchMapping("/{id}/status")
     public ApiResponse<AdminUserResponse> status(@PathVariable Long id, @Valid @RequestBody UpdateUserStatusRequest request) {
         return ApiResponse.ok(adminUserService.updateStatus(id, request));
+    }
+
+    @PatchMapping("/{id}/roles")
+    public ApiResponse<AdminUserResponse> roles(@PathVariable Long id, @Valid @RequestBody UpdateUserRoleRequest request) {
+        return ApiResponse.ok(adminUserService.updateRoles(id, request));
     }
 }

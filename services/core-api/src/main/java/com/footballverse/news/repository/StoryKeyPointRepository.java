@@ -9,4 +9,5 @@ public interface StoryKeyPointRepository extends JpaRepository<StoryKeyPoint, Lo
     List<StoryKeyPoint> findByStoryIdOrderByOrdinalAsc(Long storyId);
     Optional<StoryKeyPoint> findByStoryIdAndOrdinal(Long storyId, int ordinal);
     void deleteByStoryIdAndOrdinal(Long storyId, int ordinal);
+    void deleteByStoryId(Long storyId);
 }

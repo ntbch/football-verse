@@ -9,19 +9,7 @@ import {
 import { secureFetchText } from '../crawler/secure-fetch';
 import { SourceAdapter } from './source-adapter';
 
-const HIGHLIGHT_KEYWORDS = [
-  'highlight',
-  'highlights',
-  'match highlight',
-  'extended highlight',
-  'all goals',
-  'full match',
-  'bàn thắng',
-  'tóm tắt',
-  'trận đấu',
-  'vòng',
-  'goals & highlights',
-];
+const HIGHLIGHT_TITLE_PATTERN = /highlight|all goals|full match|goals & highlights|b\u00e0n th\u1eafng|t\u00f3m t\u1eaft|tr\u1eadn \u0111\u1ea5u/i;
 
 export class YouTubeAdapter implements SourceAdapter {
   readonly provider = 'youtube';
@@ -63,11 +51,13 @@ export class YouTubeAdapter implements SourceAdapter {
                             $entry.children('summary').text().trim();
         const thumbnailUrl = $entry.find('media\\:thumbnail').attr('url') ||
                              (videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : undefined);
-        const publishedAt = $entry.children('published, updated').text().trim() || new Date().toISOString();
+        const rawPublishedAt = $entry.children('published, updated').text().trim();
+        const publishedAt = this.safeDate(rawPublishedAt);
         const videoUrl = videoId ? `https://www.youtube.com/watch?v=${videoId}` : $entry.children('link').attr('href') || source.feedUrl;
 
         // Ponytail highlight filtering logic: Keep ONLY Match Highlights!
-        if (!this.isHighlightVideo(rawTitle, description)) {
+        // Channel descriptions often mention highlights for non-match videos.
+        if (!this.isHighlightVideo(rawTitle)) {
           skippedCount++;
           continue;
         }
@@ -101,7 +91,7 @@ export class YouTubeAdapter implements SourceAdapter {
             },
           ],
           language: 'en',
-          publishedAt: new Date(publishedAt).toISOString(),
+          publishedAt,
           collectedAt: new Date().toISOString(),
         });
       }
@@ -130,9 +120,8 @@ export class YouTubeAdapter implements SourceAdapter {
     }
   }
 
-  private isHighlightVideo(title: string, description: string): boolean {
-    const text = `${title} ${description}`.toLowerCase();
-    return HIGHLIGHT_KEYWORDS.some(keyword => text.includes(keyword));
+  private isHighlightVideo(title: string): boolean {
+    return HIGHLIGHT_TITLE_PATTERN.test(title);
   }
 
   private emptyResult(checkpoint?: ProviderCheckpoint): CollectResult {
@@ -157,6 +146,12 @@ export class YouTubeAdapter implements SourceAdapter {
   private limitText(text: string, max: number): string {
     if (text.length <= max) return text;
     return text.substring(0, max - 3) + '...';
+  }
+
+  private safeDate(value?: string): string {
+    if (!value) return new Date().toISOString();
+    const parsed = Date.parse(value.trim());
+    return Number.isNaN(parsed) ? new Date().toISOString() : new Date(parsed).toISOString();
   }
 
   private sha256(val: string): string {

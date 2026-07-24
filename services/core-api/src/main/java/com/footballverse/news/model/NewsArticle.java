@@ -12,7 +12,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Index;
@@ -43,10 +42,10 @@ public class NewsArticle extends AuditableEntity {
     @Column(nullable = false, unique = true, length = 240)
     private String slug;
 
-    @Column(length = 500)
+    @Column(columnDefinition = "text")
     private String summary;
 
-    @Column(nullable = false, columnDefinition = "text")
+    @Column(columnDefinition = "text")
     private String content;
 
     @Enumerated(EnumType.STRING)
@@ -110,6 +109,9 @@ public class NewsArticle extends AuditableEntity {
 
     @Column(name = "source_count_cached", nullable = false)
     private int sourceCountCached;
+
+    @Column(name = "hot_score", columnDefinition = "double precision")
+    private Double hotScore = 0.0;
 
     @Column(name = "summary_basis_hash", length = 64)
     private String summaryBasisHash;

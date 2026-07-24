@@ -4,6 +4,7 @@ import com.footballverse.common.exception.ResourceNotFoundException;
 import com.footballverse.user.model.UserAccount;
 import com.footballverse.user.repository.UserAccountRepository;
 import com.footballverse.user.admin.AdminUserResponse;
+import com.footballverse.user.admin.dto.UpdateUserRoleRequest;
 import com.footballverse.user.admin.dto.UpdateUserStatusRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,13 @@ public class AdminUserService {
     public AdminUserResponse updateStatus(Long id, UpdateUserStatusRequest request) {
         UserAccount user = users.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
         user.setStatus(request.status());
+        return toAdminUser(user);
+    }
+
+    @Transactional
+    public AdminUserResponse updateRoles(Long id, UpdateUserRoleRequest request) {
+        UserAccount user = users.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        user.setRoles(request.roles());
         return toAdminUser(user);
     }
 

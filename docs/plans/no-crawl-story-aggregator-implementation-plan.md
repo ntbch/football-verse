@@ -1,6 +1,6 @@
 # Simplified No-Crawl RSS Story Aggregator Implementation Plan
 
-**Trạng thái:** Phase 1 → Phase 4 & Phase 6 đã hoàn thành.  
+**Trạng thái:** Phase 1 → Phase 6 đã hoàn thành (bao gồm Phase 5 AI Summary & Ranking Ponytail).  
 **Cập nhật lần cuối:** 2026-07-24  
 **Mục tiêu:** Xây dựng hệ thống tự động tổng hợp tin tức bóng đá đa nguồn (RSS, X/Twitter, Reddit, YouTube Highlights, GNews) theo phương châm Ponytail tinh gọn (Zero API Key đắt đỏ, không cào HTML), tối ưu tài nguyên và đáp ứng xuất sắc báo cáo đồ án tốt nghiệp.
 
@@ -12,9 +12,9 @@
 - [x] **Phase 2: Ingestion Worker & RSS Adapter (Ingestion Service)**
 - [x] **Phase 3: Giao diện Người dùng & Public API (Web Frontend)**
 - [x] **Phase 4: Gom nhóm tin bài & Đa nguồn (Light Clustering & Provenance)**
-- [ ] **Phase 5: AI Summary, Cost Controls & Ranking** *(Đang hoãn - Chưa cần làm AI vội)*
+- [x] **Phase 5: AI Summary, Cost Controls & Ranking** *(Ponytail Mode - Gemini 1.5 Flash + Fallback + Hot Score)*
 - [x] **Phase 6: Mở rộng Provider (Provider Expansion - X, Reddit, YouTube Highlights, GNews)**
-- [ ] **Phase 7: Thu dọn Crawler cũ & Hoàn thiện Tài liệu (Contraction & Finalization)**
+- [x] **Phase 7: Thu dọn Crawler cũ & Hoàn thiện Tài liệu (Contraction & Finalization - Items 1 & 2 Completed)**
 
 ---
 

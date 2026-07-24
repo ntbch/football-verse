@@ -100,6 +100,12 @@ services:
       - AUTH_COOKIE_SECURE=${AUTH_COOKIE_SECURE:-false}
       - AUTH_COOKIE_SAME_SITE=${AUTH_COOKIE_SAME_SITE:-Lax}
       - APP_UPLOAD_DIR=/app/uploads
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-1.5-flash}
+      - AI_DAILY_LIMIT=${AI_DAILY_LIMIT:-100}
+      - TELEGRAM_ENABLED=${TELEGRAM_ENABLED:-false}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHANNEL_ID=${TELEGRAM_CHANNEL_ID:-}
     volumes:
       - core_uploads:/app/uploads
     depends_on:
@@ -138,7 +144,9 @@ services:
       - INTERNAL_TOKEN=${INTERNAL_TOKEN}
       - INGESTION_DB_URL=postgresql://${INGESTION_DB_USER:-ingestion_user}:${INGESTION_DB_PASSWORD:-ingestion_pass}@postgres:5432/${INGESTION_DB_NAME:-ingestion_db}
       - CRAWL_CRON=${CRAWL_CRON:-*/15 * * * *}
-      - INGESTION_MODE=${INGESTION_MODE:-rss_metadata_shadow}
+      - REDDIT_ACCESS_TOKEN=${REDDIT_ACCESS_TOKEN:-}
+      - INGESTION_MODE=${INGESTION_MODE:-rss_metadata_publish}
+      - RUN_CRAWL_ON_STARTUP=true
       - PORT=8085
     expose:
       - "8085"

@@ -52,6 +52,7 @@ public class NewsArticleService {
     private final KeyPointEvidenceRepository evidence;
     private final RichTextSanitizer sanitizer;
     private final CurrentUser currentUser;
+    private final AiSummaryService aiSummaryService;
 
     @Transactional(readOnly = true)
     public PageResponse<NewsArticleResponse> published(List<Long> categoryIds, List<Long> tagIds, int page, int size) {
@@ -64,6 +65,22 @@ public class NewsArticleService {
                 tagIds,
                 PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "publishedAt"))
         ).map(this::toArticle));
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<NewsArticleResponse> trending(int page, int size) {
+        return PageResponse.from(articles.findTrendingArticles(PageRequest.of(page, size))
+                .map(this::toArticle));
+    }
+
+    public double calculateHotScore(NewsArticle article) {
+        if (article == null) return 0.0;
+        Instant pubDate = article.getPublishedAt() != null ? article.getPublishedAt() : Instant.now();
+        double hoursOld = Math.max(0.1, java.time.Duration.between(pubDate, Instant.now()).toMinutes() / 60.0);
+        int sources = Math.max(1, article.getSourceCountCached());
+        double hotScore = (sources * 10.0 + 1.0) / Math.pow(hoursOld + 2.0, 1.5);
+        article.setHotScore(hotScore);
+        return hotScore;
     }
 
     private java.time.Instant parseInstant(String str) {
@@ -104,13 +121,52 @@ public class NewsArticleService {
         return toArticle(adminArticle(id));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public NewsArticleResponse detail(String slug) {
-        return toArticle(
-                articles.findBySlugAndStatus(slug, ArticleStatus.PUBLISHED)
-                        .orElseThrow(() -> new ResourceNotFoundException("Article not found")),
-                true
+        NewsArticle article = articles.findBySlugAndStatus(slug, ArticleStatus.PUBLISHED)
+                .orElseThrow(() -> new ResourceNotFoundException("Article not found"));
+
+        List<com.footballverse.news.model.StoryKeyPoint> existingPoints = keyPoints.findByStoryIdOrderByOrdinalAsc(article.getId());
+        if (existingPoints.size() <= 1) {
+            generateAiSummaryAndKeyPointsForStory(article);
+        }
+
+        return toArticle(article, true);
+    }
+
+    private void generateAiSummaryAndKeyPointsForStory(NewsArticle article) {
+        String sourceText = (article.getSummary() != null && !article.getSummary().isBlank())
+                ? article.getSummary()
+                : article.getTitle();
+
+        AiSummaryService.SummaryResult result = aiSummaryService.generateSummaryAndKeyPoints(
+                article.getTitle(),
+                sourceText,
+                sourceText
         );
+
+        if (result.summary() != null && !result.summary().isBlank()) {
+            article.setSummary(result.summary());
+            articles.save(article);
+        }
+
+        if (result.keyPoints() != null && !result.keyPoints().isEmpty()) {
+            List<com.footballverse.news.model.StoryKeyPoint> oldPoints = keyPoints.findByStoryIdOrderByOrdinalAsc(article.getId());
+            if (!oldPoints.isEmpty()) {
+                keyPoints.deleteAll(oldPoints);
+                keyPoints.flush();
+            }
+            int ordinal = 1;
+            for (String pt : result.keyPoints()) {
+                if (pt == null || pt.isBlank()) continue;
+                com.footballverse.news.model.StoryKeyPoint kp = new com.footballverse.news.model.StoryKeyPoint();
+                kp.setStory(article);
+                kp.setOrdinal(ordinal++);
+                kp.setText(pt.trim());
+                kp.setConfidence(java.math.BigDecimal.valueOf(0.95));
+                keyPoints.save(kp);
+            }
+        }
     }
 
     public NewsArticleResponse createArticle(NewsArticleRequest request) {
@@ -130,6 +186,7 @@ public class NewsArticleService {
         if (request.tags() != null) {
             article.setTags(request.tags().stream().map(this::tag).collect(Collectors.toSet()));
         }
+        calculateHotScore(article);
         return toArticle(articles.save(article));
     }
 
@@ -142,12 +199,14 @@ public class NewsArticleService {
                 .orElseThrow(() -> new ResourceNotFoundException("News category not found")));
         article.setTags(request.tags() == null ? Set.of() : request.tags().stream().map(this::tag).collect(Collectors.toSet()));
         if (request.status() != null) applyStatus(article, request.status());
+        calculateHotScore(article);
         return toArticle(articles.save(article));
     }
 
     public NewsArticleResponse updateStatus(Long id, ArticleStatus status) {
         NewsArticle article = adminArticle(id);
         applyStatus(article, status);
+        calculateHotScore(article);
         return toArticle(articles.save(article));
     }
 

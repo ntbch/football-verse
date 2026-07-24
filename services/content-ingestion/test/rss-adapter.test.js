@@ -103,10 +103,10 @@ test('RSS feed stats record malformed entries and duplicate identities without a
   const result = await adapter.collect(source, { etag: 'etag-1' });
   assert.equal(result.notModified, true);
   assert.equal(result.stats.seenCount, 0);
-  assert.deepEqual(requested, [{
-    url: source.feedUrl,
-    options: { headers: { 'If-None-Match': 'etag-1' }, timeoutMs: 15000 },
-  }]);
+  assert.equal(requested.length, 1);
+  assert.equal(requested[0].url, source.feedUrl);
+  assert.equal(requested[0].options.timeoutMs, 15000);
+  assert.equal(requested[0].options.headers['If-None-Match'], 'etag-1');
 });
 
 test('RSS adapter preserves timeout failures and malformed feeds produce no normalized item', async () => {

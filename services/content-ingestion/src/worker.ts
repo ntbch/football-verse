@@ -55,7 +55,7 @@ interface ImportResponseData {
 }
 
 export async function processSpoolQueue(): Promise<void> {
-  const pendingItems = await fetchPendingSpoolItems(10);
+  const pendingItems = await fetchPendingSpoolItems(100);
   if (pendingItems.length === 0) return;
 
   console.log(`[Worker] Processing ${pendingItems.length} pending spool items...`);
@@ -298,10 +298,10 @@ async function startWorker() {
     latestSourceReadiness,
   );
 
-  // Run spool processor queue loop every 5 seconds
+  // Run spool processor queue loop every 1 second
   setInterval(() => {
     processSpoolQueue().catch(err => console.error('[Worker] Error in spool loop:', err));
-  }, 5000);
+  }, 1000);
 
   // Schedule cron crawl cycle
   cron.schedule(CRAWL_CRON, () => {

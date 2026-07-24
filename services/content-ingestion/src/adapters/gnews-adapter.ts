@@ -70,10 +70,13 @@ export class GNewsAdapter implements SourceAdapter {
         const $item = $(node);
         const title = this.stripHtml($item.children('title').text());
         const rawLink = $item.children('link').text().trim();
-        const description = this.stripHtml($item.children('description').text());
+        const rawDescription = $item.children('description').text();
+        const rawContent = $item.children('content\\:encoded').text();
+        const description = this.stripHtml(rawDescription);
         const pubDate = $item.children('pubDate').text().trim();
         const sourceName = $item.children('source').text().trim() || source.name;
         const guid = $item.children('guid').text().trim() || rawLink;
+        const imageUrl = this.extractImageFromXml($, $item, rawDescription, rawContent);
 
         if (!title || !rawLink) continue;
 
@@ -96,7 +99,7 @@ export class GNewsAdapter implements SourceAdapter {
           author: {
             name: sourceName,
           },
-          media: [],
+          media: imageUrl ? [{ type: 'IMAGE', url: imageUrl }] : [],
           language: 'en',
           publishedAt: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
           collectedAt: new Date().toISOString(),
@@ -211,6 +214,46 @@ export class GNewsAdapter implements SourceAdapter {
   private limitText(text: string, max: number): string {
     if (text.length <= max) return text;
     return text.substring(0, max - 3) + '...';
+  }
+
+  private extractImageFromXml($: cheerio.CheerioAPI, $item: cheerio.Cheerio<any>, description?: string, content?: string): string | undefined {
+    const mediaUrl = $item.find('media\\:content, media\\:thumbnail, enclosure')
+      .map((_, el) => $(el).attr('url') || $(el).attr('href'))
+      .get()
+      .find(url => url && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//')));
+
+    if (mediaUrl) {
+      const url = mediaUrl.trim();
+      return url.startsWith('//') ? `https:${url}` : url;
+    }
+
+    const rawHtml = `${description || ''} ${content || ''}`;
+    
+    // Match src attribute with http, https or protocol-relative //
+    const imgMatch = rawHtml.match(/<img[^>]+src=["']((?:https?:)?\/\/[^"']+)["']/i);
+    if (imgMatch && imgMatch[1]) {
+      let url = imgMatch[1].trim();
+      if (url.startsWith('//')) {
+        url = `https:${url}`;
+      }
+      if (!url.includes('favicon') && !url.includes('1x1') && !url.includes('google.com/images')) {
+        return url;
+      }
+    }
+
+    try {
+      const $desc = cheerio.load(rawHtml);
+      const descImg = $desc('img').toArray()
+        .map(el => $desc(el).attr('src'))
+        .find(src => src && (src.startsWith('http') || src.startsWith('//')) && !src.includes('favicon') && !src.includes('1x1'));
+
+      if (descImg) {
+        const url = descImg.trim();
+        return url.startsWith('//') ? `https:${url}` : url;
+      }
+    } catch {}
+
+    return undefined;
   }
 
   private sha256(val: string): string {

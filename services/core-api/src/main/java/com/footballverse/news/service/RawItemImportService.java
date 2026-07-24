@@ -14,6 +14,7 @@ import com.footballverse.news.model.KeyPointEvidence;
 import com.footballverse.news.model.VerificationStatus;
 import com.footballverse.news.repository.NewsArticleRepository;
 import com.footballverse.news.repository.NewsSourceRepository;
+import com.footballverse.news.repository.NewsCategoryRepository;
 import com.footballverse.news.repository.RawItemRepository;
 import com.footballverse.news.repository.StoryItemRepository;
 import com.footballverse.news.repository.StoryKeyPointRepository;
@@ -43,6 +44,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.footballverse.telegram.service.TelegramNotificationService;
+import lombok.RequiredArgsConstructor;
+
 @Service
 @RequiredArgsConstructor
 public class RawItemImportService {
@@ -59,12 +63,18 @@ public class RawItemImportService {
     private final StoryItemRepository storyItems;
     private final NewsArticleRepository stories;
     private final NewsSourceRepository sources;
+    private final NewsCategoryRepository categories;
     private final StoryKeyPointRepository keyPoints;
     private final KeyPointEvidenceRepository evidence;
+    private final TelegramNotificationService telegramNotificationService;
+    private final AiSummaryService aiSummaryService;
 
     @Transactional
     public ArticleImportResponse importItem(NormalizedItemImportRequest request) {
         validateContract(request);
+        if (!isFootballRelated(request)) {
+            return new ArticleImportResponse("REJECTED", "Content is not football-related");
+        }
         NewsSource source = sources.findById(request.connectorId())
                 .orElseThrow(() -> new IllegalArgumentException("Connector not found"));
         if (!source.isActive()) {
@@ -121,6 +131,7 @@ public class RawItemImportService {
                 .setScale(4, RoundingMode.HALF_UP));
         storyItems.save(membership);
         updateStoryAfterAttach(story, savedRawItem, cluster == null ? 1.0 : cluster.score());
+        telegramNotificationService.checkAndPushBreakingNews(story);
         return new ArticleImportResponse("ACCEPTED", "Raw item imported");
     }
 
@@ -178,10 +189,10 @@ public class RawItemImportService {
 
     private String eventType(String... values) {
         String text = String.join(" ", Arrays.stream(values).filter(Objects::nonNull).toList()).toLowerCase(Locale.ROOT);
-        if (containsAny(text, "rumour", "rumor", "linked", "interest in")) return "RUMOUR";
-        if (containsAny(text, "sign", "transfer", "deal", "medical", "contract")) return "TRANSFER";
-        if (containsAny(text, "injury", "injured", "fitness", "ruled out")) return "INJURY";
-        if (containsAny(text, "beat", "draw", "wins", "won", "score", "match report")) return "MATCH";
+        if (containsAny(text, "rumour", "rumor", "linked", "gossip", "claim", "claims", "interest in")) return "RUMOUR";
+        if (containsAny(text, "sign", "signs", "signed", "signing", "signings", "transfer", "transfers", "deal", "deals", "bid", "bids", "loan", "loans", "fee", "clause", "medical", "contract", "join", "joins", "joined", "bought", "target", "move")) return "TRANSFER";
+        if (containsAny(text, "injury", "injured", "fitness", "ruled out", "hamstring", "acl")) return "INJURY";
+        if (containsAny(text, "beat", "draw", "wins", "won", "score", "scores", "match report", "highlight", "highlights")) return "MATCH";
         return "OTHER";
     }
 
@@ -319,11 +330,27 @@ public class RawItemImportService {
         NewsArticle story = new NewsArticle();
         story.setTitle(limit(rawItem.getTitle(), 200));
         story.setSlug(SlugUtil.uniqueSlug(story.getTitle()));
-        story.setSummary(storySummary(rawItem));
+
+        AiSummaryService.SummaryResult aiRes = aiSummaryService.generateSummaryAndKeyPoints(
+                rawItem.getTitle(),
+                rawItem.getDescription(),
+                storySummary(rawItem)
+        );
+        story.setSummary(aiRes.summary());
+
         story.setContent("");
         story.setContentKind(NewsContentKind.AGGREGATED_STORY);
         story.setStatus(ArticleStatus.PUBLISHED);
         story.setSource(source);
+
+        String evt = eventType(rawItem.getTitle(), rawItem.getDescription());
+        if ("TRANSFER".equals(evt)) {
+            categories.findBySlug("transfers").ifPresent(story::setCategory);
+        } else if ("RUMOUR".equals(evt)) {
+            categories.findBySlug("rumours").ifPresent(story::setCategory);
+        } else if ("MATCH".equals(evt)) {
+            categories.findBySlug("matches").ifPresent(story::setCategory);
+        }
         story.setSourceUrl(rawItem.getOriginalUrl());
         story.setContentHash(sha256(rawItem.getIdentityKey()));
         story.setPublishedAt(publishedAt);
@@ -338,7 +365,23 @@ public class RawItemImportService {
         story.setSourceCountCached(1);
         story.setSummaryBasisHash(rawItem.getRevisionFingerprint());
         story.setHeroRawItem(rawItem);
-        return story;
+
+        NewsArticle savedStory = stories.save(story);
+
+        if (aiRes.keyPoints() != null && !aiRes.keyPoints().isEmpty()) {
+            int ordinal = 1;
+            for (String pt : aiRes.keyPoints()) {
+                if (pt == null || pt.isBlank()) continue;
+                StoryKeyPoint kp = new StoryKeyPoint();
+                kp.setStory(savedStory);
+                kp.setOrdinal(ordinal++);
+                kp.setText(pt.trim());
+                kp.setConfidence(BigDecimal.valueOf(0.95));
+                keyPoints.save(kp);
+            }
+        }
+
+        return savedStory;
     }
 
     private void updateStory(NewsArticle story, RawItem rawItem) {
@@ -398,6 +441,30 @@ public class RawItemImportService {
         } catch (Exception exception) {
             throw new IllegalStateException("Unable to calculate content identity", exception);
         }
+    }
+
+    private boolean isFootballRelated(NormalizedItemImportRequest request) {
+        String text = (Objects.requireNonNullElse(request.title(), "") + " "
+                + Objects.requireNonNullElse(request.description(), "") + " "
+                + Objects.requireNonNullElse(request.originalUrl(), "")).toLowerCase(Locale.ROOT);
+
+        if (text.contains("/f1/") || text.contains("/tennis/") || text.contains("/racing/")
+                || text.contains("/darts/") || text.contains("/cricket/") || text.contains("/golf/")
+                || text.contains("/nfl/") || text.contains("/nba/")) {
+            return false;
+        }
+
+        String[] nonFootballKeywords = {
+            "formula 1", "formula one", "hungarian gp", "grand prix", "mercedes f1", "ferrari f1", "red bull racing",
+            "wimbledon", "atp tour", "wta tour", "us open tennis", "dc open", "matchplay darts", "silver dominion",
+            "pat eddery stakes", "nba draft", "t20 world cup", "pga tour", "super bowl", "tour de france"
+        };
+        for (String kw : nonFootballKeywords) {
+            if (text.contains(kw)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private record ClusterMatch(NewsArticle story, double score) {

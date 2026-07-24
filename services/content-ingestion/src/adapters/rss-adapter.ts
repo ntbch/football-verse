@@ -52,17 +52,34 @@ function firstMedia($item: cheerio.Cheerio<any>): { media: NormalizedMedia[]; in
     return !type || type.startsWith('image/') || type.startsWith('video/') || medium === 'image' || medium === 'video';
   }).first();
 
-  if (mediaNode.length === 0) return { media: [], invalidMediaCount: 0 };
-  const url = safeRemoteUrl(mediaNode.attr('url'));
-  if (!url) return { media: [], invalidMediaCount: 1 };
+  if (mediaNode.length > 0) {
+    const url = safeRemoteUrl(mediaNode.attr('url'));
+    if (url) {
+      const type = (mediaNode.attr('type') || '').toLowerCase();
+      const medium = (mediaNode.attr('medium') || '').toLowerCase();
+      const mediaType = type.startsWith('video/') || medium === 'video' ? 'VIDEO' : 'IMAGE';
+      return {
+        media: [{ type: mediaType, url, thumbnailUrl: mediaType === 'IMAGE' ? url : undefined }],
+        invalidMediaCount: 0,
+      };
+    }
+    return { media: [], invalidMediaCount: 1 };
+  }
 
-  const type = (mediaNode.attr('type') || '').toLowerCase();
-  const medium = (mediaNode.attr('medium') || '').toLowerCase();
-  const mediaType = type.startsWith('video/') || medium === 'video' ? 'VIDEO' : 'IMAGE';
-  return {
-    media: [{ type: mediaType, url, thumbnailUrl: mediaType === 'IMAGE' ? url : undefined }],
-    invalidMediaCount: 0,
-  };
+  // Fallback: extract img src from description or content:encoded
+  const rawHtml = $item.children('description').text() + ' ' + $item.children('content\\:encoded').text();
+  const imgMatch = rawHtml.match(/<img[^>]+src=["'](https?:\/\/[^"']+)["']/i);
+  if (imgMatch && imgMatch[1]) {
+    const url = safeRemoteUrl(imgMatch[1]);
+    if (url) {
+      return {
+        media: [{ type: 'IMAGE', url, thumbnailUrl: url }],
+        invalidMediaCount: 0,
+      };
+    }
+  }
+
+  return { media: [], invalidMediaCount: 0 };
 }
 
 function itemLink($item: cheerio.Cheerio<any>): string | undefined {
@@ -204,7 +221,8 @@ export class RssAdapter implements SourceAdapter {
   constructor(private readonly fetchText = secureFetchText) {}
 
   supports(source: SourceDescriptor): boolean {
-    return source.sourceType === 'RSS' && (!source.provider || source.provider.toLowerCase() === 'rss');
+    const provider = (source.provider || 'rss').toLowerCase();
+    return provider === 'rss' || source.sourceType === 'RSS' || source.sourceType === 'SITEMAP' || source.sourceType === 'HOMEPAGE';
   }
 
   async collect(
@@ -216,7 +234,10 @@ export class RssAdapter implements SourceAdapter {
       throw new Error('RSS_ADAPTER_UNSUPPORTED_SOURCE');
     }
 
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 FootballVerse/1.0',
+      'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
+    };
     if (checkpoint.etag) headers['If-None-Match'] = checkpoint.etag;
     if (checkpoint.lastModified) headers['If-Modified-Since'] = checkpoint.lastModified;
 

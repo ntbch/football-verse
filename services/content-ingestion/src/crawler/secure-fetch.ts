@@ -13,6 +13,7 @@ const ALLOWED_CONTENT_TYPES = new Set([
   'application/rss+xml',
   'application/atom+xml',
   'application/xhtml+xml',
+  'application/json',   // Reddit JSON API, YouTube Data API, Twitter Syndication CDN
 ]);
 
 function blockedIpv4(address: string): boolean {

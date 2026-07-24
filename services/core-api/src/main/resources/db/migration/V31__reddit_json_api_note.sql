@@ -1,0 +1,10 @@
+-- Migration V31: No-op migration — RedditAdapter now converts .rss → .json URLs internally.
+-- The toJsonUrl() method in reddit-adapter.ts handles both .rss and .json feed_url variants,
+-- so no schema change is required. This migration documents the decision.
+-- If you wish to clean up feed_urls in the DB for clarity, run the UPDATE below:
+--
+-- UPDATE news_sources
+-- SET    feed_url    = REPLACE(feed_url, '/hot.rss', '/hot.json'),
+--        updated_at  = CURRENT_TIMESTAMP
+-- WHERE  provider    = 'reddit'
+--   AND  feed_url    LIKE '%reddit.com%hot.rss';

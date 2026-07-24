@@ -99,5 +99,11 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
 
     boolean existsByContentHash(String contentHash);
 
+    @Query("SELECT a FROM NewsArticle a WHERE a.status = 'PUBLISHED' ORDER BY COALESCE(a.hotScore, 0.0) DESC, a.publishedAt DESC")
+    Page<NewsArticle> findTrendingArticles(Pageable pageable);
+
     boolean existsBySlug(String slug);
+
+    @Query("SELECT a FROM NewsArticle a WHERE a.status = com.footballverse.news.model.ArticleStatus.PUBLISHED AND a.publishedAt >= :since ORDER BY COALESCE(a.hotScore, 0.0) DESC, a.publishedAt DESC")
+    List<NewsArticle> findTopTrendingArticles(Instant since, Pageable pageable);
 }

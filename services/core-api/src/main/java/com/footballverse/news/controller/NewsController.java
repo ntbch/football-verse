@@ -42,6 +42,14 @@ public class NewsController {
         return ApiResponse.ok(articleService.published(categories, tags, page, size));
     }
 
+    @GetMapping("/trending")
+    public ApiResponse<PageResponse<NewsArticleResponse>> trending(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ApiResponse.ok(articleService.trending(page, size));
+    }
+
     @GetMapping("/{slug}")
     public ResponseEntity<ApiResponse<NewsArticleResponse>> detail(
             @PathVariable String slug,
