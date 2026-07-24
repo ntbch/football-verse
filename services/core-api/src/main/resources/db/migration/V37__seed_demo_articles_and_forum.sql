@@ -132,3 +132,20 @@ VALUES
     false
 )
 ON CONFLICT DO NOTHING;
+
+-- Seed Initial Demo Tracked Matches (Premier League Fixtures)
+INSERT INTO tracked_matches (fixture_id, league_slug, round, home_team, away_team, kickoff, home_score, away_score, status, scored)
+VALUES 
+('fix_pl_101', 'premier-league', 'Regular Season - 32', 'Arsenal', 'Chelsea', CURRENT_TIMESTAMP + INTERVAL '1 day 6 hours', NULL, NULL, 'upcoming', false),
+('fix_pl_102', 'premier-league', 'Regular Season - 32', 'Manchester City', 'Liverpool', CURRENT_TIMESTAMP + INTERVAL '1 day 9 hours', NULL, NULL, 'upcoming', false),
+('fix_pl_103', 'premier-league', 'Regular Season - 32', 'Tottenham Hotspur', 'Manchester United', CURRENT_TIMESTAMP + INTERVAL '2 days 3 hours', NULL, NULL, 'upcoming', false),
+('fix_pl_104', 'premier-league', 'Regular Season - 32', 'Newcastle United', 'Aston Villa', CURRENT_TIMESTAMP + INTERVAL '2 days 6 hours', NULL, NULL, 'upcoming', false),
+('fix_pl_105', 'premier-league', 'Regular Season - 32', 'West Ham United', 'Brighton', CURRENT_TIMESTAMP + INTERVAL '3 days', NULL, NULL, 'upcoming', false)
+ON CONFLICT (fixture_id) DO NOTHING;
+
+-- Seed Demo Prediction Stats & Leaderboard
+INSERT INTO user_prediction_stats (user_id, total_points, correct_picks, total_picks, current_streak, best_streak)
+VALUES 
+((SELECT id FROM users WHERE username = 'admin'), 45, 9, 12, 3, 5),
+((SELECT id FROM users WHERE username = 'moderator'), 32, 7, 10, 1, 4)
+ON CONFLICT (user_id) DO NOTHING;
