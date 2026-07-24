@@ -30,7 +30,7 @@ jobs:
       - name: Run News Crawler Once
         env:
           BACKEND_URL: "https://football-verse-backend.onrender.com"
-          INTERNAL_TOKEN: ${{ secrets.INTERNAL_TOKEN || 'dev-secret-change-me-dev-secret-change-me' }}
+          INTERNAL_TOKEN: ${{ secrets.INTERNAL_TOKEN || 'super_secure_internal_token_for_services_12345' }}
           INGESTION_MODE: "legacy"
           RUN_CRAWL_ON_STARTUP: "true"
         run: |
