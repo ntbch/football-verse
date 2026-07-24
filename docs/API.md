@@ -1,5 +1,9 @@
 # API
 
+> This file is the endpoint reference. The canonical edge-routing and ownership
+> inventory is [service contracts](architecture/service-contracts.md); security
+> and identity behavior is defined by [identity contract](architecture/identity-contract.md).
+
 All backend routes are versioned under:
 
 ```text
@@ -35,10 +39,30 @@ Auth and validation errors use the shared error envelope:
 - `PATCH /admin/news/{id}/status` publishes, archives, or drafts an article.
 - `DELETE /admin/news/{id}` soft-deletes an article.
 - `GET|POST /admin/news/categories` lists and creates news categories.
-- `GET|POST /admin/news/sources` lists and creates RSS sources.
+- `GET|POST /admin/news/sources` lists and creates approved metadata connectors.
 - `PATCH /admin/news/sources/{id}/toggle` toggles RSS source activity.
-- `DELETE /admin/news/sources/{id}` deletes an RSS source.
-- `POST /admin/news/crawl` runs a manual RSS crawl.
+- `PATCH /admin/news/sources/{id}/auto-publish` explicitly allows or stops
+  automatic Story publication for one active source; it is off by default.
+- `DELETE /admin/news/sources/{id}` deletes an unused connector or disables one
+  whose evidence must be retained.
+- `POST /admin/news/crawl` requests a background metadata synchronization.
+
+Internal ingestion uses `POST /internal/news/raw-items` with the service
+credential and versioned `NormalizedItem v1` payload. Legacy full-article import
+remains temporary rollback compatibility only.
+
+The ingestion worker exposes service-only controls on its internal port:
+`GET /health`, authenticated `POST /crawl`, and authenticated `GET /readiness`.
+The readiness response contains only per-source counters and sanitized failure
+codes from the latest synchronization; it does not return source article data.
+
+`GET /news/{slug}` expands aggregated Stories with `sources`. Each source
+contains its publisher name, original URL, publication time, and primary flag.
+For an aggregated Story, the detail response also includes `keyPoints`. Every
+key point has one or more evidence entries containing the cited source name,
+original URL, publication time, and a `SUPPORT` or `CONTRADICTION` relation.
+List and search responses omit key-point evidence.
+List and search responses use `sourceCount` without expanding this list.
 
 ## News interactions
 

@@ -1,7 +1,7 @@
 # Career Tactics, Squad and Matchday Implementation Plan
 
 **Design:** `docs/plans/career-tactics-squad-matchday-design.md`  
-**Status:** Phase 2 backend gate and Phase 3 implemented; end-to-end Docker smoke pending  
+**Status:** Complete — Phases 0–3 implemented; service, PostgreSQL, production Web, and Docker smoke gates pass
 **Date:** 2026-07-21
 
 ## Phase 0 — Deterministic Engine Gate
@@ -19,9 +19,9 @@
 
 ### Likely files
 
-- `backend/game/match-engine/match_engine/engine/simulation.py`
-- `backend/game/match-engine/match_engine/domain/`
-- `backend/game/match-engine/tests/test_simulation.py`
+- `services/match-engine/match_engine/engine/simulation.py`
+- `services/match-engine/match_engine/domain/`
+- `services/match-engine/tests/test_simulation.py`
 
 ### Exit gate
 
@@ -48,18 +48,18 @@
 
 ### Likely files
 
-- `backend/game/game-service/src/main/resources/db/migration/V15__career_tactics_and_positions.sql`
-- `backend/game/game-service/src/main/java/com/footballverse/game/career/`
-- `backend/game/game-service/src/main/java/com/footballverse/game/dto/`
-- `backend/game/game-service/src/main/java/com/footballverse/game/web/CareerController.java`
-- `backend/game/match-engine/match_engine/domain/`
-- `web-client/src/app/career/_types.ts`
-- `web-client/src/app/career/_api.ts`
-- `web-client/src/app/career/_formations.ts`
-- `web-client/src/app/career/_components/tactics-board.tsx`
-- `web-client/src/app/career/_components/player-inspector.tsx`
-- `web-client/src/app/career/page.tsx`
-- `web-client/src/app/globals.css`
+- `services/career/src/main/resources/db/migration/V15__career_tactics_and_positions.sql`
+- `services/career/src/main/java/com/footballverse/game/career/`
+- `services/career/src/main/java/com/footballverse/game/dto/`
+- `services/career/src/main/java/com/footballverse/game/web/CareerController.java`
+- `services/match-engine/match_engine/domain/`
+- `apps/web/src/app/career/_types.ts`
+- `apps/web/src/app/career/_api.ts`
+- `apps/web/src/app/career/_formations.ts`
+- `apps/web/src/app/career/_components/tactics-board.tsx`
+- `apps/web/src/app/career/_components/player-inspector.tsx`
+- `apps/web/src/app/career/page.tsx`
+- `apps/web/src/app/globals.css`
 
 ### Verification
 
@@ -88,13 +88,13 @@
 
 ### Likely files
 
-- `backend/game/game-service/src/main/resources/db/migration/V16__interactive_match_sessions.sql`
-- `backend/game/game-service/src/main/java/com/footballverse/game/career/InteractiveMatchService.java`
-- `backend/game/game-service/src/main/java/com/footballverse/game/persistence/`
-- `backend/game/game-service/src/main/java/com/footballverse/game/web/CareerController.java`
-- `backend/game/game-service/src/main/java/com/footballverse/game/engine/MatchEngineClient.java`
-- `backend/game/match-engine/`
-- `backend/platform/gateway-service/src/proxy.ts` only if routing changes are required.
+- `services/career/src/main/resources/db/migration/V16__interactive_match_sessions.sql`
+- `services/career/src/main/java/com/footballverse/game/career/InteractiveMatchService.java`
+- `services/career/src/main/java/com/footballverse/game/persistence/`
+- `services/career/src/main/java/com/footballverse/game/web/CareerController.java`
+- `services/career/src/main/java/com/footballverse/game/engine/MatchEngineClient.java`
+- `services/match-engine/`
+- `services/gateway/src/proxy.ts` only if routing changes are required.
 
 ### Verification
 
@@ -123,12 +123,12 @@
 
 ### Likely files
 
-- `web-client/src/app/career/_types.ts`
-- `web-client/src/app/career/_api.ts`
-- `web-client/src/app/matches/page.tsx`
-- `web-client/src/app/career/page.tsx`
-- `web-client/src/app/career/_components/`
-- `web-client/src/app/globals.css`
+- `apps/web/src/app/career/_types.ts`
+- `apps/web/src/app/career/_api.ts`
+- `apps/web/src/app/matches/page.tsx`
+- `apps/web/src/app/career/page.tsx`
+- `apps/web/src/app/career/_components/`
+- `apps/web/src/app/globals.css`
 
 ### Verification
 

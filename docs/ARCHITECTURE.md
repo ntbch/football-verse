@@ -1,5 +1,10 @@
 # Architecture
 
+> This is the concise system overview. The canonical deployable inventory and
+> known risks are in [current state](architecture/current-state.md); observed
+> routes, identity flow, and ownership boundaries are in
+> [service contracts](architecture/service-contracts.md).
+
 ## Service map
 
 ```text
@@ -12,6 +17,10 @@ Node Gateway
    `-- /game/* --------> Spring Game Service -> match_game_db
                                   |
                                   `----------> Python Match Engine /simulate
+
+Content Ingestion ------> Spring Core
+   |                         |
+   `--> ingestion_db         `--> RawItem / Story / Evidence
 ```
 
 ## Ownership
@@ -42,6 +51,13 @@ Stateless calculation service. It accepts immutable `MatchInput` and returns
 Gateway is the public entry point. Core routes retain existing auth behavior. Game
 routes validate JWT, overwrite identity headers, and forward trusted identity to
 Game Service. Redis/Socket.IO owns fanout only, never business truth.
+
+### Content Ingestion
+
+Owns RSS/API provider adapters, source scheduling, persistent checkpoints,
+durable spool delivery, retry, and operational `ingestion_db` state. Core owns
+Publisher, Connector configuration, RawItem, Story, Evidence, and interactions.
+Default RSS metadata mode does not request article destination pages.
 
 ## Game flow
 

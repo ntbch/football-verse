@@ -1,0 +1,219 @@
+{
+  "dataset": {
+    "articles": 50000,
+    "forumPosts": 100000,
+    "predictions": 100000,
+    "users": 10000
+  },
+  "durationSeconds": 900,
+  "mix": {
+    "authenticatedRead": 20,
+    "publicRead": 70,
+    "write": 10
+  },
+  "observedMixPercent": {
+    "authenticatedRead": 20.0,
+    "publicRead": 70.0,
+    "write": 10.0
+  },
+  "phases": {
+    "cold": {
+      "auth-me": {
+        "errorRatePercent": 0.0,
+        "p50Ms": 69.51,
+        "p95Ms": 134.69,
+        "p99Ms": 200.0,
+        "requests": 341,
+        "requestsPerSecond": 5.68,
+        "responsesOver1Mb": 0,
+        "statuses": {
+          "200": 341
+        }
+      },
+      "auth-notifications": {
+        "errorRatePercent": 0.0,
+        "p50Ms": 74.73,
+        "p95Ms": 134.14,
+        "p99Ms": 224.0,
+        "requests": 341,
+        "requestsPerSecond": 5.68,
+        "responsesOver1Mb": 0,
+        "statuses": {
+          "200": 341
+        }
+      },
+      "auth-predictions": {
+        "errorRatePercent": 0.0,
+        "p50Ms": 74.3,
+        "p95Ms": 150.62,
+        "p99Ms": 381.96,
+        "requests": 342,
+        "requestsPerSecond": 5.7,
+        "responsesOver1Mb": 0,
+        "statuses": {
+          "200": 342
+        }
+      },
+      "public-forum": {
+        "errorRatePercent": 0.0,
+        "p50Ms": 145.18,
+        "p95Ms": 210.05,
+        "p99Ms": 301.98,
+        "requests": 768,
+        "requestsPerSecond": 12.8,
+        "responsesOver1Mb": 0,
+        "statuses": {
+          "200": 768
+        }
+      },
+      "public-leaderboard": {
+        "errorRatePercent": 0.0,
+        "p50Ms": 167.9,
+        "p95Ms": 332.88,
+        "p99Ms": 4215.69,
+        "requests": 1024,
+        "requestsPerSecond": 17.07,
+        "responsesOver1Mb": 1024,
+        "statuses": {
+          "200": 1024
+        }
+      },
+      "public-news": {
+        "errorRatePercent": 0.0,
+        "p50Ms": 342.43,
+        "p95Ms": 597.08,
+        "p99Ms": 1005.1,
+        "requests": 1024,
+        "requestsPerSecond": 17.07,
+        "responsesOver1Mb": 0,
+        "statuses": {
+          "200": 1024
+        }
+      },
+      "public-provider": {
+        "errorRatePercent": 0.0,
+        "p50Ms": 120.22,
+        "p95Ms": 172.42,
+        "p99Ms": 206.79,
+        "requests": 768,
+        "requestsPerSecond": 12.8,
+        "responsesOver1Mb": 0,
+        "statuses": {
+          "200": 768
+        }
+      },
+      "write": {
+        "errorRatePercent": 0.0,
+        "p50Ms": 77.87,
+        "p95Ms": 149.53,
+        "p99Ms": 253.1,
+        "requests": 512,
+        "requestsPerSecond": 8.53,
+        "responsesOver1Mb": 0,
+        "statuses": {
+          "200": 512
+        }
+      }
+    },
+    "warm": {
+      "auth-me": {
+        "errorRatePercent": 0.0,
+        "p50Ms": 70.01,
+        "p95Ms": 119.6,
+        "p99Ms": 170.17,
+        "requests": 4711,
+        "requestsPerSecond": 5.61,
+        "responsesOver1Mb": 0,
+        "statuses": {
+          "200": 4711
+        }
+      },
+      "auth-notifications": {
+        "errorRatePercent": 0.0,
+        "p50Ms": 70.78,
+        "p95Ms": 121.39,
+        "p99Ms": 168.52,
+        "requests": 4711,
+        "requestsPerSecond": 5.61,
+        "responsesOver1Mb": 0,
+        "statuses": {
+          "200": 4711
+        }
+      },
+      "auth-predictions": {
+        "errorRatePercent": 0.0,
+        "p50Ms": 71.19,
+        "p95Ms": 123.11,
+        "p99Ms": 175.35,
+        "requests": 4710,
+        "requestsPerSecond": 5.61,
+        "responsesOver1Mb": 0,
+        "statuses": {
+          "200": 4710
+        }
+      },
+      "public-forum": {
+        "errorRatePercent": 0.0,
+        "p50Ms": 136.35,
+        "p95Ms": 201.71,
+        "p99Ms": 256.92,
+        "requests": 10600,
+        "requestsPerSecond": 12.62,
+        "responsesOver1Mb": 0,
+        "statuses": {
+          "200": 10600
+        }
+      },
+      "public-leaderboard": {
+        "errorRatePercent": 0.0,
+        "p50Ms": 280.36,
+        "p95Ms": 494.84,
+        "p99Ms": 713.26,
+        "requests": 14132,
+        "requestsPerSecond": 16.82,
+        "responsesOver1Mb": 14132,
+        "statuses": {
+          "200": 14132
+        }
+      },
+      "public-news": {
+        "errorRatePercent": 0.0,
+        "p50Ms": 304.9,
+        "p95Ms": 452.76,
+        "p99Ms": 529.01,
+        "requests": 14133,
+        "requestsPerSecond": 16.82,
+        "responsesOver1Mb": 0,
+        "statuses": {
+          "200": 14133
+        }
+      },
+      "public-provider": {
+        "errorRatePercent": 0.0,
+        "p50Ms": 127.52,
+        "p95Ms": 197.46,
+        "p99Ms": 261.7,
+        "requests": 10599,
+        "requestsPerSecond": 12.62,
+        "responsesOver1Mb": 0,
+        "statuses": {
+          "200": 10599
+        }
+      },
+      "write": {
+        "errorRatePercent": 0.0,
+        "p50Ms": 74.23,
+        "p95Ms": 122.5,
+        "p99Ms": 172.53,
+        "requests": 7066,
+        "requestsPerSecond": 8.41,
+        "responsesOver1Mb": 0,
+        "statuses": {
+          "200": 7066
+        }
+      }
+    }
+  },
+  "totalRequests": 75782,
+  "workers": 16
+}

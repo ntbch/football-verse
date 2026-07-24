@@ -125,12 +125,12 @@
 
 ## Files Changed
 
-- `backend/game/match-engine/match_engine/domain/match.py`
-- `backend/game/match-engine/match_engine/domain/__init__.py`
-- `backend/game/match-engine/match_engine/engine/actions.py`
-- `backend/game/match-engine/match_engine/engine/simulation.py`
-- `backend/game/match-engine/match_engine/engine/__init__.py`
-- `backend/game/match-engine/tests/test_simulation.py`
+- `services/match-engine/match_engine/domain/match.py`
+- `services/match-engine/match_engine/domain/__init__.py`
+- `services/match-engine/match_engine/engine/actions.py`
+- `services/match-engine/match_engine/engine/simulation.py`
+- `services/match-engine/match_engine/engine/__init__.py`
+- `services/match-engine/tests/test_simulation.py`
 
 ## Architectural Decisions
 

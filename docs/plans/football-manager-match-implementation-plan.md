@@ -123,7 +123,7 @@ it internally, persists results, and exposes authenticated `/game/*` APIs.
   - Done when a Career fixture submits a valid lineup and handles loading/error states.
 
 - [x] **M10 — Replace random simulation with deterministic playback and report**
-  - Remove client-side score/event generation from `web-client/src/app/matches/page.tsx`.
+  - Remove client-side score/event generation from `apps/web/src/app/matches/page.tsx`.
   - Render API score, ordered timeline, scoreboard, and instant/fast/normal playback.
   - Add post-match team/player statistics and tactical summary.
   - Preserve keyboard access and a non-drag alternative for lineup controls.

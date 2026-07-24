@@ -2,6 +2,7 @@ import argparse
 import json
 import time
 from datetime import date
+from hashlib import sha256
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -17,7 +18,7 @@ PRESETS = {
 }
 
 
-def call(method, url, token=None, payload=None):
+def call(method, url, token=None, payload=None, allow_status=()):
     data = None if payload is None else json.dumps(payload).encode()
     headers = {"Content-Type": "application/json"}
     if token:
@@ -29,6 +30,8 @@ def call(method, url, token=None, payload=None):
             body = json.loads(response.read().decode())
             return body.get("data") if isinstance(body, dict) and "data" in body and "success" in body else body
     except HTTPError as error:
+        if error.code in allow_status:
+            return None
         raise SystemExit(f"{method} {url} -> {error.code}: {error.read().decode()}") from error
 
 
@@ -41,6 +44,13 @@ def main():
     parser.add_argument("--keep-save", action="store_true")
     args = parser.parse_args()
 
+    username = "smoke_" + sha256(args.email.encode()).hexdigest()[:10]
+    call(
+        "POST",
+        f"{args.base}/api/v1/auth/register",
+        payload={"email": args.email, "username": username, "password": args.password},
+        allow_status=(400,),
+    )
     token = call("POST", f"{args.base}/api/v1/auth/login", payload={"email": args.email, "password": args.password})["accessToken"]
     save = call("POST", f"{args.base}/game/saves", token, {"name": f"Smoke {int(time.time())}"})
     save_id = save["id"]

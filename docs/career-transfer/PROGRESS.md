@@ -38,8 +38,8 @@
 
 ## Files changed
 
-- `backend/game/game-service`: migration, Career entity/controller/service, transfer integration test.
-- `web-client/src/app/career`: Transfer types, hooks, and UI.
+- `services/career`: migration, Career entity/controller/service, transfer integration test.
+- `apps/web/src/app/career`: Transfer types, hooks, and UI.
 - `scripts/career_smoke.py` and Career docs.
 
 ## Architectural decisions

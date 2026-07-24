@@ -1,6 +1,6 @@
 # Java
-backend/platform/core-service/target/
-backend/game/game-service/target/
+services/core-api/target/
+services/career/target/
 *.class
 
 # Node / Next
@@ -21,6 +21,7 @@ __pycache__/
 # IDE
 .idea/
 .vscode/
+.claude/
 
 # Local scratch
 scratch/

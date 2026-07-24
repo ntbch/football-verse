@@ -1,5 +1,11 @@
 # PROJECT.md - Football Verse
 
+> **Historical product context.** For the current repository topology, deployable
+> ownership, routes, and operational entry points, start with [README.md](README.md),
+> [current state](docs/architecture/current-state.md), and
+> [service contracts](docs/architecture/service-contracts.md). Statements below
+> about future phases may describe the original roadmap rather than current code.
+
 > This file is the main context document for AI coding agents and developers working on this repository.
 >
 > Every agent must read this file before generating, editing, or refactoring code.

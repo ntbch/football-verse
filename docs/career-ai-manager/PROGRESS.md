@@ -22,9 +22,9 @@
 
 ## Files changed
 
-- `backend/game/game-service`: manager migration/service, Career integration, DTOs, controller, tests.
-- `backend/game/match-engine`: manager-plan domain contract, checkpoint reactions, tests.
-- `web-client/src/app/career`: manager types, hooks, and dashboard.
+- `services/career`: manager migration/service, Career integration, DTOs, controller, tests.
+- `services/match-engine`: manager-plan domain contract, checkpoint reactions, tests.
+- `apps/web/src/app/career`: manager types, hooks, and dashboard.
 - `scripts/career_smoke.py`, API/database/smoke docs.
 
 ## Architectural decisions

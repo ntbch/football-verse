@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: football-verse-game-service
+  datasource:
+    url: ${MATCH_GAME_DB_URL:jdbc:postgresql://127.0.0.1:55433/match_game_db}
+    username: ${MATCH_GAME_DB_USER:match_game}
+    password: ${MATCH_GAME_DB_PASSWORD:match_game}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    baseline-on-migrate: true
+
+app:
+  environment: ${APP_ENV:development}
+  internal-token: ${INTERNAL_TOKEN}
+  match-engine-url: ${MATCH_ENGINE_URL:http://127.0.0.1:8091}
+  jwt:
+    secret: ${JWT_SECRET:dev-secret-change-me-dev-secret-change-me}
+    issuer: ${JWT_ISSUER:football-verse-core}
+    audience: ${JWT_AUDIENCE:football-verse-api}
+  auth:
+    allow-legacy-headers: ${ALLOW_LEGACY_GAME_AUTH:false}
+
+server:
+  port: 8081

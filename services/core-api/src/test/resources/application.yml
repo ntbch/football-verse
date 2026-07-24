@@ -1,0 +1,54 @@
+spring:
+  cache:
+    type: simple
+  datasource:
+    url: jdbc:h2:mem:football_verse_test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+  flyway:
+    enabled: false
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+app:
+  environment: test
+  internal:
+    token: ${INTERNAL_TOKEN:test-internal-token-12345}
+  gateway:
+    url: http://localhost:8000
+  seed:
+    enabled: false
+    admin-email: admin@footballverse.local
+    admin-password: ChangeMe123!
+    moderator-email: moderator@footballverse.local
+    moderator-password: ChangeMe123!
+    news-categories: "League News=league-tournament-news;Match Analysis=match-preview-analysis;Transfers=transfer-news"
+    forum-categories: "League News=league-tournament-news;Match Analysis=match-preview-analysis;Transfers=transfer-news"
+    news-sources: "ESPN Soccer=https://www.espn.com/espn/rss/soccer/news"
+  crawl:
+    startup-enabled: false
+  jwt:
+    secret: ${JWT_SECRET:test-jwt-secret-key-for-unit-testing-only-12345}
+    issuer: football-verse-core
+    audience: football-verse-api
+    access-token-minutes: 30
+    refresh-token-days: 30
+  google:
+    client-id: ""
+  auth:
+    refresh-cookie:
+      name: football_verse_refresh
+      secure: false
+      same-site: Lax
+  prediction-service:
+    url: http://127.0.0.1:8090
+  upload:
+    dir: uploads

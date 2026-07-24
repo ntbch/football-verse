@@ -1,0 +1,28 @@
+{
+  "name": "realtime-gateway",
+  "version": "1.0.0",
+  "description": "API Gateway and Realtime WebSocket Server for Football Verse",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc",
+    "test": "npm run build && node --test test/*.test.js",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
+    "express": "^4.19.2",
+    "http-proxy-middleware": "^3.0.0",
+    "ioredis": "^5.4.1",
+    "jsonwebtoken": "^9.0.3",
+    "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.9",
+    "playwright": "^1.61.1",
+    "socket.io-client": "^4.8.3",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.5.2"
+  }
+}

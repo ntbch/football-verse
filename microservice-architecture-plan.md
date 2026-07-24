@@ -34,7 +34,7 @@ Use hybrid staged microservices first:
 - Add `gateway-service` for realtime gateway, live updates, crawler, and API aggregation.
 - Add `prediction-service` for match data ingestion and prediction scoring.
 - Add `simulator-service` later for virtual game simulation.
-- Keep `web-client` as main Next.js web app.
+- Keep `apps/web` as the main Next.js web app.
 - Use Docker Compose + API Gateway first; add Kubernetes/minikube after services run locally.
 
 Skipped full service split now. Add when core boundaries are stable and duplicated local ops pain is worth it.
@@ -62,7 +62,7 @@ Skipped full service split now. Add when core boundaries are stable and duplicat
 
 ## Done When
 - [ ] Architecture doc shows staged migration, not big-bang rewrite.
-- [ ] Each stack has a clear reason: `core-service` for core domain, `gateway-service` for realtime/crawler, `prediction-service` for prediction scoring, `web-client` for frontend.
+- [ ] Each stack has a clear reason: `core-service` for core domain, `gateway-service` for realtime/crawler, `prediction-service` for prediction scoring, `apps/web` for frontend.
 - [ ] First implementation phase has 2-3 services max.
 - [ ] No new runtime is added without a feature that needs it.
 
@@ -87,4 +87,4 @@ Skipped full service split now. Add when core boundaries are stable and duplicat
 ## Open Questions
 - Pick football API provider: football-data, API-Football, Sportmonks, or another.
 - Decide first extracted service: Node gateway-service or Python prediction-service.
-- Decide whether game UI stays inside `web-client` first or becomes separate React app later.
+- Decide whether game UI stays inside `apps/web` first or becomes a separate React app later.

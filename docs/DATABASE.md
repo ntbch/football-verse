@@ -1,17 +1,22 @@
 # Database
 
-PostgreSQL uses separate databases for platform and Career game data.
+> This file is the canonical database-ownership overview. Recovery procedures
+> are in the [database restore runbook](runbooks/database-restore.md), and the
+> current deployable inventory is in [current state](architecture/current-state.md).
+
+PostgreSQL uses separate databases for platform, ingestion operational state,
+and Career game data.
 
 Schema changes are managed by Flyway migrations in:
 
 ```text
-backend/platform/core-service/src/main/resources/db/migration
+services/core-api/src/main/resources/db/migration
 ```
 
 Career migrations are owned only by Spring `game-service`:
 
 ```text
-backend/game/game-service/src/main/resources/db/migration
+services/career/src/main/resources/db/migration
 ```
 
 Hibernate runs with `ddl-auto=validate`; it must not create or mutate production schema.
@@ -30,7 +35,13 @@ Local JDBC default:
 ```text
 jdbc:postgresql://127.0.0.1:55432/football_verse
 jdbc:postgresql://127.0.0.1:55433/match_game_db
+postgresql://127.0.0.1:55434/ingestion_db
 ```
+
+`ingestion_db` stores spool, retry, per-source lease/checkpoint, and source-sync
+readiness state only. Durable
+Publisher, RawItem, Story, Evidence, comments, likes, and bookmarks remain in
+the Core platform database.
 
 `match-engine` and `prediction-service` do not own `match_game_db`.
 

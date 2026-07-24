@@ -1,23 +1,32 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:e013e867e712fec275706a6c51c966f0bb0c93cfa8f51000f85a15f9865a28cb
     environment:
       POSTGRES_DB: ${DB_NAME:-football_verse}
       POSTGRES_USER: ${DB_USERNAME:-football_verse}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-football_verse}
+      INGESTION_DB_NAME: ${INGESTION_DB_NAME:-ingestion_db}
+      INGESTION_DB_USER: ${INGESTION_DB_USER:-ingestion_user}
+      INGESTION_DB_PASSWORD: ${INGESTION_DB_PASSWORD:-ingestion_pass}
     ports:
-      - "127.0.0.1:55432:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-54320}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init/10-ingestion-database.sh:/docker-entrypoint-initdb.d/10-ingestion-database.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   match-game-postgres:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:e013e867e712fec275706a6c51c966f0bb0c93cfa8f51000f85a15f9865a28cb
     environment:
       POSTGRES_DB: ${MATCH_GAME_DB_NAME:-match_game_db}
       POSTGRES_USER: ${MATCH_GAME_DB_USER:-match_game}
       POSTGRES_PASSWORD: ${MATCH_GAME_DB_PASSWORD:-match_game}
     ports:
-      - "127.0.0.1:${MATCH_GAME_DB_PORT:-55433}:5432"
+      - "127.0.0.1:${MATCH_GAME_DB_PORT:-54330}:5432"
     volumes:
       - match_game_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -27,7 +36,7 @@ services:
       retries: 10
 
   match-engine:
-    build: ./backend/game/match-engine
+    build: ./services/match-engine
     expose:
       - "8091"
     healthcheck:
@@ -37,13 +46,18 @@ services:
       retries: 10
 
   game-service:
-    build: ./backend/game/game-service
+    build: ./services/career
     environment:
-      - MATCH_GAME_DB_URL=jdbc:postgresql://match-game-postgres:5432/match_game_db
+      - MATCH_GAME_DB_URL=jdbc:postgresql://match-game-postgres:5432/${MATCH_GAME_DB_NAME:-match_game_db}
       - MATCH_GAME_DB_USER=${MATCH_GAME_DB_USER:-match_game}
       - MATCH_GAME_DB_PASSWORD=${MATCH_GAME_DB_PASSWORD:-match_game}
       - MATCH_ENGINE_URL=http://match-engine:8091
       - INTERNAL_TOKEN=${INTERNAL_TOKEN}
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me-dev-secret-change-me}
+      - JWT_ISSUER=${JWT_ISSUER:-football-verse-core}
+      - JWT_AUDIENCE=${JWT_AUDIENCE:-football-verse-api}
+      - APP_ENV=${APP_ENV:-development}
+      - ALLOW_LEGACY_GAME_AUTH=${ALLOW_LEGACY_GAME_AUTH:-false}
     expose:
       - "8081"
     depends_on:
@@ -53,7 +67,7 @@ services:
         condition: service_started
 
   prediction-service:
-    build: ./backend/platform/prediction-service
+    build: ./services/prediction
     environment:
       FOOTBALL_API_KEY: ${FOOTBALL_API_KEY:-}
       FOOTBALL_PROVIDER: ${FOOTBALL_PROVIDER:-football-data}
@@ -63,10 +77,10 @@ services:
       - redis
 
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
 
   core-service:
-    build: ./backend/platform/core-service
+    build: ./services/core-api
     environment:
       - DB_URL=jdbc:postgresql://postgres:5432/${DB_NAME:-football_verse}
       - DB_USERNAME=${DB_USERNAME:-football_verse}
@@ -75,55 +89,82 @@ services:
       - SPRING_REDIS_PORT=6379
       - PREDICTION_SERVICE_URL=http://prediction-service:8090
       - APP_GATEWAY_URL=http://gateway-service:8000
+      - APP_CONTENT_INGESTION_URL=http://content-ingestion:8085
       - INTERNAL_TOKEN=${INTERNAL_TOKEN}
       - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me-dev-secret-change-me}
+      - JWT_ISSUER=${JWT_ISSUER:-football-verse-core}
+      - JWT_AUDIENCE=${JWT_AUDIENCE:-football-verse-api}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - APP_SEED_ENABLED=${APP_SEED_ENABLED:-true}
+      - APP_ENV=${APP_ENV:-development}
+      - AUTH_COOKIE_SECURE=${AUTH_COOKIE_SECURE:-false}
+      - AUTH_COOKIE_SAME_SITE=${AUTH_COOKIE_SAME_SITE:-Lax}
+      - APP_UPLOAD_DIR=/app/uploads
+    volumes:
+      - core_uploads:/app/uploads
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   gateway-service:
-    build: ./backend/platform/gateway-service
+    build: ./services/gateway
     ports:
-      - "8000:8000"
+      - "${GATEWAY_PORT:-8000}:8000"
     environment:
       - PORT=8000
       - BACKEND_URL=http://core-service:8080
       - PREDICTION_SERVICE_URL=http://prediction-service:8090
       - GAME_SERVICE_URL=http://game-service:8081
+      - CONTENT_INGESTION_URL=http://content-ingestion:8085
       - REDIS_URL=redis://redis:6379
       - INTERNAL_TOKEN=${INTERNAL_TOKEN}
       - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3000}
-      - ENABLE_CRAWLER=false
       - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me-dev-secret-change-me}
+      - JWT_ISSUER=${JWT_ISSUER:-football-verse-core}
+      - JWT_AUDIENCE=${JWT_AUDIENCE:-football-verse-api}
+      - APP_ENV=${APP_ENV:-development}
     depends_on:
       - redis
       - prediction-service
       - game-service
       - core-service
 
-  crawler-service:
-    build: ./backend/platform/gateway-service
-    command: npm run start:crawler
+  content-ingestion:
+    build: ./services/content-ingestion
     environment:
-      - REDIS_URL=redis://redis:6379
       - BACKEND_URL=http://core-service:8080
       - INTERNAL_TOKEN=${INTERNAL_TOKEN}
-      - ENABLE_CRAWLER=true
+      - INGESTION_DB_URL=postgresql://${INGESTION_DB_USER:-ingestion_user}:${INGESTION_DB_PASSWORD:-ingestion_pass}@postgres:5432/${INGESTION_DB_NAME:-ingestion_db}
+      - CRAWL_CRON=${CRAWL_CRON:-*/15 * * * *}
+      - INGESTION_MODE=${INGESTION_MODE:-rss_metadata_shadow}
+      - PORT=8085
+    expose:
+      - "8085"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8085/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     depends_on:
-      - redis
-      - core-service
+      postgres:
+        condition: service_healthy
+      core-service:
+        condition: service_started
 
   web-client:
     build:
-      context: ./web-client
+      context: ./apps/web
       args:
         - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
     ports:
-      - "3000:3000"
+      - "${WEB_PORT:-3000}:3000"
     depends_on:
       - gateway-service
 
 volumes:
   postgres_data:
   match_game_postgres_data:
+  core_uploads:
