@@ -36,10 +36,11 @@ public class NewsController {
     public ApiResponse<PageResponse<NewsArticleResponse>> list(
             @RequestParam(required = false) List<Long> categories,
             @RequestParam(required = false) List<Long> tags,
+            @RequestParam(required = false) String provider,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return ApiResponse.ok(articleService.published(categories, tags, page, size));
+        return ApiResponse.ok(articleService.published(categories, tags, provider, page, size));
     }
 
     @GetMapping("/trending")

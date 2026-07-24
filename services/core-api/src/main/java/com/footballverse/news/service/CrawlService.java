@@ -34,6 +34,7 @@ public class CrawlService {
     private final NewsSourceRepository sources;
     private final NewsCategoryRepository categoryRepository;
     private final RichTextSanitizer sanitizer;
+    private final NewsCategoryClassifierService categoryClassifier;
 
     @Value("${app.internal.token}")
     private String internalToken;
@@ -179,38 +180,11 @@ public class CrawlService {
                 if (cat == null || cat.isBlank()) continue;
                 var match = categoryRepository.findBySlug(SlugUtil.slug(cat.trim()));
                 if (match.isPresent()) return match.get();
+                var namedMatch = categoryRepository.findBySlug(categoryClassifier.mapCategoryNameToSlug(cat));
+                if (namedMatch.isPresent()) return namedMatch.get();
             }
         }
-        return categoryRepository.findBySlug(categorySlug(title, description, categories)).orElse(null);
-    }
-
-    private String categorySlug(String title, String description, List<String> categories) {
-        String text = ((title == null ? "" : title) + " "
-                + (description == null ? "" : description) + " "
-                + (categories == null ? "" : String.join(" ", categories))).toLowerCase();
-        if (containsAny(text, "transfer", "rumour", "rumor", "contract", "signing", "bid", "loan", "release clause")) {
-            return "transfer-news";
-        }
-        if (containsAny(text, "preview", "prediction", "predicted", "line-up", "lineup", "odds", "team news", "before")) {
-            return "match-preview-analysis";
-        }
-        if (containsAny(text, "wife", "girlfriend", "fashion", "car", "lifestyle", "instagram", "training ground", "behind the scenes")) {
-            return "off-the-pitch";
-        }
-        if (containsAny(text, "opinion", "interview", "debate", "controversy", "referee", "var", "fans", "pundit")) {
-            return "expert-fan-opinions";
-        }
-        if (containsAny(text, "tactic", "formation", "analysis", "stats", "xg", "pressing", "heatmap", "football facts")) {
-            return "football-facts-tactical-insights";
-        }
-        return "others";
-    }
-
-    private boolean containsAny(String text, String... keywords) {
-        for (String keyword : keywords) {
-            if (text.contains(keyword)) return true;
-        }
-        return false;
+        return categoryClassifier.classify(title, description, null);
     }
 
     private String plainText(String html) {

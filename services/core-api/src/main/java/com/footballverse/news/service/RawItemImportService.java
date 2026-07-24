@@ -68,6 +68,7 @@ public class RawItemImportService {
     private final KeyPointEvidenceRepository evidence;
     private final TelegramNotificationService telegramNotificationService;
     private final AiSummaryService aiSummaryService;
+    private final NewsCategoryClassifierService categoryClassifier;
 
     @Transactional
     public ArticleImportResponse importItem(NormalizedItemImportRequest request) {
@@ -190,7 +191,7 @@ public class RawItemImportService {
     private String eventType(String... values) {
         String text = String.join(" ", Arrays.stream(values).filter(Objects::nonNull).toList()).toLowerCase(Locale.ROOT);
         if (containsAny(text, "rumour", "rumor", "linked", "gossip", "claim", "claims", "interest in")) return "RUMOUR";
-        if (containsAny(text, "sign", "signs", "signed", "signing", "signings", "transfer", "transfers", "deal", "deals", "bid", "bids", "loan", "loans", "fee", "clause", "medical", "contract", "join", "joins", "joined", "bought", "target", "move")) return "TRANSFER";
+        if (containsAny(text, "sign", "signs", "signed", "signing", "signings", "transfer", "transfers", "bid", "bids", "loan", "loans", "release clause", "medical", "bought", "free agent")) return "TRANSFER";
         if (containsAny(text, "injury", "injured", "fitness", "ruled out", "hamstring", "acl")) return "INJURY";
         if (containsAny(text, "beat", "draw", "wins", "won", "score", "scores", "match report", "highlight", "highlights")) return "MATCH";
         return "OTHER";
@@ -343,14 +344,11 @@ public class RawItemImportService {
         story.setStatus(ArticleStatus.PUBLISHED);
         story.setSource(source);
 
-        String evt = eventType(rawItem.getTitle(), rawItem.getDescription());
-        if ("TRANSFER".equals(evt)) {
-            categories.findBySlug("transfers").ifPresent(story::setCategory);
-        } else if ("RUMOUR".equals(evt)) {
-            categories.findBySlug("rumours").ifPresent(story::setCategory);
-        } else if ("MATCH".equals(evt)) {
-            categories.findBySlug("matches").ifPresent(story::setCategory);
-        }
+        story.setCategory(categoryClassifier.classify(
+                rawItem.getTitle(),
+                rawItem.getDescription(),
+                aiRes.category()
+        ));
         story.setSourceUrl(rawItem.getOriginalUrl());
         story.setContentHash(sha256(rawItem.getIdentityKey()));
         story.setPublishedAt(publishedAt);
@@ -402,7 +400,7 @@ public class RawItemImportService {
     private String primaryEmbed(NormalizedItemImportRequest request) {
         if (request.media() == null) return null;
         return request.media().stream()
-                .filter(media -> "EMBED".equalsIgnoreCase(media.type()))
+                .filter(media -> "EMBED".equalsIgnoreCase(media.type()) || "VIDEO".equalsIgnoreCase(media.type()))
                 .map(NormalizedItemImportRequest.Media::url)
                 .filter(value -> value != null && !value.isBlank())
                 .findFirst()

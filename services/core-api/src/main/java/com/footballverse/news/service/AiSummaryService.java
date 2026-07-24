@@ -33,7 +33,7 @@ public class AiSummaryService {
     private final AtomicInteger dailyCallCounter = new AtomicInteger(0);
     private final AtomicReference<LocalDate> counterDate = new AtomicReference<>(LocalDate.now());
 
-    public record SummaryResult(String summary, List<String> keyPoints, boolean aiGenerated) {}
+    public record SummaryResult(String summary, List<String> keyPoints, String category, boolean aiGenerated) {}
 
     private RestClient createRestClient() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
@@ -70,6 +70,7 @@ public class AiSummaryService {
                     Analyze the following football news item and generate:
                     1. A comprehensive, detailed summary (2 rich paragraphs, approximately 150-200 words) explaining the full context, background, key figures involved, transfer fees or stats if applicable, and broader tactical or league implications.
                     2. Exactly 3 distinct, insightful key takeaways or highlights with specific details.
+                    3. Classify this article into EXACTLY ONE of the following category names: "Transfers", "Match Analysis", "League News", "Opinions", "Football Facts", "Off the Pitch".
 
                     Return the result strictly as a valid JSON object in English with format:
                     {
@@ -78,7 +79,8 @@ public class AiSummaryService {
                         "Insightful key takeaway 1...",
                         "Insightful key takeaway 2...",
                         "Insightful key takeaway 3..."
-                      ]
+                      ],
+                      "category": "Opinions"
                     }
 
                     Title: %s
@@ -117,6 +119,7 @@ public class AiSummaryService {
 
             JsonNode jsonResult = mapper.readTree(textNode.asText());
             String summary = jsonResult.path("summary").asText("");
+            String category = jsonResult.path("category").asText(null);
             List<String> keyPoints = new ArrayList<>();
             JsonNode pointsNode = jsonResult.path("keyPoints");
             if (pointsNode.isArray()) {
@@ -130,7 +133,7 @@ public class AiSummaryService {
             log.info("[AiSummary] Successfully generated AI summary via Gemini ({}) [Daily calls: {}/{}]",
                     modelName, dailyCallCounter.get(), dailyLimit);
 
-            return new SummaryResult(summary, keyPoints, true);
+            return new SummaryResult(summary, keyPoints, category, true);
 
         } catch (Exception e) {
             log.warn("[AiSummary] Failed to generate AI summary via Gemini ({}), using fallback: {}", e.getClass().getSimpleName(), e.getMessage());
@@ -147,6 +150,6 @@ public class AiSummaryService {
                 title != null ? title : "Latest football news update."
         );
 
-        return new SummaryResult(summaryText, keyPoints, false);
+        return new SummaryResult(summaryText, keyPoints, null, false);
     }
 }

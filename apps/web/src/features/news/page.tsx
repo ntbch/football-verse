@@ -26,11 +26,16 @@ export default function NewsListingPage() {
 
   // 2. Fetch news articles page
   const { data: pageData, isLoading } = useQuery({
-    queryKey: [qk.news.list()[0], selectedCategory, page] as const,
+    queryKey: [qk.news.list()[0], selectedCategory, selectedSourceType, page] as const,
     queryFn: () => {
       const params: any = { page, size, sort: "createdAt,desc" };
       if (selectedCategory !== null) {
         params.categories = selectedCategory;
+      }
+      if (selectedSourceType === "YOUTUBE") {
+        params.provider = "youtube";
+      } else if (selectedSourceType === "NEWS") {
+        params.provider = "news";
       }
       return data<PageResponse<NewsArticleResponse>>(http.get("/news", { params }));
     },
@@ -48,32 +53,53 @@ export default function NewsListingPage() {
   };
 
   const getCardBadge = (art: NewsArticleResponse) => {
+    // 1. Prioritize actual category returned by backend
     if (art.category && art.category.trim()) {
-      const cat = art.category.trim().toUpperCase();
-      if (cat.includes("TRANSFER")) return { label: "TRANSFERS", color: "bg-emerald-600 text-white" };
-      if (cat.includes("MATCH")) return { label: "MATCHES", color: "bg-sky-600 text-white" };
-      if (cat.includes("RUMOUR")) return { label: "RUMOURS", color: "bg-purple-600 text-white" };
+      const catName = art.category.trim();
+      const upperCat = catName.toUpperCase();
+
+      if (upperCat.includes("TRANSFER")) {
+        return { label: catName.toUpperCase(), color: "bg-emerald-600 text-white" };
+      }
+      if (upperCat.includes("MATCH")) {
+        return { label: catName.toUpperCase(), color: "bg-sky-600 text-white" };
+      }
+      if (upperCat.includes("RUMOUR")) {
+        return { label: catName.toUpperCase(), color: "bg-purple-600 text-white" };
+      }
+      if (upperCat.includes("OPINION")) {
+        return { label: catName.toUpperCase(), color: "bg-indigo-600 text-white" };
+      }
+      if (upperCat.includes("OFF THE PITCH")) {
+        return { label: catName.toUpperCase(), color: "bg-amber-600 text-white" };
+      }
+      if (upperCat.includes("TACTICAL") || upperCat.includes("FACT")) {
+        return { label: catName.toUpperCase(), color: "bg-teal-600 text-white" };
+      }
+      if (upperCat.includes("LEAGUE")) {
+        return { label: catName.toUpperCase(), color: "bg-blue-600 text-white" };
+      }
+
+      return { label: catName.toUpperCase(), color: "bg-slate-700 text-white" };
     }
+
+    // 2. Fallback when category is missing from backend
+    const st = getSourceType(art);
+    if (st === "YOUTUBE") return { label: "YOUTUBE", color: "bg-red-600 text-white" };
 
     const title = (art.title || "").toLowerCase();
     const summary = (art.summary || "").toLowerCase();
     const text = `${title} ${summary}`;
 
     const transferKeywords = [
-      "transfer", "transfers", "sign", "signs", "signed", "signing", "signings",
-      "deal", "deals", "bid", "bids", "loan", "loans", "fee", "clause",
-      "buy", "buys", "bought", "join", "joins", "joined", "agree", "agrees", "agreed",
-      "target", "targets", "contract", "free agent", "release clause", "swap", "move",
-      "coach", "coaches", "manager", "managers", "sacked", "appoint", "appoints", "appointed"
+      "transfer", "transfers", "signing", "signed", "sign contract", "loan deal",
+      "release clause", "free agent", "fee agreed", "buy player", "bought for"
     ];
     if (transferKeywords.some(kw => text.includes(kw))) {
       return { label: "TRANSFERS", color: "bg-emerald-600 text-white" };
     }
 
-    const st = getSourceType(art);
-    if (st === "YOUTUBE") return { label: "YOUTUBE", color: "bg-red-600 text-white" };
-
-    const matchKeywords = ["beat", "wins", "won", "defeat", "draw", "score", "vs", "highlight", "highlights", "final", "cup", "champion"];
+    const matchKeywords = ["vs", "match report", "full highlights", "final score", "preview"];
     if (matchKeywords.some(kw => text.includes(kw))) {
       return { label: "MATCHES", color: "bg-sky-600 text-white" };
     }

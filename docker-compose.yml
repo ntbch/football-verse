@@ -88,7 +88,7 @@ services:
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
       - PREDICTION_SERVICE_URL=http://prediction-service:8090
-      - APP_GATEWAY_URL=http://gateway-service:8000
+      - APP_GATEWAY_URL=${APP_GATEWAY_URL:-https://footballverse.app}
       - APP_CONTENT_INGESTION_URL=http://content-ingestion:8085
       - INTERNAL_TOKEN=${INTERNAL_TOKEN}
       - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me-dev-secret-change-me}

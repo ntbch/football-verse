@@ -9,7 +9,7 @@ import {
 import { secureFetchText } from '../crawler/secure-fetch';
 import { SourceAdapter } from './source-adapter';
 
-const HIGHLIGHT_TITLE_PATTERN = /highlight|all goals|full match|goals & highlights|b\u00e0n th\u1eafng|t\u00f3m t\u1eaft|tr\u1eadn \u0111\u1ea5u/i;
+const HIGHLIGHT_TITLE_PATTERN = /highlight|all goals|full match|goals & highlights|b\u00e0n th\u1eafng|t\u00f3m t\u1eaft|tr\u1eadn \u0111\u1ea5u|vs|goal|goals|match|interview|press conference|reaction|review|analysis|top|save|saves|extended|summary|moment/i;
 
 export class YouTubeAdapter implements SourceAdapter {
   readonly provider = 'youtube';

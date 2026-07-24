@@ -55,14 +55,18 @@ public class NewsArticleService {
     private final AiSummaryService aiSummaryService;
 
     @Transactional(readOnly = true)
-    public PageResponse<NewsArticleResponse> published(List<Long> categoryIds, List<Long> tagIds, int page, int size) {
+    public PageResponse<NewsArticleResponse> published(List<Long> categoryIds, List<Long> tagIds, String provider, int page, int size) {
         boolean hasCategories = categoryIds != null && !categoryIds.isEmpty();
         boolean hasTags = tagIds != null && !tagIds.isEmpty();
+        boolean hasProvider = provider != null && !provider.isBlank() && !"ALL".equalsIgnoreCase(provider);
+        String cleanProvider = hasProvider ? provider.trim().toLowerCase() : "";
         return PageResponse.from(articles.filterPublishedArticles(
                 hasCategories,
                 categoryIds,
                 hasTags,
                 tagIds,
+                hasProvider,
+                cleanProvider,
                 PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "publishedAt"))
         ).map(this::toArticle));
     }
