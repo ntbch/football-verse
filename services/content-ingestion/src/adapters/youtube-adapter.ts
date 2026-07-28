@@ -9,7 +9,7 @@ import {
 import { secureFetchText } from '../crawler/secure-fetch';
 import { SourceAdapter } from './source-adapter';
 
-const HIGHLIGHT_TITLE_PATTERN = /highlights?|all goals|goals? & highlights|bàn thắng|tóm tắt|trận đấu/i;
+const HIGHLIGHT_TITLE_PATTERN = /highlights?|all goals|goals?|bàn thắng|tóm tắt|trận đấu|vs|recap|review|skills|preview|matchday|full match|draw|victory|win|show|podcast|league|cup|analysis|top|best/i;
 
 export class YouTubeAdapter implements SourceAdapter {
   readonly provider = 'youtube';
@@ -49,8 +49,8 @@ export class YouTubeAdapter implements SourceAdapter {
         const rawTitle = $entry.children('title').text().trim();
         const description = $entry.find('media\\:description, description').text().trim() ||
                             $entry.children('summary').text().trim();
-        const thumbnailUrl = $entry.find('media\\:thumbnail').attr('url') ||
-                             (videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : undefined);
+        const thumbnailUrl = $entry.find('media\\:thumbnail').attr('url')?.replace(/\/(hqdefault|mqdefault|sddefault|default)\.jpg/i, '/maxresdefault.jpg') ||
+                             (videoId ? `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg` : undefined);
         const rawPublishedAt = $entry.children('published, updated').text().trim();
         const publishedAt = this.safeDate(rawPublishedAt);
         const videoUrl = videoId ? `https://www.youtube.com/watch?v=${videoId}` : $entry.children('link').attr('href') || source.feedUrl;
