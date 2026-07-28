@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.HashSet;
+import java.time.Instant;
 import java.util.Set;
 
 @Entity
@@ -42,6 +43,12 @@ public class UserAccount extends AuditableEntity {
     @Column(name = "google_id", unique = true)
     private String googleId;
 
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified;
+
+    @Column(name = "email_verified_at")
+    private Instant emailVerifiedAt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private UserStatus status = UserStatus.ACTIVE;
@@ -56,6 +63,7 @@ public class UserAccount extends AuditableEntity {
         this.email = email;
         this.username = username;
         this.passwordHash = passwordHash;
+        this.emailVerified = false;
     }
 
     /** Constructor for Google OAuth users (no password). */
@@ -63,5 +71,7 @@ public class UserAccount extends AuditableEntity {
         this.email = email;
         this.username = username;
         this.googleId = googleId;
+        this.emailVerified = true;
+        this.emailVerifiedAt = Instant.now();
     }
 }

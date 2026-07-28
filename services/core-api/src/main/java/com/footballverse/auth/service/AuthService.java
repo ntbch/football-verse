@@ -4,6 +4,7 @@ import com.footballverse.auth.repository.RefreshTokenRepository;
 
 import com.footballverse.auth.dto.AuthResponse;
 import com.footballverse.auth.dto.CurrentUserResponse;
+import com.footballverse.auth.dto.VerificationPendingResponse;
 import com.footballverse.auth.dto.GoogleAuthRequest;
 import com.footballverse.auth.dto.LoginRequest;
 import com.footballverse.auth.dto.RegisterRequest;
@@ -22,13 +23,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -41,6 +46,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final CurrentUser currentUser;
+    private final AuthEmailFlowService emailFlows;
 
     @Value("${app.jwt.refresh-token-days}")
     private long refreshTokenDays;
@@ -49,21 +55,27 @@ public class AuthService {
     private String googleClientId;
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
-        if (users.existsByEmail(request.email().toLowerCase())) {
-            throw new BadRequestException("Email already exists");
+    public VerificationPendingResponse register(RegisterRequest request, HttpServletRequest servletRequest) {
+        String email = request.email().trim().toLowerCase(Locale.ROOT);
+        UserAccount existing = users.findByEmail(email).orElse(null);
+        if (existing != null) {
+            if (!existing.isEmailVerified() && existing.getPasswordHash() != null) {
+                emailFlows.resumePendingRegistration(existing, email, servletRequest);
+            }
+            return new VerificationPendingResponse(email);
         }
         if (users.existsByUsername(request.username())) {
             throw new BadRequestException("Username already exists");
         }
 
         UserAccount user = users.save(new UserAccount(
-                request.email().toLowerCase(),
+                email,
                 request.username(),
                 passwordEncoder.encode(request.password())
         ));
         profiles.save(new UserProfile(user, request.username()));
-        return tokens(user);
+        emailFlows.startRegistration(user, email, servletRequest);
+        return new VerificationPendingResponse(email);
     }
 
     @Transactional
@@ -75,6 +87,9 @@ public class AuthService {
             throw new BadRequestException("Invalid credentials");
         }
         if (user.getPasswordHash() == null || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            throw new BadRequestException("Invalid credentials");
+        }
+        if (!user.isEmailVerified()) {
             throw new BadRequestException("Invalid credentials");
         }
         return tokens(user);
@@ -96,6 +111,10 @@ public class AuthService {
             if (user != null) {
                 // Link Google account to existing user
                 user.setGoogleId(googleId);
+                if (!user.isEmailVerified()) {
+                    user.setEmailVerified(true);
+                    user.setEmailVerifiedAt(Instant.now());
+                }
             } else {
                 // Create new user
                 String username = generateUniqueUsername(name);
@@ -109,9 +128,13 @@ public class AuthService {
 
     private JsonNode verifyGoogleToken(String idToken) {
         try {
+            if (googleClientId.isBlank()) {
+                throw new BadRequestException("Google Sign-In is not configured");
+            }
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create("https://oauth2.googleapis.com/tokeninfo?id_token=" + idToken))
+                    .uri(URI.create("https://oauth2.googleapis.com/tokeninfo?id_token="
+                            + URLEncoder.encode(idToken, StandardCharsets.UTF_8)))
                     .GET()
                     .build();
             HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
@@ -121,12 +144,16 @@ public class AuthService {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode node = mapper.readTree(resp.body());
 
-            // Verify audience matches our client ID
-            if (!googleClientId.isBlank()) {
-                String aud = node.get("aud").asText();
-                if (!googleClientId.equals(aud)) {
-                    throw new BadRequestException("Google token audience mismatch");
-                }
+            String issuer = node.path("iss").asText();
+            if (!"accounts.google.com".equals(issuer) && !"https://accounts.google.com".equals(issuer)) {
+                throw new BadRequestException("Invalid Google token");
+            }
+            if (!googleClientId.equals(node.path("aud").asText())
+                    || !"true".equalsIgnoreCase(node.path("email_verified").asText())
+                    || node.path("email").asText().isBlank()
+                    || node.path("sub").asText().isBlank()
+                    || node.path("exp").asLong(0) <= Instant.now().getEpochSecond()) {
+                throw new BadRequestException("Invalid Google token");
             }
 
             return node;

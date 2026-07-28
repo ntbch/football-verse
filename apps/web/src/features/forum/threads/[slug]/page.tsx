@@ -41,7 +41,7 @@ export default function ThreadDetailPage() {
 
     const socket: Socket = io(socketUrl, {
       auth: { token: auth.accessToken },
-      transports: ["polling", "websocket"],
+      transports: ["websocket", "polling"],
     });
     socket.on("connect", () => socket.emit("join_thread", { slug }));
     socket.on("new_reply", (newPost: RealtimeReply) => {

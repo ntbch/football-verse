@@ -52,27 +52,33 @@ public class PredictionServiceClient {
         return fetch(url);
     }
 
+    public JsonNode fetchFixtureDetail(String leagueSlug, String fixtureId) {
+        return fetch(predictionServiceUrl + "/matches/" + encode(leagueSlug) + "/fixtures/" + encode(fixtureId));
+    }
+
+    public JsonNode fetchFixturePrediction(String leagueSlug, String fixtureId) {
+        return fetch(predictionServiceUrl + "/predictions/" + encode(leagueSlug) + "/fixtures/" + encode(fixtureId));
+    }
+
     private String encode(String value) {
         return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 
     private JsonNode fetch(String url) {
-        for (int attempt = 1; attempt <= 2; attempt++) {
-            try {
-                HttpRequest req = HttpRequest.newBuilder(URI.create(url))
-                        .GET()
-                        .timeout(Duration.ofSeconds(15))
-                        .build();
-                String body = httpClient.send(req, HttpResponse.BodyHandlers.ofString()).body();
-                return objectMapper.readTree(body);
-            } catch (Exception e) {
-                if (attempt == 2) {
-                    log.warn("prediction-service fetch failed after 2 attempts: {}", url, e);
-                    return null;
-                }
-                try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+        try {
+            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
+                    .GET()
+                    .timeout(Duration.ofSeconds(6))
+                    .build();
+            HttpResponse<String> response = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                log.warn("prediction-service responded with status {}", response.statusCode());
+                return null;
             }
+            return objectMapper.readTree(response.body());
+        } catch (Exception e) {
+            log.warn("prediction-service request failed: {}", e.getClass().getSimpleName());
+            return null;
         }
-        return null;
     }
 }

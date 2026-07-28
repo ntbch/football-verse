@@ -7,6 +7,7 @@ from app import get_league_payload, health
 import football_api
 from providers import client
 from providers.normalizers import map_football_data_match, normalize_fixtures
+from providers.league_policy import lineup_payload
 from prediction import prediction_for_fixture
 
 
@@ -27,24 +28,45 @@ def test_health_and_unknown_league():
     assert error.value.status_code == 404
 
 
-def test_prediction_is_deterministic_and_normalized():
-    first = prediction_for_fixture(fixture())
-    second = prediction_for_fixture(fixture())
+def test_prediction_requires_completed_provider_history():
+    assert prediction_for_fixture(fixture()) is None
 
-    assert first == second
-    assert sum(first["probabilities"].values()) == 100
+    history = []
+    for index in range(5):
+        history.append({
+            "id": f"home-{index}",
+            "kickoff": f"2026-07-{index + 1:02d}T15:00:00Z",
+            "status": "result",
+            "homeTeam": {"id": "home", "name": "Home"},
+            "awayTeam": {"id": f"opponent-{index}", "name": "Opponent"},
+            "score": {"home": 2, "away": 1},
+        })
+        history.append({
+            "id": f"away-{index}",
+            "kickoff": f"2026-07-{index + 1:02d}T17:00:00Z",
+            "status": "result",
+            "homeTeam": {"id": f"other-{index}", "name": "Other"},
+            "awayTeam": {"id": "away", "name": "Away"},
+            "score": {"home": 0, "away": 1},
+        })
+
+    prediction = prediction_for_fixture(fixture(), history)
+
+    assert sum(prediction["probabilities"].values()) == 100
+    assert prediction["sampleSize"] == 5
+    assert "correctScore" not in prediction and "trend" not in prediction
 
 
-def test_allowed_leagues_and_mock_fixture_fallback(monkeypatch):
+def test_allowed_leagues_return_explicit_provider_unavailable_state(monkeypatch):
     monkeypatch.setattr(football_api, "FOOTBALL_PROVIDER", "api-football")
     monkeypatch.setattr(football_api, "API_KEY", "")
-    monkeypatch.setattr(football_api, "MOCK_FIXTURES", [fixture()])
 
     catalog = football_api.leagues_payload()
     payload = football_api.round_fixtures_payload("premier-league", None)
 
     assert [league["slug"] for league in catalog["leagues"]] == ["premier-league"]
-    assert payload == {"source": "mock", "league": "premier-league", "fixtures": [fixture()]}
+    assert payload["fixtures"] == []
+    assert payload["availability"]["state"] == "PROVIDER_UNAVAILABLE"
 
 
 def test_provider_http_error_maps_to_unavailable(monkeypatch):
@@ -112,7 +134,7 @@ def test_invalid_provider_items_are_skipped_without_poisoning_batch():
     assert [item["id"] for item in fixtures] == ["42"]
 
 
-def test_football_data_cache_is_ttl_bounded_and_serves_stale_on_outage(monkeypatch):
+def test_football_data_cache_is_ttl_bounded_and_does_not_serve_stale_on_outage(monkeypatch):
     monkeypatch.setattr(football_api, "API_KEY", "test-key")
     client.FOOTBALL_DATA_CACHE.clear()
     timestamp = 100.0
@@ -134,8 +156,8 @@ def test_football_data_cache_is_ttl_bounded_and_serves_stale_on_outage(monkeypat
     assert calls == 1
 
     timestamp += client.CACHE_TTL_SECONDS + 1
-    stale = football_api.football_data_get("/competitions/PL/matches", {"season": "2026"})
-    assert stale == first
+    unavailable = football_api.football_data_get("/competitions/PL/matches", {"season": "2026"})
+    assert unavailable is None
     assert calls == 2
 
 
@@ -144,3 +166,21 @@ def test_non_object_provider_payload_maps_to_unavailable(monkeypatch):
     monkeypatch.setattr(football_api, "urlopen", lambda *_args, **_kwargs: ProviderResponse(["invalid"]))
 
     assert football_api.api_get("/fixtures", {"league": "39"}) is None
+
+
+def test_lineup_payload_uses_official_players_only(monkeypatch):
+    monkeypatch.setattr(football_api, "FOOTBALL_PROVIDER", "api-football")
+    monkeypatch.setattr(football_api, "API_KEY", "test-key")
+    monkeypatch.setattr(football_api, "urlopen", lambda *_args, **_kwargs: ProviderResponse({
+        "response": [{
+            "team": {"id": 1, "name": "Home", "logo": None},
+            "formation": "4-3-3",
+            "startXI": [{"player": {"id": 7, "name": "Official Player", "number": 9, "pos": "F"}}],
+            "substitutes": [],
+        }],
+    }))
+
+    payload = lineup_payload({"providerFixtureId": "fixture-1"})
+
+    assert payload["coverage"] == "PUBLISHED"
+    assert payload["teams"][0]["startingXI"] == [{"id": "7", "name": "Official Player", "number": 9, "position": "F"}]

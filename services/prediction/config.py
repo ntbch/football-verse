@@ -37,5 +37,3 @@ FOOTBALL_DATA_BASE_URL = os.getenv("FOOTBALL_DATA_BASE_URL", "https://api.footba
 API_KEY = os.getenv("FOOTBALL_API_KEY", "")
 PORT = int(os.getenv("PORT", "8090"))
 CORS_ORIGIN = os.getenv("CORS_ORIGIN", "http://localhost:3000")
-MOCK_FIXTURES = []
-MOCK_STANDINGS = []

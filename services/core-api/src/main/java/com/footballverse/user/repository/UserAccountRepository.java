@@ -2,8 +2,10 @@ package com.footballverse.user.repository;
 import com.footballverse.user.model.UserAccount;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
 
 import java.time.Instant;
 import java.util.List;
@@ -19,6 +21,12 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long> 
     Optional<UserAccount> findByUsername(String username);
 
     Optional<UserAccount> findByGoogleId(String googleId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select user from UserAccount user where user.id = :id")
+    Optional<UserAccount> findByIdForUpdate(@Param("id") Long id);
+
+    List<UserAccount> findByEmailVerifiedFalseAndCreatedAtBefore(Instant before);
 
     @Query("SELECT CAST(u.createdAt AS LocalDate) as date, COUNT(u) as count " +
            "FROM UserAccount u " +

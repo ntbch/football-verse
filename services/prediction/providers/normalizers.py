@@ -62,6 +62,8 @@ def map_fixture(item):
 
 
 def map_standing(row):
+    overall = row["all"]
+    goals = overall.get("goals") or {}
     return {
         "rank": row["rank"],
         "team": {
@@ -70,7 +72,13 @@ def map_standing(row):
             "logo": row["team"].get("logo"),
         },
         "points": row["points"],
-        "played": row["all"]["played"],
+        "played": overall["played"],
+        "wins": overall.get("win"),
+        "draws": overall.get("draw"),
+        "losses": overall.get("lose"),
+        "goalsFor": goals.get("for"),
+        "goalsAgainst": goals.get("against"),
+        "goalDifference": row.get("goalsDiff"),
     }
 
 
@@ -128,4 +136,10 @@ def map_football_data_standing(row):
         },
         "points": row["points"],
         "played": row["playedGames"],
+        "wins": row.get("won"),
+        "draws": row.get("draw"),
+        "losses": row.get("lost"),
+        "goalsFor": row.get("goalsFor"),
+        "goalsAgainst": row.get("goalsAgainst"),
+        "goalDifference": row.get("goalDifference"),
     }

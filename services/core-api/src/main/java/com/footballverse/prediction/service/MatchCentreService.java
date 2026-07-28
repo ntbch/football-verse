@@ -1,10 +1,16 @@
 package com.footballverse.prediction.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.footballverse.common.exception.BadRequestException;
 import com.footballverse.prediction.dto.AiPredictionSummary;
 import com.footballverse.prediction.dto.MatchCentreFixture;
 import com.footballverse.prediction.dto.MatchCentreResponse;
+import com.footballverse.prediction.dto.MatchDetailResponse;
+import com.footballverse.prediction.dto.LineupPlayerResponse;
+import com.footballverse.prediction.dto.LineupResponse;
+import com.footballverse.prediction.dto.LineupTeamResponse;
 import com.footballverse.prediction.dto.PredictionResponse;
+import com.footballverse.prediction.dto.SourceAvailability;
 import com.footballverse.prediction.dto.StandingResponse;
 import com.footballverse.prediction.model.Fixture;
 import com.footballverse.prediction.model.UserPrediction;
@@ -31,6 +37,7 @@ public class MatchCentreService {
     private final UserPredictionRepository predictionRepo;
     private final PredictionServiceClient predictionServiceClient;
     private final UserPredictionService userPredictionService;
+    private final FixtureService fixtureService;
 
     @Transactional(readOnly = true)
     public MatchCentreResponse matchCentre(String leagueSlug, String round, UserAccount currentUser) {
@@ -54,30 +61,26 @@ public class MatchCentreService {
                 .collect(Collectors.toMap(p -> p.getFixture().getFixtureId(), p -> userPredictionService.toPredictionResponse(p), (a, b) -> a));
 
         JsonNode fixturesPayload = predictionServiceClient.fetchFixtures(leagueSlug, round);
-        JsonNode aiPayload = predictionServiceClient.fetchPredictions(leagueSlug, round);
         JsonNode standingsPayload = predictionServiceClient.fetchStandings(leagueSlug);
         JsonNode roundsPayload = predictionServiceClient.fetchRounds(leagueSlug);
 
-        Map<String, JsonNode> aiByFixtureId = indexAiPredictions(aiPayload);
         Map<String, Fixture> dbFixtureByFixtureId = allFixtures.stream()
                 .collect(Collectors.toMap(Fixture::getFixtureId, f -> f, (a, b) -> a));
 
         List<MatchCentreFixture> matchFixtures = new ArrayList<>();
-        List<JsonNode> apiFixtures = getFixturesFromPayload(fixturesPayload, aiPayload);
+        List<JsonNode> apiFixtures = getFixturesFromPayload(fixturesPayload, null);
         if (apiFixtures.isEmpty()) {
             for (Fixture dbFixture : allFixtures) {
-                JsonNode predNode = aiByFixtureId.get(dbFixture.getFixtureId());
                 PredictionResponse userPred = predByFixtureId.get(dbFixture.getFixtureId());
-                matchFixtures.add(buildMatchCentreFixture(dbFixture, null, predNode, userPred));
+                matchFixtures.add(buildMatchCentreFixture(leagueSlug, dbFixture, null, null, userPred));
             }
         } else {
             for (JsonNode aiFixture : apiFixtures) {
                 String matchId = aiFixture.get("id").asText();
                 Fixture dbFixture = dbFixtureByFixtureId.get(matchId);
-                JsonNode predNode = aiByFixtureId.get(matchId);
                 PredictionResponse userPred = predByFixtureId.get(matchId);
 
-                matchFixtures.add(buildMatchCentreFixture(dbFixture, aiFixture, predNode, userPred));
+                matchFixtures.add(buildMatchCentreFixture(leagueSlug, dbFixture, aiFixture, null, userPred));
             }
         }
 
@@ -87,20 +90,40 @@ public class MatchCentreService {
                 matchFixtures,
                 buildStandings(standingsPayload),
                 buildRounds(roundsPayload),
-                getCurrentRound(roundsPayload)
+                getCurrentRound(roundsPayload),
+                availability(fixturesPayload),
+                availability(standingsPayload),
+                availability(roundsPayload)
         );
     }
 
-    private Map<String, JsonNode> indexAiPredictions(JsonNode aiPayload) {
-        if (aiPayload == null || !aiPayload.has("predictions")) return Collections.emptyMap();
-        Map<String, JsonNode> map = new java.util.LinkedHashMap<>();
-        for (JsonNode p : aiPayload.get("predictions")) {
-            JsonNode fixture = p.get("fixture");
-            if (fixture != null && fixture.has("id")) {
-                map.put(fixture.get("id").asText(), p);
-            }
+    @Transactional
+    public MatchDetailResponse matchDetail(String leagueSlug, String fixtureId, UserAccount currentUser) {
+        JsonNode detail = predictionServiceClient.fetchFixtureDetail(leagueSlug, fixtureId);
+        Fixture fixture = fixtureRepo.findByFixtureIdAndLeagueSlug(fixtureId, leagueSlug)
+                .orElseGet(() -> syncKnownFixture(leagueSlug, fixtureId, detail));
+        PredictionResponse userPrediction = currentUser == null ? null : predictionRepo
+                .findByUserIdAndFixtureId(currentUser.getId(), fixture.getId())
+                .map(userPredictionService::toPredictionResponse)
+                .orElse(null);
+        JsonNode sourceFixture = detail == null ? null : detail.get("fixture");
+        JsonNode predictionPayload = predictionServiceClient.fetchFixturePrediction(leagueSlug, fixtureId);
+        JsonNode aiPrediction = predictionPayload == null ? null : predictionPayload.get("prediction");
+
+        return new MatchDetailResponse(
+                buildMatchCentreFixture(leagueSlug, fixture, sourceFixture, aiPrediction, userPrediction),
+                lineups(detail)
+        );
+    }
+
+    private Fixture syncKnownFixture(String leagueSlug, String fixtureId, JsonNode detail) {
+        JsonNode sourceFixture = detail == null ? null : detail.get("fixture");
+        if (sourceFixture == null || sourceFixture.isNull()) {
+            throw new BadRequestException("Fixture not found");
         }
-        return map;
+        fixtureService.syncFixturesForLeagueAndRound(leagueSlug, safeText(sourceFixture, "round", null));
+        return fixtureRepo.findByFixtureIdAndLeagueSlug(fixtureId, leagueSlug)
+                .orElseThrow(() -> new BadRequestException("Fixture not found"));
     }
 
     private List<JsonNode> getFixturesFromPayload(JsonNode fixturesPayload, JsonNode aiPayload) {
@@ -121,7 +144,7 @@ public class MatchCentreService {
         return fixtures;
     }
 
-    private MatchCentreFixture buildMatchCentreFixture(Fixture db, JsonNode aiFixture, JsonNode predNode, PredictionResponse userPred) {
+    private MatchCentreFixture buildMatchCentreFixture(String leagueSlug, Fixture db, JsonNode aiFixture, JsonNode predNode, PredictionResponse userPred) {
         String kickoff = "";
         if (db != null && db.getKickoff() != null) {
             kickoff = db.getKickoff().atOffset(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
@@ -143,30 +166,98 @@ public class MatchCentreService {
         AiPredictionSummary ai = predNode != null ? aiSummary(predNode) : null;
 
         return new MatchCentreFixture(
-                id, fixtureId, "Premier League", roundName,
+                id, fixtureId, leagueSlug, roundName,
                 status, kickoff, homeTeam, awayTeam, homeLogo, awayLogo,
                 homeScore, awayScore, ai, userPred
         );
+    }
+
+    private LineupResponse lineups(JsonNode detail) {
+        JsonNode lineups = detail == null ? null : detail.get("lineups");
+        if (lineups == null || lineups.isNull()) {
+            return new LineupResponse("PROVIDER_UNAVAILABLE", null, null, List.of());
+        }
+        List<LineupTeamResponse> teams = new ArrayList<>();
+        JsonNode sourceTeams = lineups.get("teams");
+        if (sourceTeams != null && sourceTeams.isArray()) {
+            for (JsonNode team : sourceTeams) {
+                teams.add(new LineupTeamResponse(
+                        safeText(team, "teamId", ""),
+                        safeText(team, "teamName", null),
+                        safeText(team, "teamLogo", null),
+                        safeText(team, "formation", null),
+                        lineupPlayers(team.get("startingXI")),
+                        lineupPlayers(team.get("substitutes"))
+                ));
+            }
+        }
+        return new LineupResponse(
+                safeText(lineups, "coverage", "PROVIDER_UNAVAILABLE"),
+                safeText(lineups, "sourceUpdatedAt", null),
+                safeText(lineups, "fetchedAt", null),
+                teams
+        );
+    }
+
+    private List<LineupPlayerResponse> lineupPlayers(JsonNode players) {
+        if (players == null || !players.isArray()) return List.of();
+        List<LineupPlayerResponse> result = new ArrayList<>();
+        for (JsonNode player : players) {
+            result.add(new LineupPlayerResponse(
+                    safeText(player, "id", ""),
+                    safeText(player, "name", null),
+                    player.has("number") && !player.get("number").isNull() ? player.get("number").asInt() : null,
+                    safeText(player, "position", null)
+            ));
+        }
+        return result;
     }
 
     private AiPredictionSummary aiSummary(JsonNode pred) {
         JsonNode p = pred.get("probabilities");
         JsonNode markets = pred.get("markets");
         JsonNode form = pred.get("form");
+        if (p == null || markets == null || form == null
+                || !p.has("home") || !p.has("draw") || !p.has("away")
+                || !pred.has("pick") || !pred.has("pickLabel")
+                || !pred.has("averageGoals") || !pred.has("confidence")
+                || !markets.has("overUnder25") || !markets.has("bothTeamsToScore")
+                || !form.has("home") || !form.has("away") || !pred.has("sampleSize")) {
+            return null;
+        }
         return new AiPredictionSummary(
-                p != null ? p.get("home").asInt() : 0,
-                p != null ? p.get("draw").asInt() : 0,
-                p != null ? p.get("away").asInt() : 0,
-                safeText(pred, "pick", ""),
-                safeText(pred, "pickLabel", ""),
-                safeText(pred, "correctScore", ""),
-                pred.has("averageGoals") ? pred.get("averageGoals").asDouble() : 0.0,
-                pred.has("confidence") ? pred.get("confidence").asInt() : 0,
-                markets != null ? safeText(markets, "overUnder25", "") : "",
-                markets != null ? safeText(markets, "bothTeamsToScore", "") : "",
-                form != null ? jsonArrayToList(form.get("home")) : List.of(),
-                form != null ? jsonArrayToList(form.get("away")) : List.of(),
-                safeText(pred, "trend", "")
+                p.get("home").asInt(),
+                p.get("draw").asInt(),
+                p.get("away").asInt(),
+                safeText(pred, "pick", null),
+                safeText(pred, "pickLabel", null),
+                null,
+                pred.get("averageGoals").asDouble(),
+                pred.get("confidence").asInt(),
+                safeText(markets, "overUnder25", null),
+                safeText(markets, "bothTeamsToScore", null),
+                jsonArrayToList(form.get("home")),
+                jsonArrayToList(form.get("away")),
+                null,
+                pred.get("sampleSize").asInt(),
+                safeText(pred, "sourceUpdatedAt", null)
+        );
+    }
+
+    private SourceAvailability availability(JsonNode payload) {
+        JsonNode source = payload == null ? null : payload.get("availability");
+        if (source == null || source.isNull()) {
+            return new SourceAvailability("PROVIDER_UNAVAILABLE", null, null, null, null, null);
+        }
+        Integer retryAfter = source.has("retryAfterSeconds") && !source.get("retryAfterSeconds").isNull()
+                ? source.get("retryAfterSeconds").asInt() : null;
+        return new SourceAvailability(
+                safeText(source, "state", "PROVIDER_UNAVAILABLE"),
+                safeText(source, "provider", null),
+                safeText(source, "season", null),
+                safeText(source, "fetchedAt", null),
+                safeText(source, "sourceUpdatedAt", null),
+                retryAfter
         );
     }
 
@@ -198,26 +289,23 @@ public class MatchCentreService {
         List<StandingResponse> standings = new ArrayList<>();
         for (JsonNode row : payload.get("standings")) {
             JsonNode team = row.get("team");
-            int wins = row.has("wins") ? row.get("wins").asInt() : 0;
-            int draws = row.has("draws") ? row.get("draws").asInt() : 0;
-            int losses = row.has("losses") ? row.get("losses").asInt() : 0;
-            int goalsFor = row.has("goalsFor") ? row.get("goalsFor").asInt() : 0;
-            int goalsAgainst = row.has("goalsAgainst") ? row.get("goalsAgainst").asInt() : 0;
-            int goalDifference = row.has("goalDifference") ? row.get("goalDifference").asInt() : 0;
+            if (team == null || !row.hasNonNull("rank") || !row.hasNonNull("points") || !row.hasNonNull("played")) {
+                continue;
+            }
 
             standings.add(new StandingResponse(
                     row.get("rank").asInt(),
-                    team != null ? team.get("id").asText() : "",
-                    team != null ? team.get("name").asText() : "",
-                    team != null && team.has("logo") && !team.get("logo").isNull() ? team.get("logo").asText() : "",
+                    safeText(team, "id", null),
+                    safeText(team, "name", null),
+                    safeText(team, "logo", null),
                     row.get("points").asInt(),
                     row.get("played").asInt(),
-                    wins,
-                    draws,
-                    losses,
-                    goalsFor,
-                    goalsAgainst,
-                    goalDifference
+                    nullableInt(row, "wins"),
+                    nullableInt(row, "draws"),
+                    nullableInt(row, "losses"),
+                    nullableInt(row, "goalsFor"),
+                    nullableInt(row, "goalsAgainst"),
+                    nullableInt(row, "goalDifference")
             ));
         }
         return standings;
@@ -233,5 +321,9 @@ public class MatchCentreService {
     private String getCurrentRound(JsonNode payload) {
         if (payload == null || !payload.has("currentRound") || payload.get("currentRound").isNull()) return null;
         return payload.get("currentRound").asText();
+    }
+
+    private Integer nullableInt(JsonNode node, String field) {
+        return node.has(field) && !node.get(field).isNull() ? node.get(field).asInt() : null;
     }
 }

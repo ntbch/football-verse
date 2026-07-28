@@ -8,6 +8,7 @@ from urllib.request import Request
 import config
 
 FOOTBALL_DATA_CACHE = {}
+API_FOOTBALL_CACHE = {}
 CACHE_TTL_SECONDS = 60
 
 
@@ -24,12 +25,21 @@ def api_get(path, params):
     if not api_key:
         return None
 
+    key = (path, tuple(sorted(params.items())))
+    cached = API_FOOTBALL_CACHE.get(key)
+    now = time.monotonic()
+    if cached and cached["expires_at"] > now:
+        return cached["payload"]
+
     url = f"{config.API_BASE_URL}{path}?{urlencode(params)}"
     request = Request(url, headers={"x-apisports-key": api_key})
     try:
         with _get_urlopen()(request, timeout=12) as response:
             payload = json.loads(response.read().decode("utf-8"))
-            return payload if isinstance(payload, dict) else None
+            if not isinstance(payload, dict):
+                return None
+            API_FOOTBALL_CACHE[key] = {"payload": payload, "expires_at": now + CACHE_TTL_SECONDS}
+            return payload
     except (HTTPError, URLError, TimeoutError, ValueError, UnicodeError):
         return None
 
@@ -53,8 +63,8 @@ def football_data_get(path, params=None):
         with _get_urlopen()(request, timeout=12) as response:
             payload = json.loads(response.read().decode("utf-8"))
             if not isinstance(payload, dict):
-                return cached["payload"] if cached else None
+                return None
             FOOTBALL_DATA_CACHE[key] = {"payload": payload, "expires_at": now + CACHE_TTL_SECONDS}
             return payload
     except (HTTPError, URLError, TimeoutError, ValueError, UnicodeError):
-        return cached["payload"] if cached else None
+        return None

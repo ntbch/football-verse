@@ -6,6 +6,10 @@ import com.footballverse.auth.dto.CurrentUserResponse;
 import com.footballverse.auth.dto.GoogleAuthRequest;
 import com.footballverse.auth.dto.LoginRequest;
 import com.footballverse.auth.dto.RegisterRequest;
+import com.footballverse.auth.dto.EmailRequest;
+import com.footballverse.auth.dto.PasswordResetRequest;
+import com.footballverse.auth.dto.TokenRequest;
+import com.footballverse.auth.dto.VerificationPendingResponse;
 import com.footballverse.common.response.ApiResponse;
 import com.footballverse.common.exception.BadRequestException;
 import com.footballverse.auth.service.RefreshCookieService;
@@ -26,10 +30,14 @@ import org.springframework.http.HttpHeaders;
 public class AuthController {
     private final AuthService authService;
     private final RefreshCookieService refreshCookieService;
+    private final com.footballverse.auth.service.AuthEmailFlowService emailFlows;
 
     @PostMapping("/register")
-    public ApiResponse<AuthResponse> register(@Valid @RequestBody RegisterRequest request, HttpServletResponse response) {
-        return withRefreshCookie(authService.register(request), response);
+    public ApiResponse<VerificationPendingResponse> register(
+            @Valid @RequestBody RegisterRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        return ApiResponse.ok("If eligible, an email will arrive shortly.", authService.register(request, servletRequest));
     }
 
     @PostMapping("/login")
@@ -40,6 +48,36 @@ public class AuthController {
     @PostMapping("/google")
     public ApiResponse<AuthResponse> googleLogin(@Valid @RequestBody GoogleAuthRequest request, HttpServletResponse response) {
         return withRefreshCookie(authService.googleLogin(request), response);
+    }
+
+    @PostMapping("/verify-email")
+    public ApiResponse<Void> verifyEmail(@Valid @RequestBody TokenRequest request) {
+        emailFlows.verifyEmail(request.token());
+        return ApiResponse.ok("Email verified. You can now sign in.", null);
+    }
+
+    @PostMapping("/resend-verification")
+    public ApiResponse<Void> resendVerification(
+            @Valid @RequestBody EmailRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        emailFlows.resendVerification(request.email(), servletRequest);
+        return ApiResponse.ok("If eligible, an email will arrive shortly.", null);
+    }
+
+    @PostMapping("/forgot-password")
+    public ApiResponse<Void> forgotPassword(
+            @Valid @RequestBody EmailRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        emailFlows.requestPasswordReset(request.email(), servletRequest);
+        return ApiResponse.ok("If eligible, an email will arrive shortly.", null);
+    }
+
+    @PostMapping("/reset-password")
+    public ApiResponse<Void> resetPassword(@Valid @RequestBody PasswordResetRequest request) {
+        emailFlows.resetPassword(request.token(), request.password());
+        return ApiResponse.ok("Password reset. Please sign in.", null);
     }
 
     @PostMapping("/refresh")

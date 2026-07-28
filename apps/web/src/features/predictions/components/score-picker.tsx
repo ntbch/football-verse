@@ -3,24 +3,27 @@
 type ScorePickerProps = {
   value: number;
   onChange: (v: number) => void;
+  label: string;
 };
 
-export const ScorePicker = ({ value, onChange }: ScorePickerProps) => {
+export const ScorePicker = ({ value, onChange, label }: ScorePickerProps) => {
   return (
     <div className="flex items-center bg-[var(--color-surface-muted)] border border-[var(--color-border)] rounded-xl p-0.5 shadow-sm">
       <button
         type="button"
         onClick={() => onChange(Math.max(0, value - 1))}
+        aria-label={`Decrease ${label} score`}
         className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)] active:scale-90 transition-all text-xs font-bold text-[var(--color-text-secondary)] border-0 bg-transparent cursor-pointer"
       >
         −
       </button>
-      <span className="w-8 text-center font-mono text-base font-black text-[var(--color-text-primary)] tabular-nums">
+      <span aria-label={`${label} score ${value}`} className="w-8 text-center font-mono text-base font-black text-[var(--color-text-primary)] tabular-nums">
         {value}
       </span>
       <button
         type="button"
         onClick={() => onChange(Math.min(15, value + 1))}
+        aria-label={`Increase ${label} score`}
         className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)] active:scale-90 transition-all text-xs font-bold text-[var(--color-text-secondary)] border-0 bg-transparent cursor-pointer"
       >
         +

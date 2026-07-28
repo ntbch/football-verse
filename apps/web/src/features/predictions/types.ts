@@ -26,6 +26,7 @@ export type UserPrediction = {
   correctBtts: boolean | null;
   pickOu25: string | null;
   pickBtts: string | null;
+  scoringState: "NOT_READY" | "PENDING" | "SCORED";
 };
 
 export type StatsResponse = {
@@ -56,14 +57,25 @@ export type AiPredictionSummary = {
   awayPct: number;
   pick: string;
   pickLabel: string;
-  correctScore: string;
+  correctScore: string | null;
   averageGoals: number;
   confidence: number;
   overUnder25: string;
   bothTeamsToScore: string;
   homeForm: string[];
   awayForm: string[];
-  trend: string;
+  trend: string | null;
+  sampleSize: number;
+  sourceUpdatedAt: string | null;
+};
+
+export type SourceAvailability = {
+  state: "AVAILABLE" | "NO_DATA" | "PROVIDER_UNAVAILABLE" | "UNSUPPORTED";
+  provider: string | null;
+  season: string | null;
+  fetchedAt: string | null;
+  sourceUpdatedAt: string | null;
+  retryAfterSeconds: number | null;
 };
 
 export type MatchCentreFixture = {
@@ -105,4 +117,37 @@ export type MatchCentreResponse = {
   standings: StandingRow[];
   rounds: string[];
   currentRound: string | null;
+  fixturesAvailability?: SourceAvailability;
+  standingsAvailability?: SourceAvailability;
+  roundsAvailability?: SourceAvailability;
+};
+
+export type LineupCoverage = "PUBLISHED" | "AWAITING_OFFICIAL" | "UNSUPPORTED_COMPETITION" | "PROVIDER_UNAVAILABLE";
+
+export type LineupPlayer = {
+  id: string;
+  name: string;
+  number: number | null;
+  position: string | null;
+};
+
+export type LineupTeam = {
+  teamId: string;
+  teamName: string;
+  teamLogo: string | null;
+  formation: string | null;
+  startingXI: LineupPlayer[];
+  substitutes: LineupPlayer[];
+};
+
+export type MatchLineups = {
+  coverage: LineupCoverage;
+  sourceUpdatedAt: string | null;
+  fetchedAt: string | null;
+  teams: LineupTeam[];
+};
+
+export type MatchDetailResponse = {
+  fixture: MatchCentreFixture;
+  lineups: MatchLineups;
 };

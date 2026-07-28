@@ -1,3 +1,5 @@
 app:
   seed:
     enabled: ${APP_SEED_ENABLED:false}
+  mail:
+    enabled: ${APP_MAIL_ENABLED:true}

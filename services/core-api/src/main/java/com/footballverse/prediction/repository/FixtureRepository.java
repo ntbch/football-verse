@@ -16,6 +16,7 @@ public interface FixtureRepository extends JpaRepository<Fixture, Long> {
     Optional<Fixture> findByIdForUpdate(@Param("id") Long id);
 
     Optional<Fixture> findByFixtureId(String fixtureId);
+    Optional<Fixture> findByFixtureIdAndLeagueSlug(String fixtureId, String leagueSlug);
     List<Fixture> findByLeagueSlugAndStatusOrderByKickoffAsc(String leagueSlug, String status);
     List<Fixture> findByStatusAndScoredFalse(String status);
     List<Fixture> findByLeagueSlugOrderByKickoffAsc(String leagueSlug);

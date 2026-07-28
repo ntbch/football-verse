@@ -31,7 +31,7 @@ public class JwtService {
             @Value("${app.jwt.audience}") String audience,
             @Value("${app.environment:development}") String environment
     ) {
-        validateConfiguration(secret, issuer, audience, environment);
+        validateConfiguration(secret, issuer, audience, accessTokenMinutes, environment);
         this.objectMapper = objectMapper;
         this.secret = secret.getBytes(StandardCharsets.UTF_8);
         this.accessTokenSeconds = accessTokenMinutes * 60;
@@ -138,7 +138,7 @@ public class JwtService {
         return objectMapper.readValue(json, new TypeReference<>() { });
     }
 
-    private static void validateConfiguration(String secret, String issuer, String audience, String environment) {
+    private static void validateConfiguration(String secret, String issuer, String audience, long accessTokenMinutes, String environment) {
         if (secret == null || secret.length() < 32) {
             throw new IllegalArgumentException("JWT secret must contain at least 32 characters");
         }
@@ -148,6 +148,9 @@ public class JwtService {
         if ("production".equalsIgnoreCase(environment)
                 && "dev-secret-change-me-dev-secret-change-me".equals(secret)) {
             throw new IllegalArgumentException("Development JWT secret is forbidden in production");
+        }
+        if ("production".equalsIgnoreCase(environment) && accessTokenMinutes > 30) {
+            throw new IllegalArgumentException("Access tokens may not exceed 30 minutes in production");
         }
     }
 }

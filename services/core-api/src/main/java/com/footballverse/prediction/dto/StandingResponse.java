@@ -7,10 +7,10 @@ public record StandingResponse(
         String teamLogo,
         int points,
         int played,
-        int wins,
-        int draws,
-        int losses,
-        int goalsFor,
-        int goalsAgainst,
-        int goalDifference
+        Integer wins,
+        Integer draws,
+        Integer losses,
+        Integer goalsFor,
+        Integer goalsAgainst,
+        Integer goalDifference
 ) {}

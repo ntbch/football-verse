@@ -15,7 +15,7 @@ python app.py
 
 Terminal will keep running while the HTTP server is alive.
 
-Without `FOOTBALL_API_KEY`, endpoints return mock Premier League data.
+Without `FOOTBALL_API_KEY`, provider-backed endpoints return an explicit unavailable state; they never return mock football data.
 
 ## Endpoints
 

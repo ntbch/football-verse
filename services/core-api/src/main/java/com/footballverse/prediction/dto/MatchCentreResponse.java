@@ -8,5 +8,8 @@ public record MatchCentreResponse(
                 List<MatchCentreFixture> fixtures,
                 List<StandingResponse> standings,
                 List<String> rounds,
-                String currentRound) {
+                String currentRound,
+                SourceAvailability fixturesAvailability,
+                SourceAvailability standingsAvailability,
+                SourceAvailability roundsAvailability) {
 }

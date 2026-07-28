@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSubmitPrediction } from "../api";
 import type { Fixture, UserPrediction, MatchCentreFixture } from "../types";
@@ -12,25 +12,33 @@ type PickFormProps = {
   match: Fixture | MatchCentreFixture;
   auth: unknown;
   onSuccess?: () => void;
+  onClosed?: () => void;
+  loginHref?: string;
 };
 
-export const PickForm = ({ match, auth, onSuccess }: PickFormProps) => {
+export const PickForm = ({ match, auth, onSuccess, onClosed, loginHref = "/login" }: PickFormProps) => {
   const existingPred = match.userPrediction;
 
   const [homeScore, setHomeScore] = useState<number>(existingPred?.homeScore ?? 0);
   const [awayScore, setAwayScore] = useState<number>(existingPred?.awayScore ?? 0);
   const [pickOu25, setPickOu25] = useState<string | null>(existingPred?.pickOu25 ?? "over");
   const [pickBtts, setPickBtts] = useState<string | null>(existingPred?.pickBtts ?? "yes");
+  const [saveState, setSaveState] = useState<"idle" | "saved">("idle");
+  const errorRef = useRef<HTMLParagraphElement>(null);
 
   const { mutate, isPending, error } = useSubmitPrediction();
 
   const kickoff = new Date(match.kickoff);
-  const started = kickoff <= new Date();
+  const started = match.status !== "upcoming" || kickoff <= new Date();
+
+  useEffect(() => {
+    if (error) errorRef.current?.focus();
+  }, [error]);
 
   if (!auth) {
     return (
       <div className="mt-3 border-t border-[var(--color-border)] pt-3">
-        <Link className="btn btn-secondary" href="/login">
+        <Link className="btn btn-secondary" href={loginHref}>
           Login to predict
         </Link>
       </div>
@@ -60,6 +68,7 @@ export const PickForm = ({ match, auth, onSuccess }: PickFormProps) => {
         : "Draw";
 
   const submit = () => {
+    setSaveState("idle");
     mutate(
       {
         matchId: match.id,
@@ -71,7 +80,12 @@ export const PickForm = ({ match, auth, onSuccess }: PickFormProps) => {
       },
       {
         onSuccess: () => {
+          setSaveState("saved");
           if (onSuccess) onSuccess();
+        },
+        onError: (submitError) => {
+          const message = (submitError as { response?: { data?: { message?: string } } }).response?.data?.message ?? "";
+          if (message === "PREDICTION_CLOSED") onClosed?.();
         },
       }
     );
@@ -101,11 +115,11 @@ export const PickForm = ({ match, auth, onSuccess }: PickFormProps) => {
 
         {/* Score Pickers & VS */}
         <div className="flex items-center gap-2 shrink-0 justify-center">
-          <ScorePicker value={homeScore} onChange={setHomeScore} />
+          <ScorePicker label={`${match.homeTeam} score`} value={homeScore} onChange={setHomeScore} />
           <span className="text-[9px] font-black text-[var(--color-text-secondary)] uppercase px-1">
             VS
           </span>
-          <ScorePicker value={awayScore} onChange={setAwayScore} />
+          <ScorePicker label={`${match.awayTeam} score`} value={awayScore} onChange={setAwayScore} />
         </div>
 
         {/* Away Team */}
@@ -189,17 +203,19 @@ export const PickForm = ({ match, auth, onSuccess }: PickFormProps) => {
         <button
           className="btn btn-primary !px-4 !py-1.5 !text-[10px] active:scale-[0.98] transition-all cursor-pointer"
           disabled={isPending}
+          aria-busy={isPending}
           type="button"
           onClick={submit}
         >
-          {isPending ? "Saving..." : existingPred ? "UPDATE PICK" : "SAVE PICK"}
+          {isPending ? "Saving..." : saveState === "saved" ? "SAVED" : existingPred ? "UPDATE PICK" : "SAVE PICK"}
         </button>
       </div>
 
       {error ? (
-        <p className="text-xs font-bold text-[var(--color-danger)]">
-          {(error as { response?: { data?: { message?: string } } }).response?.data?.message ??
-            "Failed to save prediction"}
+        <p ref={errorRef} role="alert" tabIndex={-1} className="text-xs font-bold text-[var(--color-danger)] focus:outline-none">
+          {(error as { response?: { data?: { message?: string } } }).response?.data?.message === "PREDICTION_CLOSED"
+            ? "Predictions have just closed. Refreshing the match state."
+            : (error as { response?: { data?: { message?: string } } }).response?.data?.message ?? "Failed to save prediction"}
         </p>
       ) : null}
     </div>

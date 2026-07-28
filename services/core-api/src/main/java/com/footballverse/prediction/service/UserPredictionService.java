@@ -4,6 +4,7 @@ import com.footballverse.common.exception.BadRequestException;
 import com.footballverse.prediction.dto.FixtureResponse;
 import com.footballverse.prediction.dto.PredictionRequest;
 import com.footballverse.prediction.dto.PredictionResponse;
+import com.footballverse.prediction.dto.PredictionScoringState;
 import com.footballverse.prediction.model.Fixture;
 import com.footballverse.prediction.model.UserPrediction;
 import com.footballverse.prediction.repository.FixtureRepository;
@@ -62,10 +63,10 @@ public class UserPredictionService {
 
     @Transactional
     public PredictionResponse submitPrediction(UserAccount user, Long fixtureId, PredictionRequest request) {
-        Fixture fixture = fixtureRepo.findById(fixtureId)
+        Fixture fixture = fixtureRepo.findByIdForUpdate(fixtureId)
                 .orElseThrow(() -> new BadRequestException("Fixture not found"));
 
-        if (fixture.getKickoff().isBefore(Instant.now())) {
+        if (!fixture.getKickoff().isAfter(Instant.now())) {
             throw new BadRequestException("PREDICTION_CLOSED");
         }
         if (!"upcoming".equals(fixture.getStatus())) {
@@ -131,7 +132,13 @@ public class UserPredictionService {
                 p.getCorrectOu25(),
                 p.getCorrectBtts(),
                 p.getPickOu25(),
-                p.getPickBtts()
+                p.getPickBtts(),
+                predictionScoringState(p.getFixture())
         );
+    }
+
+    private PredictionScoringState predictionScoringState(Fixture fixture) {
+        if (fixture.isScored()) return PredictionScoringState.SCORED;
+        return "result".equals(fixture.getStatus()) ? PredictionScoringState.PENDING : PredictionScoringState.NOT_READY;
     }
 }

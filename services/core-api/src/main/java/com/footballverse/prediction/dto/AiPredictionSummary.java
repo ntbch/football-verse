@@ -15,5 +15,7 @@ public record AiPredictionSummary(
         String bothTeamsToScore,
         List<String> homeForm,
         List<String> awayForm,
-        String trend
+        String trend,
+        int sampleSize,
+        String sourceUpdatedAt
 ) {}

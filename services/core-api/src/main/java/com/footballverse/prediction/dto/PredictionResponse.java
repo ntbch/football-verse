@@ -13,5 +13,6 @@ public record PredictionResponse(
         Boolean correctOu25,
         Boolean correctBtts,
         String pickOu25,
-        String pickBtts
+        String pickBtts,
+        PredictionScoringState scoringState
 ) {}

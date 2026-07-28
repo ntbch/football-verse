@@ -69,12 +69,14 @@ export const setupProxy = (app: Express): void => {
     createReadProxyMiddleware({
       target: gameServiceUrl,
       rewrite: originalUrl => originalUrl.replace(/^\/api\/v1\/game/, '/game'),
+      timeoutMs: 30000,
+      retries: 3,
     }),
     createProxyMiddleware({
       target: gameServiceUrl,
       changeOrigin: true,
-      proxyTimeout: 15000,
-      timeout: 15000,
+      proxyTimeout: 60000,
+      timeout: 60000,
       pathRewrite: (path) => `/game${path}`,
       on: {
         proxyRes: protectPrivateResponse,
@@ -89,12 +91,14 @@ export const setupProxy = (app: Express): void => {
     createReadProxyMiddleware({
       target: backendUrl,
       rewrite: originalUrl => originalUrl,
+      timeoutMs: 30000,
+      retries: 3,
     }),
     createProxyMiddleware({
       target: backendUrl,
       changeOrigin: true,
-      proxyTimeout: 15000,
-      timeout: 15000,
+      proxyTimeout: 60000,
+      timeout: 60000,
       pathRewrite: (path) => `/api/v1${path}`,
       on: {
         proxyRes: protectPrivateResponse,
@@ -109,12 +113,14 @@ export const setupProxy = (app: Express): void => {
     createReadProxyMiddleware({
       target: predictionServiceUrl,
       rewrite: originalUrl => originalUrl,
+      timeoutMs: 30000,
+      retries: 3,
     }),
     createProxyMiddleware({
       target: predictionServiceUrl,
       changeOrigin: true,
-      proxyTimeout: 15000,
-      timeout: 15000,
+      proxyTimeout: 60000,
+      timeout: 60000,
       pathRewrite: (path) => `/matches${path}`,
       on: {
         error: handleProxyError
@@ -128,12 +134,14 @@ export const setupProxy = (app: Express): void => {
     createReadProxyMiddleware({
       target: predictionServiceUrl,
       rewrite: originalUrl => originalUrl,
+      timeoutMs: 30000,
+      retries: 3,
     }),
     createProxyMiddleware({
       target: predictionServiceUrl,
       changeOrigin: true,
-      proxyTimeout: 15000,
-      timeout: 15000,
+      proxyTimeout: 60000,
+      timeout: 60000,
       pathRewrite: (path) => `/standings${path}`,
       on: {
         error: handleProxyError
@@ -148,12 +156,14 @@ export const setupProxy = (app: Express): void => {
     createReadProxyMiddleware({
       target: gameServiceUrl,
       rewrite: originalUrl => originalUrl,
+      timeoutMs: 30000,
+      retries: 3,
     }),
     createProxyMiddleware({
       target: gameServiceUrl,
       changeOrigin: true,
-      proxyTimeout: 15000,
-      timeout: 15000,
+      proxyTimeout: 60000,
+      timeout: 60000,
       pathRewrite: (path) => `/game${path}`,
       on: {
         proxyRes: protectPrivateResponse,

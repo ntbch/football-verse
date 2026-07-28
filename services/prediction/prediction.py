@@ -1,18 +1,8 @@
-"""Prediction engine.
+"""Prediction engine built only from completed provider-sourced matches.
 
-Computes probabilities, pick, score, markets and form from actual recent match history
-rather than deterministic seeds. Falls back to a benign prior when no history is available.
-
-ponytail: simple Poisson-style model from observed goal rates. No ML. Replace with xG
-model or trained classifier when history volume justifies it.
+ponytail: a small Poisson model is enough while there is no validated xG model.
+Upgrade only when a measured model can beat this one on held-out provider data.
 """
-
-AVERAGE_LEAGUE_GOALS = 2.7
-DREW_FACTOR = 0.28  # rough share of draws in PL
-
-
-def team_seed(team):
-    return sum(ord(char) for char in f"{team['id']}:{team['name']}")
 
 
 def clamp(value, low, high):
@@ -20,103 +10,78 @@ def clamp(value, low, high):
 
 
 def fixture_history(fixture, all_fixtures):
-    """Last 5 finished matches for each team (any opponent)."""
+    """The five most recent completed matches for each team."""
     home_id = str(fixture["homeTeam"].get("id", ""))
     away_id = str(fixture["awayTeam"].get("id", ""))
     home, away = [], []
     for item in all_fixtures:
         if item.get("status") != "result":
             continue
-        ht = str(item["homeTeam"].get("id", ""))
-        at = str(item["awayTeam"].get("id", ""))
-        if ht == home_id or at == home_id:
+        score = item.get("score") or {}
+        if score.get("home") is None or score.get("away") is None:
+            continue
+        home_team = str(item["homeTeam"].get("id", ""))
+        away_team = str(item["awayTeam"].get("id", ""))
+        if home_team == home_id or away_team == home_id:
             home.append(item)
-        if ht == away_id or at == away_id:
+        if home_team == away_id or away_team == away_id:
             away.append(item)
-    home.sort(key=lambda f: f["kickoff"], reverse=True)
-    away.sort(key=lambda f: f["kickoff"], reverse=True)
+    home.sort(key=lambda item: item["kickoff"], reverse=True)
+    away.sort(key=lambda item: item["kickoff"], reverse=True)
     return home[:5], away[:5]
 
 
+def completed_history(fixtures):
+    matches = [
+        fixture for fixture in fixtures
+        if fixture.get("status") == "result"
+        and (fixture.get("score") or {}).get("home") is not None
+        and (fixture.get("score") or {}).get("away") is not None
+    ]
+    return sorted(matches, key=lambda fixture: fixture["kickoff"], reverse=True)[:5]
+
+
 def form_marks(history, team_id):
-    """W/D/L string for the last 5 matches from team_id's perspective."""
     marks = []
     for item in history:
-        ht = str(item["homeTeam"].get("id", ""))
-        home_goals = item.get("score", {}).get("home") or 0
-        away_goals = item.get("score", {}).get("away") or 0
-        if ht == team_id:
-            own, opp = home_goals, away_goals
-        else:
-            own, opp = away_goals, home_goals
-        if own > opp:
-            marks.append("W")
-        elif own == opp:
-            marks.append("D")
-        else:
-            marks.append("L")
-    while len(marks) < 5:
-        marks.append("-")
+        home_team = str(item["homeTeam"].get("id", ""))
+        home_goals = item["score"]["home"]
+        away_goals = item["score"]["away"]
+        own, opponent = (home_goals, away_goals) if home_team == team_id else (away_goals, home_goals)
+        marks.append("W" if own > opponent else "D" if own == opponent else "L")
     return marks
 
 
 def expected_goals(history, team_id):
-    """Average goals scored per match."""
-    if not history:
-        return AVERAGE_LEAGUE_GOALS / 2
     total = 0
     for item in history:
-        ht = str(item["homeTeam"].get("id", ""))
-        if ht == team_id:
-            total += item.get("score", {}).get("home") or 0
-        else:
-            total += item.get("score", {}).get("away") or 0
+        total += item["score"]["home"] if str(item["homeTeam"].get("id", "")) == team_id else item["score"]["away"]
     return total / len(history)
 
 
-def match_outcome_probabilities(home_xg, away_xg):
-    """Poisson-derived 1X2 probabilities from expected goals."""
-    p_home = poisson_win(home_xg, away_xg)
-    p_away = poisson_win(away_xg, home_xg)
-    p_draw = clamp(1.0 - p_home - p_away, 0.05, 0.40)
-    total = p_home + p_away + p_draw
-    return {
-        "home": round(p_home * 100 / total),
-        "draw": round(p_draw * 100 / total),
-        "away": round(p_away * 100 / total),
-    }
-
-
-def poisson_win(lambda_home, lambda_away, cap=8):
-    """P(home goals > away goals) via Poisson pmf up to `cap` goals."""
-    pmf_home = [poisson_pmf(lambda_home, k) for k in range(cap + 1)]
-    pmf_away = [poisson_pmf(lambda_away, k) for k in range(cap + 1)]
-    win = 0.0
-    for h in range(cap + 1):
-        for a in range(h):
-            win += pmf_home[h] * pmf_away[a]
-    return clamp(win, 0.05, 0.85)
-
-
-def poisson_pmf(lam, k):
-    """Poisson probability mass at k via recurrence."""
+def poisson_pmf(lam, value):
     from math import exp
-    if lam <= 0:
-        return 1.0 if k == 0 else 0.0
-    p = exp(-lam)
-    for i in range(1, k + 1):
-        p = p * lam / i
-    return p
+
+    probability = exp(-lam)
+    for index in range(1, value + 1):
+        probability = probability * lam / index
+    return probability
 
 
-def correct_score(pick, goals):
-    """Most likely scoreline for the pick given total expected goals."""
-    if pick == "draw":
-        score = 1 if goals < 3 else 2
-        return score, score
-    if pick == "home":
-        return (2, 1) if goals < 3 else (3, 1)
-    return (1, 2) if goals < 3 else (1, 3)
+def poisson_win(home_goals, away_goals, cap=8):
+    home = [poisson_pmf(home_goals, score) for score in range(cap + 1)]
+    away = [poisson_pmf(away_goals, score) for score in range(cap + 1)]
+    return clamp(sum(home[home_score] * away[away_score] for home_score in range(cap + 1) for away_score in range(home_score)), 0.05, 0.85)
+
+
+def match_outcome_probabilities(home_goals, away_goals):
+    home = poisson_win(home_goals, away_goals)
+    away = poisson_win(away_goals, home_goals)
+    draw = clamp(1.0 - home - away, 0.05, 0.40)
+    total = home + draw + away
+    probabilities = {"home": round(home * 100 / total), "draw": round(draw * 100 / total)}
+    probabilities["away"] = 100 - probabilities["home"] - probabilities["draw"]
+    return probabilities
 
 
 def pick_label(fixture, pick):
@@ -127,58 +92,41 @@ def pick_label(fixture, pick):
     return "Draw"
 
 
-def trend_text(fixture, pick, goals):
-    side = pick_label(fixture, pick)
-    total = "open game" if goals >= 2.5 else "tight game"
-    return f"{side} edge, {total}"
-
-
-def prediction_for_fixture(fixture, all_fixtures=None):
+def prediction_for_fixture(fixture, all_fixtures=None, team_histories=None):
     all_fixtures = all_fixtures or []
-    home_history, away_history = fixture_history(fixture, all_fixtures)
-
     home_id = str(fixture["homeTeam"].get("id", ""))
     away_id = str(fixture["awayTeam"].get("id", ""))
-
-    home_xg = expected_goals(home_history, home_id)
-    away_xg = expected_goals(away_history, away_id)
-    goals = round(clamp(home_xg + away_xg, 1.0, 6.0), 1)
-
-    probabilities = match_outcome_probabilities(home_xg, away_xg)
-    # normalize remainder away
-    probabilities["away"] = 100 - probabilities["home"] - probabilities["draw"]
-
+    if team_histories is None:
+        home_history, away_history = fixture_history(fixture, all_fixtures)
+    else:
+        home_history = completed_history(team_histories.get(home_id, []))
+        away_history = completed_history(team_histories.get(away_id, []))
+    if len(home_history) < 5 or len(away_history) < 5:
+        return None
+    home_goals = expected_goals(home_history, home_id)
+    away_goals = expected_goals(away_history, away_id)
+    average_goals = round(home_goals + away_goals, 1)
+    probabilities = match_outcome_probabilities(home_goals, away_goals)
     pick = max(probabilities, key=probabilities.get)
-    home_goals, away_goals = correct_score(pick, goals)
-
-    has_history = bool(home_history and away_history)
-    home_form = form_marks(home_history, home_id) if has_history else form_marks_seed(home_id)
-    away_form = form_marks(away_history, away_id) if has_history else form_marks_seed(away_id)
+    source_updated_at = max(item["kickoff"] for item in home_history + away_history)
 
     return {
         "fixture": fixture,
         "probabilities": probabilities,
         "pick": pick,
         "pickLabel": pick_label(fixture, pick),
-        "correctScore": f"{home_goals}-{away_goals}",
-        "averageGoals": goals,
+        "averageGoals": average_goals,
         "confidence": probabilities[pick],
         "markets": {
             "oneXTwo": pick,
-            "overUnder25": "over" if goals >= 2.5 else "under",
-            "bothTeamsToScore": "yes" if home_xg >= 0.8 and away_xg >= 0.8 else "no",
+            "overUnder25": "over" if average_goals >= 2.5 else "under",
+            "bothTeamsToScore": "yes" if home_goals >= 0.8 and away_goals >= 0.8 else "no",
         },
-        "form": {"home": home_form, "away": away_form},
-        "trend": trend_text(fixture, pick, goals),
+        "form": {"home": form_marks(home_history, home_id), "away": form_marks(away_history, away_id)},
+        "sampleSize": 5,
+        "sourceUpdatedAt": source_updated_at,
     }
 
 
-def form_marks_seed(team_id):
-    """Fallback W/D/L when no history exists (deterministic but labeled)."""
-    seed = sum(ord(c) for c in str(team_id))
-    marks = ["W", "D", "L"]
-    return [marks[(seed + i) % len(marks)] for i in range(5)]
-
-
 def predictions_for_fixtures(fixtures, all_fixtures=None):
-    return [prediction_for_fixture(f, all_fixtures or fixtures) for f in fixtures]
+    return [prediction for fixture in fixtures if (prediction := prediction_for_fixture(fixture, all_fixtures or fixtures)) is not None]

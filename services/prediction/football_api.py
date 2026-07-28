@@ -7,6 +7,8 @@ and league policy while maintaining 100% backward compatibility.
 from providers.client import FOOTBALL_DATA_CACHE, api_get, football_data_get
 from providers.league_policy import (
     fixture_season_candidates,
+    fixture_detail_payload,
+    fixture_prediction_payload,
     fixtures_payload,
     football_data_current_round,
     football_data_fixtures_payload,
@@ -48,5 +50,4 @@ import config
 
 FOOTBALL_PROVIDER = config.FOOTBALL_PROVIDER
 API_KEY = config.API_KEY
-MOCK_FIXTURES = config.MOCK_FIXTURES
 urlopen = None

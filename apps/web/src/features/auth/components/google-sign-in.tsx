@@ -21,6 +21,7 @@ type GoogleIdentity = {
           width: number;
           text: "signin_with" | "signup_with";
           shape: "rectangular";
+          locale?: string;
         },
       ) => void;
     };
@@ -40,6 +41,7 @@ type GoogleSignInProps = {
   disabled: boolean;
   onCredential: (credential: string) => void;
   onUnavailable: () => void;
+  hideDivider?: boolean;
 };
 
 export function GoogleSignIn({
@@ -49,6 +51,7 @@ export function GoogleSignIn({
   disabled,
   onCredential,
   onUnavailable,
+  hideDivider = false,
 }: GoogleSignInProps) {
   useEffect(() => {
     if (!googleClientId) return;
@@ -69,6 +72,7 @@ export function GoogleSignIn({
         width: 380,
         text: buttonText,
         shape: "rectangular",
+        locale: "en",
       });
     };
 
@@ -86,30 +90,39 @@ export function GoogleSignIn({
   }, [buttonId, buttonText, onCredential]);
 
   return (
-    <div className="mt-6 flex flex-col gap-4">
-      <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-[var(--color-border)]" />
-        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
-          or
-        </span>
-        <div className="h-px flex-1 bg-[var(--color-border)]" />
-      </div>
-      <div className="relative mt-2 min-h-[44px] w-full">
+    <div className="flex flex-col gap-4 w-full">
+      {!hideDivider && (
+        <div className="relative my-3">
+          <div className="absolute inset-0 flex items-center" aria-hidden="true">
+            <div className="w-full border-t border-[var(--color-border)] opacity-60" />
+          </div>
+          <div className="relative flex justify-center">
+            <span className="bg-[var(--color-background-surface)] px-4 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-secondary)]">
+              or
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div className="relative min-h-[48px] w-full">
+        {/* Custom Football Verse Styled Button */}
         <button
           type="button"
           disabled={disabled}
           onClick={() => {
             if (!googleClientId) onUnavailable();
           }}
-          className="flex min-h-[44px] w-full items-center justify-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-background-surface)] px-4 py-3 shadow-sm transition-all hover:bg-[var(--color-background-body)] active:scale-[0.98]"
+          className="flex h-12 min-h-[48px] w-full items-center justify-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-background-surface)] px-4 py-3 shadow-xs transition-all hover:bg-[var(--color-background-body)] hover:border-[var(--color-text-secondary)]/40 active:scale-[0.99] disabled:opacity-60 cursor-pointer text-xs font-bold text-[var(--color-text-primary)]"
         >
           <GoogleMark />
-          <span className="text-xs font-bold text-[var(--color-text-primary)]">{label}</span>
+          <span>{label}</span>
         </button>
+
+        {/* Invisible Google GSI iframe overlay */}
         {googleClientId && (
           <div
             id={buttonId}
-            className="absolute inset-0 z-20 h-full w-full cursor-pointer opacity-0 [&>div]:h-full [&>div]:w-full [&_iframe]:h-full [&_iframe]:w-full"
+            className="absolute inset-0 z-20 h-full w-full cursor-pointer opacity-[0.001] overflow-hidden rounded-xl [&>div]:h-full [&>div]:w-full [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:cursor-pointer"
           />
         )}
       </div>
@@ -119,7 +132,7 @@ export function GoogleSignIn({
 
 function GoogleMark() {
   return (
-    <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+    <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
       <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
       <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
       <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />

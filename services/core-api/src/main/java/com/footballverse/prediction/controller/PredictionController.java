@@ -4,17 +4,18 @@ import com.footballverse.common.response.ApiResponse;
 import com.footballverse.prediction.dto.FixtureResponse;
 import com.footballverse.prediction.dto.LeaderboardEntryResponse;
 import com.footballverse.prediction.dto.MatchCentreResponse;
+import com.footballverse.prediction.dto.MatchDetailResponse;
 import com.footballverse.prediction.dto.PredictionRequest;
 import com.footballverse.prediction.dto.PredictionResponse;
 import com.footballverse.prediction.dto.PredictionScoreLogResponse;
 import com.footballverse.prediction.dto.StatsResponse;
-import com.footballverse.prediction.service.FixtureService;
 import com.footballverse.prediction.service.LeaderboardService;
 import com.footballverse.prediction.service.MatchCentreService;
 import com.footballverse.prediction.service.ScoringService;
 import com.footballverse.prediction.service.UserPredictionService;
 import com.footballverse.security.CurrentUser;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,7 +36,6 @@ public class PredictionController {
     private final MatchCentreService matchCentreService;
     private final LeaderboardService leaderboardService;
     private final ScoringService scoringService;
-    private final FixtureService fixtureService;
     private final CurrentUser currentUser;
 
     @GetMapping("/fixtures")
@@ -81,9 +81,20 @@ public class PredictionController {
     @GetMapping("/match-centre")
     public ApiResponse<MatchCentreResponse> matchCentre(
             @RequestParam(defaultValue = "premier-league") String league,
-            @RequestParam(required = false) String round
+            @RequestParam(required = false) String round,
+            HttpServletResponse response
     ) {
-        fixtureService.syncFixturesForLeagueAndRound(league, round);
+        response.setHeader("Cache-Control", "private, no-store");
         return ApiResponse.ok(matchCentreService.matchCentre(league, round, currentUser.getOrNull()));
+    }
+
+    @GetMapping("/match-centre/{fixtureId}")
+    public ApiResponse<MatchDetailResponse> matchDetail(
+            @PathVariable String fixtureId,
+            @RequestParam(defaultValue = "premier-league") String league,
+            HttpServletResponse response
+    ) {
+        response.setHeader("Cache-Control", "private, no-store");
+        return ApiResponse.ok(matchCentreService.matchDetail(league, fixtureId, currentUser.getOrNull()));
     }
 }

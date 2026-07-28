@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { data, http } from "@/shared/lib/api-client";
-import type { Fixture, UserPrediction, StatsResponse, LeaderboardEntry, MatchCentreResponse } from "./types";
+import type { Fixture, UserPrediction, StatsResponse, LeaderboardEntry, MatchCentreResponse, MatchDetailResponse } from "./types";
 
 export const usePredictionFixtures = (league = "premier-league") =>
   useQuery({
@@ -64,5 +64,13 @@ export const useMatchCentre = (league = "premier-league", round?: string) =>
       if (round) params.set("round", round);
       return data<MatchCentreResponse>(http.get(`/predictions/match-centre?${params.toString()}`));
     },
+    refetchInterval: 30000,
+  });
+
+export const useMatchDetail = (fixtureId: string, league = "premier-league") =>
+  useQuery({
+    queryKey: ["predictions", "match-detail", league, fixtureId],
+    queryFn: () => data<MatchDetailResponse>(http.get(`/predictions/match-centre/${encodeURIComponent(fixtureId)}?league=${encodeURIComponent(league)}`)),
+    enabled: Boolean(fixtureId),
     refetchInterval: 30000,
   });

@@ -30,7 +30,7 @@ export function useRealtimeNotifications() {
 
     const socket: Socket = io(socketUrl, {
       auth: { token: auth.accessToken },
-      transports: ["polling", "websocket"],
+      transports: ["websocket", "polling"],
     });
 
     socket.on("connect", () => {

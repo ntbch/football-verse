@@ -3,6 +3,7 @@ package com.footballverse.prediction.controller;
 import com.footballverse.common.response.ApiResponse;
 import com.footballverse.prediction.dto.MatchCentreResponse;
 import lombok.RequiredArgsConstructor;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -18,8 +19,9 @@ public class MatchesController {
     @GetMapping("/centre")
     public ApiResponse<MatchCentreResponse> matchCentre(
             @RequestParam(defaultValue = "premier-league") String league,
-            @RequestParam(required = false) String round
+            @RequestParam(required = false) String round,
+            HttpServletResponse response
     ) {
-        return predictionController.matchCentre(league, round);
+        return predictionController.matchCentre(league, round, response);
     }
 }
