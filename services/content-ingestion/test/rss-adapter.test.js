@@ -40,6 +40,17 @@ test('RSS metadata normalization never requires article HTML', () => {
   assert.equal('content' in item, false);
 });
 
+test('RSS prefers full-size image media over an earlier thumbnail', () => {
+  const [item] = parseRssEntries(source, `
+    <rss xmlns:media="http://search.yahoo.com/mrss/"><channel><item>
+      <guid>image-quality</guid><title>Full-size media wins</title><link>https://example.com/image-quality</link>
+      <media:thumbnail url="https://cdn.example.com/story-300.jpg" width="300" height="169" />
+      <media:content url="https://cdn.example.com/story-1600.jpg" type="image/jpeg" width="1600" height="900" />
+    </item></channel></rss>`, 10);
+
+  assert.equal(item.media[0].url, 'https://cdn.example.com/story-1600.jpg');
+});
+
 test('same identity with corrected metadata creates a new revision only', () => {
   const first = parseRssEntries(source, `
     <rss><channel><item>

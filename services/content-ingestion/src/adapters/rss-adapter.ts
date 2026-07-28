@@ -45,25 +45,30 @@ function safeRemoteUrl(value?: string): string | undefined {
 }
 
 function firstMedia($item: cheerio.Cheerio<any>): { media: NormalizedMedia[]; invalidMediaCount: number } {
-  const mediaNode = $item.find('media\\:content, media\\:thumbnail, enclosure').filter((_, element) => {
+  const candidates = $item.find('media\\:content, media\\:thumbnail, enclosure').toArray().flatMap(element => {
     const node = $item.find(element);
     const type = (node.attr('type') || '').toLowerCase();
     const medium = (node.attr('medium') || '').toLowerCase();
-    return !type || type.startsWith('image/') || type.startsWith('video/') || medium === 'image' || medium === 'video';
-  }).first();
-
-  if (mediaNode.length > 0) {
-    const url = safeRemoteUrl(mediaNode.attr('url'));
-    if (url) {
-      const type = (mediaNode.attr('type') || '').toLowerCase();
-      const medium = (mediaNode.attr('medium') || '').toLowerCase();
-      const mediaType = type.startsWith('video/') || medium === 'video' ? 'VIDEO' : 'IMAGE';
-      return {
-        media: [{ type: mediaType, url, thumbnailUrl: mediaType === 'IMAGE' ? url : undefined }],
-        invalidMediaCount: 0,
-      };
+    if (type && !type.startsWith('image/') && !type.startsWith('video/') && medium !== 'image' && medium !== 'video') {
+      return [];
     }
-    return { media: [], invalidMediaCount: 1 };
+    const url = safeRemoteUrl(node.attr('url'));
+    if (!url) return [null];
+    const image = !type.startsWith('video/') && medium !== 'video';
+    const content = element.tagName.toLowerCase() === 'media:content';
+    const width = Number.parseInt(node.attr('width') || '0', 10) || 0;
+    const height = Number.parseInt(node.attr('height') || '0', 10) || 0;
+    return [{ url, image, content, area: width * height }];
+  });
+
+  const invalidMediaCount = candidates.filter(candidate => candidate === null).length;
+  const best = candidates
+    .filter((candidate): candidate is { url: string; image: boolean; content: boolean; area: number } => candidate !== null)
+    .sort((a, b) => Number(b.image) - Number(a.image) || Number(b.content) - Number(a.content) || b.area - a.area)[0];
+
+  if (best) {
+    const mediaType = best.image ? 'IMAGE' : 'VIDEO';
+    return { media: [{ type: mediaType, url: best.url, thumbnailUrl: mediaType === 'IMAGE' ? best.url : undefined }], invalidMediaCount };
   }
 
   // Fallback: extract img src from description or content:encoded
@@ -79,7 +84,7 @@ function firstMedia($item: cheerio.Cheerio<any>): { media: NormalizedMedia[]; in
     }
   }
 
-  return { media: [], invalidMediaCount: 0 };
+  return { media: [], invalidMediaCount };
 }
 
 function itemLink($item: cheerio.Cheerio<any>): string | undefined {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { PublicShell } from "@/shared/components/page-shell";
@@ -121,90 +122,97 @@ function FullStandingsDialog({
   const seasonYear = Number(availability?.season);
   const seasonLabel = availability?.season && Number.isFinite(seasonYear) ? ` ${seasonYear}/${seasonYear + 1}` : "";
 
-  const trapFocus = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "Tab") return;
-    const focusable = [...event.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]):not([tabindex="-1"]), [href], [tabindex]:not([tabindex="-1"])')];
-    if (!focusable.length) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  };
+  return createPortal(
+    /* Portal to body — escapes DOM stacking context to sit ABOVE navbar */
+    <div className="fixed inset-0 z-[9999] flex items-start justify-center pt-12 pb-4 px-4 sm:px-8" role="presentation">
+      {/* Blurred dimmed backdrop — covers navbar and everything */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-black/70 backdrop-blur-md"
+        onClick={onClose}
+      />
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-3 sm:p-6 transition-opacity duration-200" onKeyDown={trapFocus} role="presentation">
-      {/* Soft click-outside backdrop */}
-      <button aria-label="Close all standings" className="absolute inset-0 cursor-default" onClick={onClose} tabIndex={-1} type="button" />
-
-      <section aria-describedby={`${titleId}-description`} aria-labelledby={titleId} aria-modal="true" className="relative z-10 flex w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-background-surface)] shadow-xl" role="dialog">
-        <header className="flex items-center justify-between gap-4 border-b border-[var(--color-border)] px-6 py-4 bg-[var(--color-surface-subtle)]">
+      {/* Centered card */}
+      <section
+        aria-labelledby={titleId}
+        aria-modal="true"
+        className="relative z-10 flex w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-background-surface)] shadow-2xl"
+        role="dialog"
+        style={{ maxHeight: "calc(100vh - 5rem)" }}
+      >
+        {/* Header */}
+        <header className="flex items-center justify-between gap-4 border-b border-[var(--color-border)] px-6 py-4 bg-[var(--color-surface-subtle)] shrink-0">
           <div>
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-accent)] block mb-0.5">
-              PREMIER LEAGUE {seasonLabel}
+              PREMIER LEAGUE{seasonLabel}
             </span>
             <h2 className="font-serif font-black text-2xl tracking-tight text-[var(--color-text-primary)] m-0" id={titleId}>
-              Premier League Standings
+              Standings
             </h2>
           </div>
           <button
             ref={closeButtonRef}
-            className="flex h-8 px-4 items-center justify-center rounded-xl border border-[var(--color-border)] text-xs font-bold text-[var(--color-text-primary)] transition-all hover:bg-[var(--color-surface-hover)] hover:border-[var(--color-accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] cursor-pointer"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-all hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] cursor-pointer"
             onClick={onClose}
             type="button"
           >
-            Close
+            <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className="h-5 w-5">
+              <path d="M5 5l10 10M15 5l-10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
           </button>
         </header>
 
-        {/* Scrollbar-free clean detailed standings table with bottom padding */}
-        <div className="p-4 sm:p-5 sm:pb-6 overflow-hidden">
-          <table className="w-full text-xs border-separate border-spacing-0">
+        {/* Fixed table header */}
+        <div className="px-5 sm:px-6 pt-2 bg-[var(--color-background-surface)] shrink-0">
+          <table className="w-full text-sm border-separate border-spacing-0">
             <thead className="text-left text-[10px] font-extrabold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
               <tr>
-                <th className="w-8 px-2 py-2 text-center border-b border-[var(--color-border)]">#</th>
-                <th className="px-3 py-2 border-b border-[var(--color-border)]">Team</th>
-                <th className="w-10 px-2 py-2 text-right font-black border-b border-[var(--color-border)]">P</th>
-                <th className="w-10 px-2 py-2 text-right font-black border-b border-[var(--color-border)]">W</th>
-                <th className="w-10 px-2 py-2 text-right font-black border-b border-[var(--color-border)]">D</th>
-                <th className="w-10 px-2 py-2 text-right font-black border-b border-[var(--color-border)]">L</th>
-                <th className="w-12 px-2 py-2 text-right font-black border-b border-[var(--color-border)]">GF</th>
-                <th className="w-12 px-2 py-2 text-right font-black border-b border-[var(--color-border)]">GA</th>
-                <th className="w-12 px-2 py-2 text-right font-black border-b border-[var(--color-border)]">GD</th>
-                <th className="w-12 px-2 py-2 text-right font-black border-b border-[var(--color-border)] text-[var(--color-accent)]">PTS</th>
+                <th className="w-10 px-3 py-3 text-center border-b border-[var(--color-border)]">#</th>
+                <th className="px-4 py-3 border-b border-[var(--color-border)]">Team</th>
+                <th className="w-12 px-3 py-3 text-right font-black border-b border-[var(--color-border)]">P</th>
+                <th className="w-12 px-3 py-3 text-right font-black border-b border-[var(--color-border)]">W</th>
+                <th className="w-12 px-3 py-3 text-right font-black border-b border-[var(--color-border)]">D</th>
+                <th className="w-12 px-3 py-3 text-right font-black border-b border-[var(--color-border)]">L</th>
+                <th className="w-14 px-3 py-3 text-right font-black border-b border-[var(--color-border)]">GF</th>
+                <th className="w-14 px-3 py-3 text-right font-black border-b border-[var(--color-border)]">GA</th>
+                <th className="w-14 px-3 py-3 text-right font-black border-b border-[var(--color-border)]">GD</th>
+                <th className="w-14 px-3 py-3 text-right font-black border-b border-[var(--color-border)] text-[var(--color-accent)]">PTS</th>
               </tr>
             </thead>
+          </table>
+        </div>
+
+        {/* Scrollable table body */}
+        <div className="flex-1 overflow-y-auto scrollbar-hide px-5 sm:px-6 pb-4">
+          <table className="w-full text-sm border-separate border-spacing-0">
             <tbody className="divide-y divide-[var(--color-border)]/40">
               {standings.map((team) => (
                 <tr className="group transition-colors hover:bg-[var(--color-surface-hover)]" key={team.teamId}>
-                  <td className="px-2 py-1.5 sm:py-2 text-center font-black text-[var(--color-text-secondary)]">
+                  <td className="w-10 px-3 py-3 text-center font-black text-[var(--color-text-secondary)]">
                     {team.rank}
                   </td>
-                  <td className="px-3 py-1.5 sm:py-2 font-bold text-[var(--color-text-primary)]">
-                    <div className="flex items-center gap-2.5">
-                      {team.teamLogo && <img alt="" className="h-5 w-5 shrink-0 object-contain" src={team.teamLogo} />}
+                  <td className="px-4 py-3 font-bold text-[var(--color-text-primary)]">
+                    <div className="flex items-center gap-3">
+                      {team.teamLogo && <img alt="" className="h-6 w-6 shrink-0 object-contain" src={team.teamLogo} />}
                       <span className="truncate">{team.teamName}</span>
                     </div>
                   </td>
-                  <td className="px-2 py-1.5 sm:py-2 text-right font-medium tabular-nums text-[var(--color-text-secondary)]">{team.played ?? 0}</td>
-                  <td className="px-2 py-1.5 sm:py-2 text-right font-medium tabular-nums text-emerald-600 dark:text-emerald-400">{team.wins ?? 0}</td>
-                  <td className="px-2 py-1.5 sm:py-2 text-right font-medium tabular-nums text-[var(--color-text-secondary)]">{team.draws ?? 0}</td>
-                  <td className="px-2 py-1.5 sm:py-2 text-right font-medium tabular-nums text-rose-600 dark:text-rose-400">{team.losses ?? 0}</td>
-                  <td className="px-2 py-1.5 sm:py-2 text-right font-medium tabular-nums text-[var(--color-text-secondary)]">{team.goalsFor ?? 0}</td>
-                  <td className="px-2 py-1.5 sm:py-2 text-right font-medium tabular-nums text-[var(--color-text-secondary)]">{team.goalsAgainst ?? 0}</td>
-                  <td className="px-2 py-1.5 sm:py-2 text-right font-medium tabular-nums text-[var(--color-text-secondary)]">{team.goalDifference ?? 0}</td>
-                  <td className="px-2 py-1.5 sm:py-2 text-right font-black tabular-nums text-[var(--color-accent)] text-sm">{team.points ?? 0}</td>
+                  <td className="w-12 px-3 py-3 text-right font-medium tabular-nums text-[var(--color-text-secondary)]">{team.played ?? 0}</td>
+                  <td className="w-12 px-3 py-3 text-right font-medium tabular-nums text-emerald-600 dark:text-emerald-400">{team.wins ?? 0}</td>
+                  <td className="w-12 px-3 py-3 text-right font-medium tabular-nums text-[var(--color-text-secondary)]">{team.draws ?? 0}</td>
+                  <td className="w-12 px-3 py-3 text-right font-medium tabular-nums text-rose-600 dark:text-rose-400">{team.losses ?? 0}</td>
+                  <td className="w-14 px-3 py-3 text-right font-medium tabular-nums text-[var(--color-text-secondary)]">{team.goalsFor ?? 0}</td>
+                  <td className="w-14 px-3 py-3 text-right font-medium tabular-nums text-[var(--color-text-secondary)]">{team.goalsAgainst ?? 0}</td>
+                  <td className="w-14 px-3 py-3 text-right font-medium tabular-nums text-[var(--color-text-secondary)]">{team.goalDifference ?? 0}</td>
+                  <td className="w-14 px-3 py-3 text-right font-black tabular-nums text-[var(--color-accent)] text-base">{team.points ?? 0}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </section>
-    </div>
+    </div>,
+    document.body
   );
 }
 

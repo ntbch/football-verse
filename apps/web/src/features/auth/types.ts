@@ -9,3 +9,7 @@ export type AuthResponse = {
   username: string;
   roles: UserRole[];
 };
+
+export type VerificationPendingResponse = {
+  email: string;
+};

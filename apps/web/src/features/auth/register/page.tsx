@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { apiErrorMessage, data, http } from "@/shared/lib/api-client";
 import { useAuthStore } from "@/shared/lib/auth-store";
-import type { AuthResponse } from "../types";
+import type { AuthResponse, VerificationPendingResponse } from "../types";
 import { useToast } from "@/shared/components/toast";
 import { GoogleSignIn } from "../components/google-sign-in";
 
@@ -27,6 +27,7 @@ export default function RegisterPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
   const [errors, setErrors] = useState<{ email?: string; username?: string; password?: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -48,9 +49,9 @@ export default function RegisterPage() {
 
     setIsLoading(true);
     try {
-      const auth = await data<AuthResponse>(http.post("/auth/register", parsed.data));
-      setAuth(auth);
-      router.push("/");
+      const pending = await data<VerificationPendingResponse>(http.post("/auth/register", parsed.data));
+      setPendingEmail(pending.email);
+      setPassword("");
     } catch (err) {
       toast({ body: apiErrorMessage(err, "Registration failed."), type: "error" });
     } finally {
@@ -73,6 +74,16 @@ export default function RegisterPage() {
     },
     [setAuth, router, toast]
   );
+
+  const resendVerification = async () => {
+    if (!pendingEmail) return;
+    try {
+      await data<void>(http.post("/auth/resend-verification", { email: pendingEmail }));
+      toast({ body: "If eligible, a new verification email will arrive shortly." });
+    } catch (err) {
+      toast({ body: apiErrorMessage(err, "Unable to send another email."), type: "error" });
+    }
+  };
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center py-6 px-4 text-[var(--color-text-primary)] font-sans relative overflow-hidden">
@@ -137,6 +148,13 @@ export default function RegisterPage() {
               Join us to share news, comment, and predict scores
             </p>
           </div>
+
+          {pendingEmail && (
+            <div role="status" className="mb-4 rounded-xl bg-[var(--color-accent-muted)] p-3 text-xs text-[var(--color-text-primary)]">
+              Check {pendingEmail} for a verification link, then <Link href="/login" className="font-bold underline">sign in</Link>.
+              <button type="button" onClick={resendVerification} className="ml-2 font-bold underline">Resend</button>
+            </div>
+          )}
 
           {/* Register Form */}
           <form onSubmit={handleRegister} className="flex flex-col gap-3.5 sm:gap-4">

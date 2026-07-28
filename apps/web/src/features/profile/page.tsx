@@ -123,17 +123,7 @@ export default function ProfilePage() {
 
   return (
     <PublicShell>
-      <div className="flex flex-col gap-8 w-full max-w-5xl mx-auto animate-fade-in mt-4">
-        {/* Banner */}
-        <header className="text-center py-6 border-b border-[var(--color-border)]">
-          <h1 className="m-0 font-serif-title font-black text-4xl tracking-tight text-[var(--color-text-primary)]">
-            Your desk
-          </h1>
-          <p className="mt-2 font-serif italic text-sm text-[var(--color-text-secondary)]">
-            manage your credentials, track your activity, and view saved content
-          </p>
-        </header>
-
+      <div className="flex flex-col gap-6 w-full max-w-5xl mx-auto animate-fade-in mt-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start w-full">
           {/* Left: Profile Info Card */}
           <aside className="lg:col-span-1 flex flex-col gap-4 lg:sticky lg:top-24">
@@ -161,10 +151,12 @@ export default function ProfilePage() {
           {/* Right: Tabbed Content */}
           <div className="lg:col-span-2 flex flex-col gap-4 w-full">
             {/* Tab Switcher */}
-            <div className="editorial-panel flex items-center gap-1 p-1.5">
+            <div aria-label="Saved content" className="editorial-panel grid grid-cols-2 gap-1 p-1.5" role="tablist">
               <button
+                aria-pressed={activeTab === "threads"}
                 onClick={() => setActiveTab("threads")}
-                className={`flex-1 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5 ${
+                type="button"
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5 ${
                   activeTab === "threads"
                     ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
                     : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]"
@@ -174,10 +166,13 @@ export default function ProfilePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
                 <span>Followed Threads</span>
+                <span className={`min-w-5 rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${activeTab === "threads" ? "bg-white/20" : "bg-[var(--color-surface-hover)]"}`}>{followedThreads.length}</span>
               </button>
               <button
+                aria-pressed={activeTab === "bookmarks"}
                 onClick={() => setActiveTab("bookmarks")}
-                className={`flex-1 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5 ${
+                type="button"
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5 ${
                   activeTab === "bookmarks"
                     ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
                     : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]"
@@ -187,6 +182,7 @@ export default function ProfilePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                 </svg>
                 <span>Bookmarked Articles</span>
+                <span className={`min-w-5 rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${activeTab === "bookmarks" ? "bg-white/20" : "bg-[var(--color-surface-hover)]"}`}>{bookmarkedArticles.length}</span>
               </button>
             </div>
 

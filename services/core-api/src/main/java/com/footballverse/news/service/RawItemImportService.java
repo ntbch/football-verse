@@ -391,7 +391,9 @@ public class RawItemImportService {
         if (request.media() == null) return null;
         return request.media().stream()
                 .filter(media -> "IMAGE".equalsIgnoreCase(media.type()) || media.thumbnailUrl() != null)
-                .map(media -> media.thumbnailUrl() != null ? media.thumbnailUrl() : media.url())
+                .map(media -> "IMAGE".equalsIgnoreCase(media.type()) && media.url() != null
+                        ? media.url()
+                        : media.thumbnailUrl() != null ? media.thumbnailUrl() : media.url())
                 .filter(value -> value != null && !value.isBlank())
                 .findFirst()
                 .orElse(null);
