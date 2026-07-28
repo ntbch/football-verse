@@ -215,7 +215,7 @@ export default function NewsDetailPage() {
 
   return (
     <PublicShell>
-      <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full animate-fade-in mt-4">
+      <div className="flex flex-col gap-8 max-w-5xl mx-auto w-full animate-fade-in mt-4">
         {/* Article Breadcrumbs & Meta */}
         <div className="flex items-center justify-between text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-secondary)] border-b border-[var(--color-border)] pb-3">
           <Link href="/news" className="hover:text-[var(--color-accent)] transition-colors">
@@ -225,11 +225,12 @@ export default function NewsDetailPage() {
         </div>
 
         {/* Heading */}
-        <div className="flex flex-col gap-2.5 text-center md:text-left">
-          <h1 className="m-0 font-serif-title font-black text-2xl md:text-3xl leading-snug text-[var(--color-text-primary)] tracking-tight">
+        <div className="flex flex-col gap-4 text-center md:text-left md:max-w-4xl md:mx-auto w-full">
+          <p className="editorial-kicker m-0">{article.category || "Football Verse Editorial"}</p>
+          <h1 className="m-0 font-serif-title font-black text-3xl md:text-5xl leading-[1.08] text-[var(--color-text-primary)] tracking-tight">
             {article.title}
           </h1>
-          <div className="flex items-center justify-between flex-wrap gap-3 text-xs text-[var(--color-text-secondary)] font-semibold border-y border-[var(--color-border)] py-3">
+          <div className="flex items-center justify-between flex-wrap gap-3 text-xs text-[var(--color-text-secondary)] font-semibold border-y border-[var(--color-border)] py-4">
             <div className="flex items-center gap-3 flex-wrap">
               <span className="font-bold text-[var(--color-accent)]">
                 {article.sourceName || "Football Verse"}
@@ -264,7 +265,7 @@ export default function NewsDetailPage() {
                 style={
                   article.liked
                     ? {
-                        backgroundColor: "rgba(180, 95, 53, 0.12)",
+                        backgroundColor: "var(--color-accent-muted)",
                         borderColor: "var(--color-accent)",
                         color: "var(--color-accent)",
                       }
@@ -284,9 +285,9 @@ export default function NewsDetailPage() {
                 style={
                   article.bookmarked
                     ? {
-                        backgroundColor: "rgba(74, 124, 89, 0.12)",
-                        borderColor: "#4a7c59",
-                        color: "#4a7c59",
+                        backgroundColor: "var(--color-success-muted)",
+                        borderColor: "var(--color-success)",
+                        color: "var(--color-success)",
                       }
                     : {
                         backgroundColor: "var(--color-background-surface)",
@@ -312,7 +313,7 @@ export default function NewsDetailPage() {
                 summary={article.summary}
               />
             ) : (
-              <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-background-surface)] shadow-sm">
+              <div className="editorial-story overflow-hidden bg-[var(--color-background-surface)]">
                 <img
                   src={getArticleImage(article.id, undefined, article.imageUrl)}
                   alt={article.title}
@@ -324,12 +325,12 @@ export default function NewsDetailPage() {
             )}
 
             {/* Unified Article Summary & Key Takeaways Card */}
-            <div className="card p-6 flex flex-col gap-5 bg-white border border-[var(--color-border)] shadow-sm rounded-2xl" role="region" aria-label="Article Summary">
+            <div className="editorial-panel p-6 md:p-8 flex flex-col gap-5" role="region" aria-label="Article Summary">
               {/* Header Bar */}
               <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3.5">
                 <div className="flex items-center gap-2.5">
-                  <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--color-text-primary)] text-white shadow-xs" aria-hidden="true">
-                    <svg className="w-4 h-4 fill-current text-white" viewBox="0 0 24 24">
+                  <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--color-text-primary)] text-[var(--color-text-inverse)] shadow-xs" aria-hidden="true">
+                    <svg className="w-4 h-4 fill-current text-[var(--color-text-inverse)]" viewBox="0 0 24 24">
                       <path d="M12 2L14.4 8.6L21 11L14.4 13.4L12 20L9.6 13.4L3 11L9.6 8.6L12 2Z" />
                     </svg>
                   </span>
@@ -355,8 +356,8 @@ export default function NewsDetailPage() {
                   </h3>
                   <ul className="m-0 flex flex-col gap-3 pl-0 list-none">
                     {article.keyPoints.map((point, index) => (
-                      <li key={`${point.text}-${index}`} className="flex items-start gap-3 text-sm leading-relaxed text-[var(--color-text-primary)] font-serif bg-gray-50/70 p-3 rounded-xl border border-gray-100">
-                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[var(--color-text-primary)] text-white font-extrabold text-[10px] flex items-center justify-center mt-0.5 shadow-2xs">
+                      <li key={`${point.text}-${index}`} className="flex items-start gap-3 text-sm leading-relaxed text-[var(--color-text-primary)] font-serif bg-[var(--color-surface-subtle)] p-3 rounded-xl border border-[var(--color-border)]">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[var(--color-text-primary)] text-[var(--color-text-inverse)] font-extrabold text-[10px] flex items-center justify-center mt-0.5 shadow-2xs">
                           {index + 1}
                         </span>
                         <span>{point.text}</span>
@@ -368,7 +369,7 @@ export default function NewsDetailPage() {
             </div>
 
             {article.sourceUrl && (
-              <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-[var(--color-border)] text-xs">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-surface-subtle)] border border-[var(--color-border)] text-xs">
                 <span className="font-medium text-[var(--color-text-secondary)]">
                   Source: <strong className="text-[var(--color-text-primary)]">{article.sourceName || "External Publication"}</strong>
                 </span>
@@ -387,7 +388,7 @@ export default function NewsDetailPage() {
         ) : (
           <div className="flex flex-col gap-6">
             {/* Article Image */}
-            <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-background-surface)] shadow-sm">
+            <div className="editorial-story overflow-hidden bg-[var(--color-background-surface)]">
               <img
                 src={getArticleImage(article.id, article.content, article.imageUrl)}
                 alt={article.title}
@@ -399,7 +400,7 @@ export default function NewsDetailPage() {
 
             {/* Article Content */}
             <article
-              className="prose prose-lg max-w-none font-serif text-[var(--color-text-primary)] leading-relaxed flex flex-col gap-4"
+              className="article-body prose prose-lg max-w-[720px] w-full mx-auto font-serif text-[var(--color-text-primary)] leading-relaxed flex flex-col gap-4"
               dangerouslySetInnerHTML={{
                 __html: preprocessArticleContent(article.content || article.summary || ""),
               }}
@@ -408,7 +409,7 @@ export default function NewsDetailPage() {
         )}
 
         {/* Comment Section */}
-        <section className="card p-6 flex flex-col gap-6 mt-6 border-t border-[var(--color-border)]">
+        <section className="editorial-panel p-6 md:p-8 flex flex-col gap-6 mt-4">
           <h2 className="m-0 font-serif-title font-black text-xl text-[var(--color-text-primary)] flex items-center gap-2">
             <span>Comments</span>
             <span className="text-sm font-bold text-[var(--color-text-secondary)] tabular-nums">
@@ -430,7 +431,7 @@ export default function NewsDetailPage() {
               <button
                 type="submit"
                 disabled={!auth || !commentText.trim() || commentMutation.isPending}
-                className="px-6 py-2.5 rounded-xl bg-black text-white text-xs font-bold uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity cursor-pointer"
+                className="px-6 py-2.5 rounded-xl bg-[var(--color-text-primary)] text-[var(--color-text-inverse)] text-xs font-bold uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity cursor-pointer"
               >
                 {commentMutation.isPending ? "Posting..." : "Post Comment"}
               </button>
@@ -443,7 +444,7 @@ export default function NewsDetailPage() {
               No comments yet. Be the first to share your thoughts!
             </div>
           ) : (
-            <div className="flex flex-col gap-4 divide-y divide-gray-100">
+            <div className="flex flex-col gap-4 divide-y divide-[var(--color-border)]">
               {comments.map((comment) => (
                 <CommentNode
                   key={comment.id}

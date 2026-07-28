@@ -11,7 +11,7 @@ export const MatchAnalytics = ({ match }: MatchAnalyticsProps) => {
   if (!ai) return null;
 
   return (
-    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background-surface)] p-4 flex flex-col gap-4 shadow-sm mb-4">
+    <div className="editorial-panel p-4 flex flex-col gap-4 mb-4">
       <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
         Match Analytics & Insights
       </span>
@@ -23,10 +23,10 @@ export const MatchAnalytics = ({ match }: MatchAnalyticsProps) => {
           <span>Draw: {ai.drawPct}%</span>
           <span className="truncate max-w-[120px] text-right">{match.awayTeam}: {ai.awayPct}%</span>
         </div>
-        <div className="h-2 rounded-full overflow-hidden flex w-full bg-gray-200/50">
+        <div className="h-2 rounded-full overflow-hidden flex w-full bg-[var(--color-surface-muted)]">
           <div className="bg-[var(--color-accent)] h-full" style={{ width: `${ai.homePct}%` }} />
-          <div className="bg-gray-300 h-full" style={{ width: `${ai.drawPct}%` }} />
-          <div className="bg-gray-400 h-full" style={{ width: `${ai.awayPct}%` }} />
+          <div className="bg-[var(--color-chart-secondary)] h-full" style={{ width: `${ai.drawPct}%` }} />
+          <div className="bg-[var(--color-chart-tertiary)] h-full" style={{ width: `${ai.awayPct}%` }} />
         </div>
       </div>
 
@@ -42,13 +42,13 @@ export const MatchAnalytics = ({ match }: MatchAnalyticsProps) => {
                 {ai.homeForm?.map((f, i) => (
                   <span
                     key={i}
-                    className={`w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold text-white ${
-                      f === "W" ? "bg-green-500" : f === "D" ? "bg-gray-400" : "bg-red-500"
+                    className={`w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold text-[var(--color-text-inverse)] ${
+                      f === "W" ? "bg-[var(--color-success)]" : f === "D" ? "bg-[var(--color-neutral)]" : "bg-[var(--color-danger)]"
                     }`}
                   >
                     {f}
                   </span>
-                )) || <span className="text-gray-400">—</span>}
+                )) || <span className="text-[var(--color-neutral)]">—</span>}
               </div>
             </div>
             <div className="flex flex-col gap-1">
@@ -57,13 +57,13 @@ export const MatchAnalytics = ({ match }: MatchAnalyticsProps) => {
                 {ai.awayForm?.map((f, i) => (
                   <span
                     key={i}
-                    className={`w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold text-white ${
-                      f === "W" ? "bg-green-500" : f === "D" ? "bg-gray-400" : "bg-red-500"
+                    className={`w-4 h-4 flex items-center justify-center rounded text-[9px] font-bold text-[var(--color-text-inverse)] ${
+                      f === "W" ? "bg-[var(--color-success)]" : f === "D" ? "bg-[var(--color-neutral)]" : "bg-[var(--color-danger)]"
                     }`}
                   >
                     {f}
                   </span>
-                )) || <span className="text-gray-400">—</span>}
+                )) || <span className="text-[var(--color-neutral)]">—</span>}
               </div>
             </div>
           </div>

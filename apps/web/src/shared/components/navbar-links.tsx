@@ -20,7 +20,7 @@ export const publicNavItems: NavItem[] = [
       <svg
         className={`w-5 h-5 transition-transform duration-200 ${
           active
-            ? "scale-110 text-[var(--color-accent)] fill-current"
+            ? "text-[var(--color-accent)] fill-current"
             : "text-[var(--color-text-primary)]/70 group-hover:text-[var(--color-text-primary)] fill-none"
         }`}
         viewBox="0 0 24 24"
@@ -43,7 +43,7 @@ export const publicNavItems: NavItem[] = [
       <svg
         className={`w-5 h-5 transition-transform duration-200 ${
           active
-            ? "scale-110 text-[var(--color-accent)]"
+            ? "text-[var(--color-accent)]"
             : "text-[var(--color-text-primary)]/70 group-hover:text-[var(--color-text-primary)]"
         }`}
         fill="none"
@@ -67,7 +67,7 @@ export const publicNavItems: NavItem[] = [
       <svg
         className={`w-5 h-5 transition-transform duration-200 ${
           active
-            ? "scale-110 text-[var(--color-accent)]"
+            ? "text-[var(--color-accent)]"
             : "text-[var(--color-text-primary)]/70 group-hover:text-[var(--color-text-primary)]"
         }`}
         fill="none"
@@ -88,7 +88,7 @@ export const publicNavItems: NavItem[] = [
       <svg
         className={`w-5 h-5 transition-transform duration-200 ${
           active
-            ? "scale-110 text-[var(--color-accent)]"
+            ? "text-[var(--color-accent)]"
             : "text-[var(--color-text-primary)]/70 group-hover:text-[var(--color-text-primary)]"
         }`}
         fill="none"
@@ -108,7 +108,7 @@ export const publicNavItems: NavItem[] = [
       <svg
         className={`w-5 h-5 transition-transform duration-200 ${
           active
-            ? "scale-110 text-[var(--color-accent)]"
+            ? "text-[var(--color-accent)]"
             : "text-[var(--color-text-primary)]/70 group-hover:text-[var(--color-text-primary)]"
         }`}
         fill="none"
@@ -134,7 +134,7 @@ export function DesktopNavLinks() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex items-center justify-center gap-1 md:gap-2.5 h-14">
+    <nav className="flex items-center justify-center gap-1 h-14">
       {publicNavItems.map(({ href, label, tooltip, icon }) => {
         const active = activePath(pathname, href);
         return (
@@ -142,19 +142,12 @@ export function DesktopNavLinks() {
             key={href}
             href={href}
             aria-label={label}
-            className="group relative flex items-center justify-center px-4 h-full transition-all duration-200 active:scale-95 cursor-pointer"
+            className={`group relative grid h-10 w-10 place-items-center rounded-xl transition-colors duration-200 active:scale-95 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${active ? "bg-[var(--color-accent-muted)]" : "hover:bg-[var(--color-surface-hover)]"}`}
           >
             {icon(active)}
-
-            {/* Hover Tooltip */}
-            <span className="absolute top-full mt-1.5 px-2.5 py-1 bg-[var(--color-text-primary)] text-[var(--color-background-surface)] text-[10px] font-bold rounded-md whitespace-nowrap shadow-xl opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 pointer-events-none z-50">
+            <span className="pointer-events-none absolute top-full mt-2 rounded-lg bg-[var(--color-text-primary)] px-2.5 py-1 text-[10px] font-bold whitespace-nowrap text-[var(--color-text-inverse)] shadow-lg opacity-0 translate-y-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-y-0 group-focus-visible:opacity-100 group-focus-visible:translate-y-0">
               {tooltip}
             </span>
-
-            {/* Red Underline Active Indicator matching Screenshot UI */}
-            {active && (
-              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-[3px] bg-[var(--color-accent)] rounded-t-full transition-all duration-300 shadow-[0_2px_8px_rgba(0,0,0,0.15)]" />
-            )}
           </Link>
         );
       })}

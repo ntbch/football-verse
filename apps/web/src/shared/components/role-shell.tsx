@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useRealtimeNotifications } from "@/shared/hooks/use-realtime-notifications";
 import { useAuthStore } from "@/shared/lib/auth-store";
 import type { RoleNavigationItem } from "./role-navigation";
+import { ThemeToggle } from "./theme-provider";
 
 type RoleShellProps = {
   children: ReactNode;
@@ -41,23 +42,24 @@ export function RoleShell({ children, navigation, roleLabel, sectionLabel, fallb
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 active:scale-[0.98] ${active ? "shadow-sm bg-[var(--color-accent)] text-white" : "hover:bg-black/5"}`}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 active:scale-[0.98] ${active ? "shadow-sm bg-[var(--color-accent)] text-[var(--color-text-inverse)]" : "hover:bg-[var(--color-surface-hover)]"}`}
               >
-                <span className={active ? "text-white" : "text-[var(--color-text-secondary)]"}>{item.icon}</span>
-                <span className={active ? "text-white" : "text-[var(--color-text-primary)]"}>{item.label}</span>
+                <span className={active ? "text-[var(--color-text-inverse)]" : "text-[var(--color-text-secondary)]"}>{item.icon}</span>
+                <span className={active ? "text-[var(--color-text-inverse)]" : "text-[var(--color-text-primary)]"}>{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
         <div className="px-3 py-4 flex flex-col gap-2 border-t border-[var(--color-border)]">
-          <Link href="/" className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-black/5 transition-all active:scale-[0.98]">
+          <ThemeToggle className="role-theme-toggle w-full justify-start gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] transition-all" />
+          <Link href="/" className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] transition-all active:scale-[0.98]">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.75"><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
             Back to Site
           </Link>
           {auth && (
             <div className="flex items-center gap-2.5 px-3 py-2">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-black text-[10px] bg-[var(--color-accent)] text-white">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-black text-[10px] bg-[var(--color-accent)] text-[var(--color-text-inverse)]">
                 {(auth.username || fallbackInitial).charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0">

@@ -3,6 +3,7 @@ package com.footballverse.telegram.service;
 import com.footballverse.news.model.NewsArticle;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.Jsoup;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -232,11 +233,23 @@ public class TelegramNotificationService {
 
     private String resolveArticleImage(NewsArticle article) {
         if (article == null) return null;
-        if (article.getImageUrl() != null && article.getImageUrl().startsWith("http")) {
-            return article.getImageUrl();
+        String imageUrl = article.getImageUrl();
+        if ((imageUrl == null || imageUrl.isBlank()) && article.getHeroRawItem() != null) {
+            imageUrl = article.getHeroRawItem().getImageUrl();
         }
-        if (article.getHeroRawItem() != null && article.getHeroRawItem().getImageUrl() != null && article.getHeroRawItem().getImageUrl().startsWith("http")) {
-            return article.getHeroRawItem().getImageUrl();
+        if (imageUrl == null || imageUrl.isBlank()) {
+            var media = Jsoup.parse(article.getContent() == null ? "" : article.getContent())
+                    .selectFirst("img[src], video[poster]");
+            imageUrl = media == null ? null : media.hasAttr("src") ? media.attr("src") : media.attr("poster");
+        }
+        return telegramPhotoUrl(imageUrl, gatewayUrl);
+    }
+
+    static String telegramPhotoUrl(String imageUrl, String gatewayUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) return null;
+        if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) return imageUrl;
+        if (imageUrl.startsWith("/uploads/")) {
+            return gatewayUrl.replaceAll("/+$", "") + "/api/v1" + imageUrl;
         }
         return null;
     }

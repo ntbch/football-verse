@@ -26,7 +26,7 @@ interface LeaderboardWidgetProps {
 
 export function LeaderboardWidget({ leaderboard }: LeaderboardWidgetProps) {
   return (
-    <div className="card overflow-hidden flex flex-col">
+    <div className="editorial-panel overflow-hidden flex flex-col">
       <div className="px-5 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h3 className="font-serif-title font-black text-sm m-0 flex items-center gap-1.5">
           <svg className="w-4 h-4 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -42,22 +42,22 @@ export function LeaderboardWidget({ leaderboard }: LeaderboardWidgetProps) {
         </Link>
       </div>
       {leaderboard.length > 0 ? (
-        <div className="divide-y divide-gray-50 flex-1">
+        <div className="divide-y divide-[var(--color-border)] flex-1">
           {leaderboard.slice(0, 5).map((u, i) => (
             <div
               key={u.userId}
-              className="flex items-center justify-between px-5 py-3 hover:bg-gray-50/50 transition-colors"
+              className="flex items-center justify-between px-5 py-3 hover:bg-[var(--color-surface-hover)] transition-colors"
             >
               <div className="flex items-center gap-2.5">
                 <span
                   className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${
                     i === 0
-                      ? "bg-yellow-100 text-yellow-700"
+                      ? "rank-gold"
                       : i === 1
-                        ? "bg-gray-100 text-gray-600"
+                        ? "rank-silver"
                         : i === 2
-                          ? "bg-orange-50 text-orange-600"
-                          : "bg-gray-50 text-[var(--color-text-secondary)]"
+                          ? "rank-bronze"
+                          : "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]"
                   }`}
                 >
                   {i + 1}
@@ -77,7 +77,7 @@ export function LeaderboardWidget({ leaderboard }: LeaderboardWidgetProps) {
       )}
       <Link
         href="/predictions"
-        className="block text-center py-3 border-t border-[var(--color-border)] text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-primary)] hover:bg-gray-50 active:bg-gray-100 transition-all active:scale-[0.98]"
+        className="block text-center py-3 border-t border-[var(--color-border)] text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] active:bg-[var(--color-surface-muted)] transition-all active:scale-[0.98]"
       >
         Make Your Predictions
       </Link>
@@ -94,7 +94,7 @@ interface CommunityWidgetProps {
 
 export function CommunityWidget({ threads }: CommunityWidgetProps) {
   return (
-    <div className="card overflow-hidden flex flex-col">
+    <div className="editorial-panel overflow-hidden flex flex-col">
       <div className="px-5 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h3 className="font-serif-title font-black text-sm m-0 flex items-center gap-1.5">
           <svg className="w-4 h-4 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -110,12 +110,12 @@ export function CommunityWidget({ threads }: CommunityWidgetProps) {
         </Link>
       </div>
       {threads.length > 0 ? (
-        <div className="divide-y divide-gray-50 flex-1">
+        <div className="divide-y divide-[var(--color-border)] flex-1">
           {threads.map((t) => (
             <Link
               key={t.id}
               href={`/forum/threads/${t.slug}`}
-              className="flex flex-col gap-1 px-5 py-3 hover:bg-gray-50/50 transition-colors"
+              className="flex flex-col gap-1 px-5 py-3 hover:bg-[var(--color-surface-hover)] transition-colors"
             >
               <h4 className="text-xs font-bold m-0 leading-snug line-clamp-1 text-[var(--color-text-primary)]">
                 {t.title}
@@ -137,7 +137,7 @@ export function CommunityWidget({ threads }: CommunityWidgetProps) {
       )}
       <Link
         href="/forum"
-        className="block text-center py-3 border-t border-[var(--color-border)] text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-primary)] hover:bg-gray-50 transition-colors"
+        className="block text-center py-3 border-t border-[var(--color-border)] text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] transition-colors"
       >
         Join the Conversation
       </Link>
@@ -155,7 +155,7 @@ interface EditorsPickWidgetProps {
 
 export function EditorsPickWidget({ articles, getImage }: EditorsPickWidgetProps) {
   return (
-    <div className="card overflow-hidden flex flex-col">
+    <div className="editorial-panel overflow-hidden flex flex-col">
       <div className="px-5 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h3 className="font-serif-title font-black text-sm m-0 flex items-center gap-1.5">
           <svg className="w-4 h-4 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -171,14 +171,14 @@ export function EditorsPickWidget({ articles, getImage }: EditorsPickWidgetProps
         </Link>
       </div>
       {articles.length > 0 ? (
-        <div className="divide-y divide-gray-50 flex-1">
+        <div className="divide-y divide-[var(--color-border)] flex-1">
           {articles.map((art) => (
             <Link
               key={art.id}
               href={`/news/${art.slug}`}
-              className="flex gap-3 px-5 py-3 hover:bg-gray-50/50 transition-colors items-center"
+              className="flex gap-3 px-5 py-3 hover:bg-[var(--color-surface-hover)] transition-colors items-center"
             >
-              <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
+              <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-[var(--color-surface-muted)]">
                 <img
                   src={getImage(art.id, art.content)}
                   alt={art.title}
@@ -208,7 +208,7 @@ export function EditorsPickWidget({ articles, getImage }: EditorsPickWidgetProps
       )}
       <Link
         href="/news"
-        className="block text-center py-3 border-t border-[var(--color-border)] text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-primary)] hover:bg-gray-50 transition-colors"
+        className="block text-center py-3 border-t border-[var(--color-border)] text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] transition-colors"
       >
         Browse All Articles
       </Link>

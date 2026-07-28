@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Tab } from "../_navigation";
 import { TABS } from "../_navigation";
+import { ThemeToggle } from "@/shared/components/theme-provider";
 
 const ICONS: Record<Tab, string> = {
   overview: "M3 11.5 12 4l9 7.5M5 10v10h14V10M9 20v-6h6v6",
@@ -22,6 +23,7 @@ export function CareerSidebar({ tab, open, clubMark, clubName, dirty, onClose, o
     <aside className={`career-sidebar ${open ? "is-open" : ""}`} aria-label="Career navigation">
       <div className="career-sidebar-brand"><span className="career-club-mark" aria-hidden="true">{clubMark}</span><div className="career-sidebar-copy"><strong>{clubName}</strong><span>Manager career</span></div></div>
       <nav className="career-nav">{TABS.map((item) => <button key={item.id} title={item.label} aria-label={item.label} aria-current={tab === item.id ? "page" : undefined} onClick={() => onSelect(item.id)}><span className="career-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d={ICONS[item.id]} /></svg></span><span className="career-sidebar-copy">{item.label}</span></button>)}</nav>
+      <ThemeToggle className="career-theme-toggle" />
       <div className="career-sidebar-footer"><Link href="/" title="Back to site" aria-label="Back to site" onClick={(event) => { if (dirty && !window.confirm("Discard unsaved tactics changes?")) event.preventDefault(); }}><span aria-hidden="true">←</span><span className="career-sidebar-copy">Back to site</span></Link></div>
     </aside>
   </>;

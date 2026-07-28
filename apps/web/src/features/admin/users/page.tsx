@@ -11,9 +11,9 @@ import type { AdminUser } from "../types";
 type RoleTab = "ADMIN" | "MODERATOR" | "USER";
 
 const STATUS_STYLES: Record<string, { label: string; bg: string; color: string }> = {
-  ACTIVE: { label: "Active", bg: "rgba(74,124,89,0.12)", color: "#4a7c59" },
-  MUTED: { label: "Muted", bg: "rgba(180,95,53,0.12)", color: "#B45F35" },
-  BANNED: { label: "Banned", bg: "rgba(185,28,28,0.12)", color: "#b91c1c" },
+  ACTIVE: { label: "Active", bg: "var(--color-success-muted)", color: "var(--color-success)" },
+  MUTED: { label: "Muted", bg: "var(--color-accent-muted)", color: "var(--color-accent)" },
+  BANNED: { label: "Banned", bg: "color-mix(in srgb, var(--color-danger) 12%, transparent)", color: "var(--color-danger)" },
 };
 
 export default function AdminUsersPage() {
@@ -133,15 +133,15 @@ export default function AdminUsersPage() {
               const highestRole = isAdmin ? "ADMIN" : isMod ? "MODERATOR" : "USER";
 
               return (
-                <tr key={user.id} className="hover:bg-black/[0.02] transition-colors" style={{ borderBottom: i < filtered.length - 1 ? "1px solid var(--color-border)" : undefined }}>
+                <tr key={user.id} className="hover:bg-[var(--color-surface-hover)] transition-colors" style={{ borderBottom: i < filtered.length - 1 ? "1px solid var(--color-border)" : undefined }}>
                   <td className="py-3 px-4 font-mono text-[10px]" style={{ color: "var(--color-text-secondary)" }}>{user.id}</td>
                   <td className="py-3 px-4 font-bold" style={{ color: "var(--color-text-primary)" }}>@{user.username}</td>
                   <td className="py-3 px-4" style={{ color: "var(--color-text-secondary)" }}>{user.email}</td>
                   <td className="py-3 px-4">
                     <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase" style={
                       highestRole === "ADMIN" ? { background: "rgba(180,95,53,0.12)", color: "var(--color-accent)" }
-                      : highestRole === "MODERATOR" ? { background: "rgba(180,95,53,0.07)", color: "#8B4513" }
-                      : { background: "rgba(109,113,95,0.12)", color: "var(--color-text-secondary)" }
+                      : highestRole === "MODERATOR" ? { background: "var(--color-accent-muted)", color: "var(--color-accent)" }
+                      : { background: "var(--color-surface-muted)", color: "var(--color-text-secondary)" }
                     }>{highestRole}</span>
                   </td>
                   <td className="py-3 px-4">
@@ -167,7 +167,7 @@ export default function AdminUsersPage() {
                         <button
                           onClick={() => updateRoleMutation.mutate({ id: user.id, roles: ["USER"] })}
                           disabled={updateRoleMutation.isPending}
-                          className="px-2.5 py-1 rounded text-[9px] font-black uppercase transition-colors hover:opacity-80 bg-gray-500/10 text-gray-700 border border-gray-500/20 cursor-pointer"
+                          className="px-2.5 py-1 rounded text-[9px] font-black uppercase transition-colors hover:opacity-80 bg-[var(--color-neutral)]/10 text-[var(--color-neutral)] border border-[var(--color-neutral)]/20 cursor-pointer"
                         >
                           Demote
                         </button>
@@ -177,7 +177,7 @@ export default function AdminUsersPage() {
                         <button
                           onClick={() => updateRoleMutation.mutate({ id: user.id, roles: ["USER", "MODERATOR"] })}
                           disabled={updateRoleMutation.isPending}
-                          className="px-2.5 py-1 rounded text-[9px] font-black uppercase transition-colors hover:opacity-80 bg-blue-500/10 text-blue-700 border border-blue-500/20 cursor-pointer"
+                          className="px-2.5 py-1 rounded text-[9px] font-black uppercase transition-colors hover:opacity-80 bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/20 cursor-pointer"
                         >
                           Make Mod
                         </button>
@@ -187,17 +187,17 @@ export default function AdminUsersPage() {
                       {user.status !== "ACTIVE" && (
                         <button onClick={() => updateStatusMutation.mutate({ id: user.id, status: "ACTIVE" })}
                           className="px-2.5 py-1 rounded text-[9px] font-black uppercase transition-colors hover:opacity-80"
-                          style={{ background: "rgba(74,124,89,0.15)", color: "#4a7c59" }}>Activate</button>
+                          style={{ background: "var(--color-success-muted)", color: "var(--color-success)" }}>Activate</button>
                       )}
                       {user.status !== "MUTED" && (
                         <button onClick={() => updateStatusMutation.mutate({ id: user.id, status: "MUTED" })}
                           className="px-2.5 py-1 rounded text-[9px] font-black uppercase transition-colors hover:opacity-80"
-                          style={{ background: "rgba(180,95,53,0.12)", color: "var(--color-accent)" }}>Mute</button>
+                          style={{ background: "var(--color-accent-muted)", color: "var(--color-accent)" }}>Mute</button>
                       )}
                       {user.status !== "BANNED" && (
                         <button onClick={() => updateStatusMutation.mutate({ id: user.id, status: "BANNED" })}
                           className="px-2.5 py-1 rounded text-[9px] font-black uppercase transition-colors hover:opacity-80"
-                          style={{ background: "rgba(185,28,28,0.12)", color: "#b91c1c" }}>Ban</button>
+                          style={{ background: "color-mix(in srgb, var(--color-danger) 12%, transparent)", color: "var(--color-danger)" }}>Ban</button>
                       )}
                     </div>
                   </td>

@@ -146,9 +146,9 @@ export default function RssCrawlerPage() {
         <div className="card p-4 flex items-center gap-6 text-xs" style={{ borderLeft: "3px solid var(--color-accent)" }}>
           <span className="font-black uppercase text-[10px]" style={{ color: "var(--color-accent)" }}>Last Run Result</span>
           {[
-            { label: "Saved", value: crawlResult.saved, color: "#4a7c59" },
+            { label: "Saved", value: crawlResult.saved, color: "var(--color-success)" },
             { label: "Skipped", value: crawlResult.skipped, color: "var(--color-text-secondary)" },
-            { label: "Failed", value: crawlResult.failed, color: "#b91c1c" },
+            { label: "Failed", value: crawlResult.failed, color: "var(--color-danger)" },
           ].map((m) => (
             <div key={m.label} className="flex items-center gap-1.5">
               <span className="font-black tabular-nums text-base" style={{ color: m.color }}>{m.value}</span>
@@ -212,7 +212,7 @@ export default function RssCrawlerPage() {
             {filtered.length === 0 ? (
               <tr><td colSpan={5} className="py-10 text-center text-xs italic" style={{ color: "var(--color-text-secondary)" }}>No metadata sources configured yet.</td></tr>
             ) : filtered.map((src, i) => (
-              <tr key={src.id} className="hover:bg-black/[0.02] transition-colors" style={{ borderBottom: i < filtered.length - 1 ? "1px solid var(--color-border)" : undefined }}>
+              <tr key={src.id} className="hover:bg-[var(--color-surface-hover)] transition-colors" style={{ borderBottom: i < filtered.length - 1 ? "1px solid var(--color-border)" : undefined }}>
                 <td className="py-3 px-4 font-bold" style={{ color: "var(--color-text-primary)" }}>{src.name}</td>
                 <td className="py-3 px-4 max-w-xs">
                   <a href={src.feedUrl} target="_blank" rel="noreferrer" className="font-mono text-[10px] truncate block hover:underline" style={{ color: "var(--color-text-secondary)" }}>{src.feedUrl}</a>
@@ -224,8 +224,8 @@ export default function RssCrawlerPage() {
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex flex-col gap-1">
-                    <span className="inline-flex items-center gap-1 text-[9px] font-black" style={{ color: src.active ? "#4a7c59" : "var(--color-text-secondary)" }}>
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: src.active ? "#4a7c59" : "#9ca3af" }} />
+                    <span className="inline-flex items-center gap-1 text-[9px] font-black" style={{ color: src.active ? "var(--color-success)" : "var(--color-text-secondary)" }}>
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: src.active ? "var(--color-success)" : "var(--color-chart-axis)" }} />
                       {src.active ? "ENABLED" : "DISABLED"}
                     </span>
                     <span className="text-[9px] font-black uppercase" style={{ color: src.autoPublish ? "var(--color-accent)" : "var(--color-text-secondary)" }}>
@@ -237,20 +237,20 @@ export default function RssCrawlerPage() {
                   <div className="flex items-center gap-1.5 justify-end">
                     <button onClick={() => toggleMutation.mutate(src.id)}
                       className="px-2.5 py-1 rounded text-[9px] font-black uppercase hover:opacity-80 transition-opacity"
-                      style={src.active ? { background: "rgba(109,113,95,0.12)", color: "var(--color-text-secondary)" } : { background: "rgba(74,124,89,0.12)", color: "#4a7c59" }}>
+                      style={src.active ? { background: "var(--color-surface-muted)", color: "var(--color-text-secondary)" } : { background: "var(--color-success-muted)", color: "var(--color-success)" }}>
                       {src.active ? "Disable" : "Enable"}
                     </button>
                     <button
                       onClick={() => toggleAutoPublishMutation.mutate(src.id)}
                       disabled={!src.active || toggleAutoPublishMutation.isPending}
                       className="px-2.5 py-1 rounded text-[9px] font-black uppercase hover:opacity-80 transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
-                      style={src.autoPublish ? { background: "rgba(180,95,53,0.12)", color: "var(--color-accent)" } : { background: "rgba(74,124,89,0.12)", color: "#4a7c59" }}
+                      style={src.autoPublish ? { background: "var(--color-accent-muted)", color: "var(--color-accent)" } : { background: "var(--color-success-muted)", color: "var(--color-success)" }}
                     >
                       {src.autoPublish ? "Review" : "Approve"}
                     </button>
                     <button onClick={() => { if (window.confirm(`Delete ${src.name}?`)) deleteMutation.mutate(src.id); }}
                       className="px-2.5 py-1 rounded text-[9px] font-black uppercase hover:opacity-80 transition-opacity"
-                      style={{ background: "rgba(185,28,28,0.12)", color: "#b91c1c" }}>Delete</button>
+                      style={{ background: "color-mix(in srgb, var(--color-danger) 12%, transparent)", color: "var(--color-danger)" }}>Delete</button>
                   </div>
                 </td>
               </tr>

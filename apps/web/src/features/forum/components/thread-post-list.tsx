@@ -33,8 +33,8 @@ export function ThreadPostList({
         return (
           <article
             key={post.id}
-            className={`rounded-2xl border bg-white p-5 shadow-sm transition-all duration-200 ${
-              isBestAnswer ? "border-green-400 bg-green-50/30" : "border-[var(--color-border)]"
+            className={`editorial-panel rounded-2xl border p-5 md:p-6 transition-all duration-200 ${
+              isBestAnswer ? "border-[var(--color-success)] bg-[var(--color-success)]/10" : "border-[var(--color-border)]"
             }`}
           >
             <div className="flex flex-col gap-3">
@@ -44,13 +44,13 @@ export function ThreadPostList({
                   <span aria-hidden="true">·</span>
                   <span>{new Date(post.createdAt).toLocaleDateString()}</span>
                   {index === 0 && (
-                    <span className="flex items-center gap-1 rounded-full bg-slate-900 px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-white shadow-sm">
-                      <span className="h-1 w-1 animate-pulse rounded-full bg-slate-300" /> OP
+                    <span className="flex items-center gap-1 rounded-full bg-[var(--color-text-primary)] px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-[var(--color-text-inverse)] shadow-sm">
+                      <span className="h-1 w-1 animate-pulse rounded-full bg-[var(--color-chart-axis)]" /> OP
                     </span>
                   )}
                   {isBestAnswer && (
-                    <span className="flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-2.5 py-0.5 text-[8px] font-black uppercase tracking-wider text-green-700 shadow-sm">
-                      <span className="h-1 w-1 animate-pulse rounded-full bg-green-500" /> Best Answer
+                    <span className="flex items-center gap-1.5 rounded-full border border-[var(--color-success)] bg-[var(--color-success)]/10 px-2.5 py-0.5 text-[8px] font-black uppercase tracking-wider text-[var(--color-success)] shadow-sm">
+                      <span className="h-1 w-1 animate-pulse rounded-full bg-[var(--color-success)]" /> Best Answer
                     </span>
                   )}
                 </div>
@@ -58,14 +58,14 @@ export function ThreadPostList({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => onReport(post.id)}
-                    className="flex items-center gap-1 font-bold text-[var(--color-text-secondary)] transition-all hover:text-red-500 active:scale-[0.98]"
+                    className="flex items-center gap-1 font-bold text-[var(--color-text-secondary)] transition-all hover:text-[var(--color-danger)] active:scale-[0.98]"
                   >
                     <span aria-hidden="true">⚠</span> Report
                   </button>
                   {canModerate && (
                     <button
                       onClick={() => onToggleHidden(post)}
-                      className="ml-2 font-bold text-[var(--color-text-secondary)] transition-all hover:text-orange-500 active:scale-[0.98]"
+                      className="ml-2 font-bold text-[var(--color-text-secondary)] transition-all hover:text-[var(--color-warning)] active:scale-[0.98]"
                     >
                       {post.hidden ? "Unhide" : "Hide"}
                     </button>
@@ -97,7 +97,7 @@ export function ThreadPostList({
                   <button
                     onClick={isBestAnswer ? onClearBestAnswer : () => onMarkBestAnswer(post.id)}
                     className={`text-xs font-bold transition-all hover:underline active:scale-[0.98] ${
-                      isBestAnswer ? "text-red-500" : "text-green-600"
+                      isBestAnswer ? "text-[var(--color-danger)]" : "text-[var(--color-success)]"
                     }`}
                   >
                     {isBestAnswer ? "Unmark Best Answer" : "Mark as Best Answer"}

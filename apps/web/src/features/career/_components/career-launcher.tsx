@@ -2,6 +2,7 @@ import type { FormEvent } from "react";
 import Link from "next/link";
 import type { CareerSave } from "../_types";
 import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
+import { ThemeToggle } from "@/shared/components/theme-provider";
 
 export function CareerLauncher({ saves, name, loading, error, creating, onNameChange, onCreate, onOpen }: {
   saves?: CareerSave[];
@@ -14,6 +15,7 @@ export function CareerLauncher({ saves, name, loading, error, creating, onNameCh
   onOpen: (saveId: string) => void;
 }) {
   return <main className="career-launcher">
+    <ThemeToggle className="career-launcher-theme" />
     <Link href="/" className="career-launcher-back">← Back to portal</Link>
     <section className="career-launcher-panel" aria-labelledby="career-launcher-title">
       <header><span className="career-launcher-mark" aria-hidden="true">FVF</span><p className="eyebrow">Football Verse Career</p><h1 id="career-launcher-title">Choose your career</h1><p>Continue a saved journey or start a new one.</p></header>

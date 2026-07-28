@@ -123,16 +123,16 @@ export default function ProfilePage() {
 
   return (
     <PublicShell>
-      <div className="flex flex-col gap-6 w-full max-w-5xl mx-auto animate-fade-in mt-4">
+      <div className="flex flex-col gap-8 w-full max-w-5xl mx-auto animate-fade-in mt-4">
         {/* Banner */}
-        <div className="text-center py-6 border-b border-[var(--color-border)]">
-          <h1 className="m-0 font-serif-title font-black text-4xl uppercase tracking-tight text-[var(--color-text-primary)]">
-            User Desk
+        <header className="text-center py-6 border-b border-[var(--color-border)]">
+          <h1 className="m-0 font-serif-title font-black text-4xl tracking-tight text-[var(--color-text-primary)]">
+            Your desk
           </h1>
           <p className="mt-2 font-serif italic text-sm text-[var(--color-text-secondary)]">
             manage your credentials, track your activity, and view saved content
           </p>
-        </div>
+        </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start w-full">
           {/* Left: Profile Info Card */}
@@ -161,13 +161,13 @@ export default function ProfilePage() {
           {/* Right: Tabbed Content */}
           <div className="lg:col-span-2 flex flex-col gap-4 w-full">
             {/* Tab Switcher */}
-            <div className="flex items-center gap-1 bg-white border border-[var(--color-border)] rounded-2xl p-1 shadow-sm">
+            <div className="editorial-panel flex items-center gap-1 p-1.5">
               <button
                 onClick={() => setActiveTab("threads")}
                 className={`flex-1 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5 ${
                   activeTab === "threads"
-                    ? "bg-[var(--color-accent)] text-white shadow-sm"
-                    : "text-[var(--color-text-secondary)] hover:bg-gray-50"
+                    ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
+                    : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]"
                 }`}
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -179,8 +179,8 @@ export default function ProfilePage() {
                 onClick={() => setActiveTab("bookmarks")}
                 className={`flex-1 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5 ${
                   activeTab === "bookmarks"
-                    ? "bg-[var(--color-accent)] text-white shadow-sm"
-                    : "text-[var(--color-text-secondary)] hover:bg-gray-50"
+                    ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
+                    : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]"
                 }`}
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">

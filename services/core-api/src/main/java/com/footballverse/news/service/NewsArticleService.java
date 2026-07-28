@@ -180,6 +180,8 @@ public class NewsArticleService {
         article.setSlug(SlugUtil.uniqueSlug(request.title()));
         article.setSummary(request.summary());
         article.setContent(sanitizer.sanitize(request.content()));
+        article.setImageUrl(request.imageUrl());
+        article.setMediaType(request.imageUrl() == null || request.imageUrl().isBlank() ? "NONE" : "IMAGE");
         article.setStatus(request.status() == null ? ArticleStatus.DRAFT : request.status());
         article.setAuthor(author);
         if (article.getStatus() == ArticleStatus.PUBLISHED) article.setPublishedAt(Instant.now());
@@ -199,6 +201,8 @@ public class NewsArticleService {
         article.setTitle(request.title());
         article.setSummary(request.summary());
         article.setContent(sanitizer.sanitize(request.content()));
+        article.setImageUrl(request.imageUrl());
+        article.setMediaType(request.imageUrl() == null || request.imageUrl().isBlank() ? "NONE" : "IMAGE");
         article.setCategory(request.categoryId() == null ? null : categories.findById(request.categoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("News category not found")));
         article.setTags(request.tags() == null ? Set.of() : request.tags().stream().map(this::tag).collect(Collectors.toSet()));

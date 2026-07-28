@@ -49,7 +49,7 @@ export default function PredictionsPage() {
   // Queries
   const { data: stats, isLoading: statsLoading } = usePredictionStats();
   const { data: lbData, isLoading: lbLoading, error: lbError } = useLeaderboard(lbPeriod);
-  const { data: centre, isLoading: centreLoading, error: centreError } = useMatchCentre(league);
+  const { data: centre, isLoading: centreLoading, error: centreError } = useMatchCentre(league, selectedRound ?? undefined);
 
   const submitMut = useSubmitPrediction();
 
@@ -65,14 +65,10 @@ export default function PredictionsPage() {
     });
   }, [fixtures, tab]);
 
-  // Extract all unique rounds in the current tab client-side
+  // Rounds must come from the API, not just the fixtures currently displayed.
   const availableRounds = useMemo(() => {
-    const rounds = new Set<string>();
-    for (const fix of filteredFixtures) {
-      if (fix.round) rounds.add(fix.round);
-    }
-    return Array.from(rounds);
-  }, [filteredFixtures]);
+    return centre?.rounds ?? [];
+  }, [centre?.rounds]);
 
   // Set default selected round on tab/data change
   useEffect(() => {
@@ -118,7 +114,7 @@ export default function PredictionsPage() {
       <div className="flex flex-col gap-6 w-full animate-fade-in">
         {/* Stats Section at the very top */}
         {auth && stats && (
-          <div className="card p-3 md:p-4 grid grid-cols-5 divide-x divide-[var(--color-border)] bg-[var(--color-background-surface)] shadow-premium">
+          <div className="editorial-panel p-3 md:p-4 grid grid-cols-5 divide-x divide-[var(--color-border)]">
             {[
               { label: "Points", value: stats.totalPoints ?? 0, accent: true },
               { label: "Streak", value: stats.currentStreak ?? 0 },
@@ -152,7 +148,7 @@ export default function PredictionsPage() {
             <select
               value={league}
               onChange={(e) => changeLeague(e.target.value)}
-              className="appearance-none bg-white border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs font-bold uppercase rounded-xl pl-4 pr-9 py-2.5 focus:outline-none cursor-pointer shadow-sm hover:bg-gray-50 transition-colors"
+              className="appearance-none bg-[var(--color-background-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs font-bold uppercase rounded-xl pl-4 pr-9 py-2.5 focus:outline-none cursor-pointer shadow-sm hover:bg-[var(--color-surface-hover)] transition-colors"
             >
               <option value="premier-league">Premier League</option>
             </select>
@@ -169,7 +165,7 @@ export default function PredictionsPage() {
               <select
                 value={selectedRound || ""}
                 onChange={(e) => setSelectedRound(e.target.value)}
-                className="appearance-none bg-white border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs font-bold uppercase rounded-xl pl-4 pr-9 py-2.5 focus:outline-none cursor-pointer shadow-sm hover:bg-gray-50 transition-colors"
+                className="appearance-none bg-[var(--color-background-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs font-bold uppercase rounded-xl pl-4 pr-9 py-2.5 focus:outline-none cursor-pointer shadow-sm hover:bg-[var(--color-surface-hover)] transition-colors"
               >
                 {availableRounds.map((r: string) => (
                   <option key={r} value={r}>
@@ -187,11 +183,11 @@ export default function PredictionsPage() {
         </div>
 
         {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_20rem] gap-8 items-start">
           {/* Left: Fixtures */}
-          <div className="lg:col-span-2 flex flex-col gap-4">
+          <div className="flex flex-col gap-4">
             {/* Tabs - Premium Segmented Control / Pill Style */}
-            <div className="bg-[#E5DFD3] p-1 rounded-xl flex w-full shadow-inner">
+            <div className="bg-[var(--color-surface-muted)] p-1 rounded-xl flex w-full shadow-inner">
               {(["upcoming", "live", "results"] as const).map((t) => {
                 const isActive = tab === t;
                 const label = t === "upcoming" ? "Upcoming" : t === "live" ? "Live" : "Results";
@@ -203,7 +199,7 @@ export default function PredictionsPage() {
                       setExpandedId(null);
                     }}
                     className={`flex-1 py-2 text-xs font-bold text-center rounded-lg transition-all duration-200 cursor-pointer ${isActive
-                      ? "bg-white text-[var(--color-text-primary)] shadow-sm font-black"
+                      ? "bg-[var(--color-background-surface)] text-[var(--color-text-primary)] shadow-sm font-black"
                       : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                       }`}
                   >
@@ -214,7 +210,7 @@ export default function PredictionsPage() {
             </div>
 
             {/* Fixtures list */}
-            <div className="card overflow-hidden">
+            <div className="editorial-panel overflow-hidden">
               {centreLoading ? (
                 <LoadingBlock label="Loading fixtures" />
               ) : centreError ? (
@@ -245,7 +241,7 @@ export default function PredictionsPage() {
                         <div key={fix.id} className="w-full">
                           <button
                             onClick={() => setExpandedId(isExpanded ? null : fix.id)}
-                            className={`w-full flex items-center px-4 md:px-5 py-4 hover:bg-gray-50/50 transition-colors text-left gap-2 ${predicted ? "border-l-[3px] border-l-green-500" : "border-l-[3px] border-l-transparent"
+                            className={`w-full flex items-center px-4 md:px-5 py-4 hover:bg-[var(--color-surface-hover)] transition-colors text-left gap-2 ${predicted ? "border-l-[3px] border-l-green-500" : "border-l-[3px] border-l-transparent"
                               }`}
                           >
                             {/* Home */}
@@ -280,7 +276,7 @@ export default function PredictionsPage() {
                                 </>
                               ) : (
                                 <>
-                                  <span className="text-xs font-black text-[var(--color-text-primary)] bg-gray-50 border border-[var(--color-border)] rounded-lg px-2 py-0.5">
+                                  <span className="text-xs font-black text-[var(--color-text-primary)] bg-[var(--color-surface-muted)] border border-[var(--color-border)] rounded-lg px-2 py-0.5">
                                     {formatTime(fix.kickoff)}
                                   </span>
                                   <span className="text-[8px] text-[var(--color-text-secondary)] mt-0.5">
@@ -306,7 +302,7 @@ export default function PredictionsPage() {
 
                           {/* Expanded Form / Picker / Analytics */}
                           {isExpanded && (
-                            <div className="px-5 py-4 border-t border-[var(--color-border)] bg-gray-50/30">
+                            <div className="prediction-detail px-5 py-5 border-t border-[var(--color-border)]">
                               {/* AI Analytics and Insights */}
                               {fix.aiPrediction && (
                                 <MatchAnalytics match={fix} />
@@ -351,7 +347,7 @@ export default function PredictionsPage() {
                 <div className="w-full">
                   <table className="w-full text-[11px] text-left border-collapse">
                     <thead>
-                      <tr className="text-[var(--color-text-secondary)] border-b border-[var(--color-border)] bg-gray-50/50">
+                      <tr className="text-[var(--color-text-secondary)] border-b border-[var(--color-border)] bg-[var(--color-surface-muted)]">
                         <th className="px-2 py-2 font-bold w-5 text-center">#</th>
                         <th className="py-2 font-bold">Team</th>
                         <th className="text-center py-2 font-bold w-6">P</th>
@@ -365,9 +361,9 @@ export default function PredictionsPage() {
                         <th className="text-right px-2 py-2 font-bold w-7">Pts</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-50">
+                    <tbody className="divide-y divide-[var(--color-border)]">
                       {standings.slice(0, showAllStandings ? 20 : 8).map((s: StandingRow) => (
-                        <tr key={s.teamId} className="hover:bg-gray-50/50 transition-colors">
+                        <tr key={s.teamId} className="hover:bg-[var(--color-surface-hover)] transition-colors">
                           <td className="px-2 py-2 font-black text-[var(--color-text-secondary)] text-center">
                             {s.rank}
                           </td>

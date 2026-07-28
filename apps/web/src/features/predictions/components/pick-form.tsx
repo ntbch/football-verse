@@ -84,7 +84,7 @@ export const PickForm = ({ match, auth, onSuccess }: PickFormProps) => {
       </p>
 
       {/* COMPACT HORIZONTAL MATCH SCORE PICKER */}
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl p-3 shadow-sm w-full">
+      <div className="editorial-panel grid grid-cols-[1fr_auto_1fr] items-center gap-3 p-4 w-full">
         {/* Home Team */}
         <div className="flex items-center gap-2.5 justify-end min-w-0">
           <span className="text-xs font-black uppercase text-[var(--color-text-primary)] truncate text-right">
@@ -93,7 +93,7 @@ export const PickForm = ({ match, auth, onSuccess }: PickFormProps) => {
           {"homeLogo" in match && match.homeLogo ? (
             <img src={match.homeLogo} alt="" className="w-6 h-6 object-contain flex-shrink-0" />
           ) : (
-            <div className="w-6 h-6 rounded-full bg-gray-100 flex-shrink-0 flex items-center justify-center text-[7px] font-bold text-[var(--color-text-secondary)]">
+            <div className="w-6 h-6 rounded-full bg-[var(--color-surface-muted)] flex-shrink-0 flex items-center justify-center text-[7px] font-bold text-[var(--color-text-secondary)]">
               {match.homeTeam.slice(0, 2).toUpperCase()}
             </div>
           )}
@@ -113,7 +113,7 @@ export const PickForm = ({ match, auth, onSuccess }: PickFormProps) => {
           {"awayLogo" in match && match.awayLogo ? (
             <img src={match.awayLogo} alt="" className="w-6 h-6 object-contain flex-shrink-0" />
           ) : (
-            <div className="w-6 h-6 rounded-full bg-gray-100 flex-shrink-0 flex items-center justify-center text-[7px] font-bold text-[var(--color-text-secondary)]">
+            <div className="w-6 h-6 rounded-full bg-[var(--color-surface-muted)] flex-shrink-0 flex items-center justify-center text-[7px] font-bold text-[var(--color-text-secondary)]">
               {match.awayTeam.slice(0, 2).toUpperCase()}
             </div>
           )}
@@ -128,7 +128,7 @@ export const PickForm = ({ match, auth, onSuccess }: PickFormProps) => {
         {/* O/U 2.5 */}
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)] tracking-wider">O/U 2.5:</span>
-          <div className="flex rounded-lg border border-[var(--color-border)] bg-gray-50/50 p-0.5">
+          <div className="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-0.5">
             {(["over", "under"] as const).map((v) => (
               <button
                 key={v}
@@ -136,7 +136,7 @@ export const PickForm = ({ match, auth, onSuccess }: PickFormProps) => {
                 onClick={() => setPickOu25(pickOu25 === v ? null : v)}
                 className={`px-3 py-1 rounded text-[9px] font-bold uppercase transition-all duration-200 active:scale-95 cursor-pointer ${
                   pickOu25 === v
-                    ? "bg-[var(--color-accent)] text-white shadow-sm"
+                    ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
                     : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                 }`}
               >
@@ -149,7 +149,7 @@ export const PickForm = ({ match, auth, onSuccess }: PickFormProps) => {
         {/* BTTS */}
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-bold uppercase text-[var(--color-text-secondary)] tracking-wider">BTTS:</span>
-          <div className="flex rounded-lg border border-[var(--color-border)] bg-gray-50/50 p-0.5">
+          <div className="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-0.5">
             {(["yes", "no"] as const).map((v) => (
               <button
                 key={v}
@@ -157,7 +157,7 @@ export const PickForm = ({ match, auth, onSuccess }: PickFormProps) => {
                 onClick={() => setPickBtts(pickBtts === v ? null : v)}
                 className={`px-3 py-1 rounded text-[9px] font-bold uppercase transition-all duration-200 active:scale-95 cursor-pointer ${
                   pickBtts === v
-                    ? "bg-[var(--color-accent)] text-white shadow-sm"
+                    ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
                     : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                 }`}
               >
@@ -176,10 +176,10 @@ export const PickForm = ({ match, auth, onSuccess }: PickFormProps) => {
           </span>
           <span className={`px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase flex items-center gap-1.5 shadow-sm transition-all duration-300 ${
             calculatedPick === "draw"
-              ? "text-yellow-700 border-yellow-200 bg-yellow-50/80"
+              ? "text-[var(--color-warning)] border-[var(--color-warning)]/30 bg-[var(--color-warning)]/10"
               : calculatedPick === "home"
-              ? "text-green-700 border-green-200 bg-green-50/80"
-              : "text-blue-700 border-blue-200 bg-blue-50/80"
+              ? "text-[var(--color-success)] border-[var(--color-success)]/30 bg-[var(--color-success)]/10"
+              : "text-[var(--color-info)] border-[var(--color-info)]/30 bg-[var(--color-info)]/10"
           }`}>
             {calculatedPick === "home" ? <HomeIcon /> : calculatedPick === "away" ? <AwayIcon /> : <DrawIcon />}
             {outcomeLabel}
@@ -197,7 +197,7 @@ export const PickForm = ({ match, auth, onSuccess }: PickFormProps) => {
       </div>
 
       {error ? (
-        <p className="text-xs font-bold text-red-500">
+        <p className="text-xs font-bold text-[var(--color-danger)]">
           {(error as { response?: { data?: { message?: string } } }).response?.data?.message ??
             "Failed to save prediction"}
         </p>

@@ -66,18 +66,18 @@ export default function AdminDashboardPage() {
   const signupPeak = growth.length > 0 ? Math.max(...growth.map((g) => g.count)) : 0;
 
   const articleBreakdown = [
-    { name: "Published", value: stats?.publishedArticles ?? 0, color: "#4a7c59" },
-    { name: "Drafts", value: stats?.draftArticles ?? 0, color: "#B45F35" },
-    { name: "Archived", value: stats?.archivedArticles ?? 0, color: "#9ca3af" },
+    { name: "Published", value: stats?.publishedArticles ?? 0, color: "var(--color-success)" },
+    { name: "Drafts", value: stats?.draftArticles ?? 0, color: "var(--color-accent)" },
+    { name: "Archived", value: stats?.archivedArticles ?? 0, color: "var(--color-chart-axis)" },
   ];
 
   const CHART_COLORS = {
-    axis: "#9ca3af",
-    tooltip_bg: "#FFFDF9",
-    tooltip_border: "#D8D0BC",
-    area_stroke: "#B45F35",
-    area_fill_start: "rgba(180,95,53,0.15)",
-    area_fill_end: "rgba(180,95,53,0)",
+    axis: "var(--color-chart-axis)",
+    tooltip_bg: "var(--color-background-surface)",
+    tooltip_border: "var(--color-border)",
+    area_stroke: "var(--color-accent)",
+    area_fill_start: "var(--color-accent)",
+    area_fill_end: "var(--color-accent)",
   };
 
   return (
@@ -92,8 +92,8 @@ export default function AdminDashboardPage() {
             {new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
           </p>
         </div>
-        <div className="flex items-center gap-1.5 text-[10px] font-bold" style={{ color: "#4a7c59" }}>
-          <span className="w-1.5 h-1.5 rounded-full bg-green-600 animate-pulse inline-block" />
+        <div className="flex items-center gap-1.5 text-[10px] font-bold" style={{ color: "var(--color-success)" }}>
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)] animate-pulse inline-block" />
           LIVE
         </div>
       </div>
@@ -140,14 +140,14 @@ export default function AdminDashboardPage() {
                 <AreaChart data={growth} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
                   <defs>
                     <linearGradient id="growthGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#B45F35" stopOpacity={0.2} />
-                      <stop offset="95%" stopColor="#B45F35" stopOpacity={0} />
+                      <stop offset="5%" stopColor="var(--color-accent)" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="var(--color-accent)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="date" stroke={CHART_COLORS.axis} fontSize={9} tickLine={false} tick={{ fill: CHART_COLORS.axis }} tickFormatter={(v) => v.slice(5)} />
                   <YAxis stroke={CHART_COLORS.axis} fontSize={9} tickLine={false} tick={{ fill: CHART_COLORS.axis }} allowDecimals={false} />
-                  <Tooltip contentStyle={{ background: CHART_COLORS.tooltip_bg, border: `1px solid ${CHART_COLORS.tooltip_border}`, borderRadius: 8, fontSize: 11, color: "#10140F" }} labelStyle={{ color: "#6D715F", fontWeight: 700 }} itemStyle={{ color: "#B45F35" }} />
-                  <Area type="monotone" dataKey="count" stroke="#B45F35" strokeWidth={2} fill="url(#growthGrad)" dot={false} />
+                  <Tooltip contentStyle={{ background: CHART_COLORS.tooltip_bg, border: `1px solid ${CHART_COLORS.tooltip_border}`, borderRadius: 8, fontSize: 11, color: "var(--color-text-primary)" }} labelStyle={{ color: "var(--color-text-secondary)", fontWeight: 700 }} itemStyle={{ color: "var(--color-accent)" }} />
+                  <Area type="monotone" dataKey="count" stroke={CHART_COLORS.area_stroke} strokeWidth={2} fill="url(#growthGrad)" dot={false} />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
@@ -168,7 +168,7 @@ export default function AdminDashboardPage() {
                 <BarChart data={articleBreakdown} margin={{ top: 0, right: 0, left: -28, bottom: 0 }}>
                   <XAxis dataKey="name" stroke={CHART_COLORS.axis} fontSize={9} tickLine={false} tick={{ fill: CHART_COLORS.axis }} />
                   <YAxis stroke={CHART_COLORS.axis} fontSize={9} tickLine={false} tick={{ fill: CHART_COLORS.axis }} allowDecimals={false} />
-                  <Tooltip contentStyle={{ background: CHART_COLORS.tooltip_bg, border: `1px solid ${CHART_COLORS.tooltip_border}`, borderRadius: 8, fontSize: 11, color: "#10140F" }} itemStyle={{ color: "#10140F" }} cursor={{ fill: "rgba(16,20,15,0.04)" }} />
+                  <Tooltip contentStyle={{ background: CHART_COLORS.tooltip_bg, border: `1px solid ${CHART_COLORS.tooltip_border}`, borderRadius: 8, fontSize: 11, color: "var(--color-text-primary)" }} itemStyle={{ color: "var(--color-text-primary)" }} cursor={{ fill: "var(--color-surface-hover)" }} />
                   <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                     {articleBreakdown.map((e) => <Cell key={e.name} fill={e.color} />)}
                   </Bar>
@@ -211,24 +211,24 @@ export default function AdminDashboardPage() {
             </thead>
             <tbody>
               {recentUsers.map((u, i) => (
-                <tr key={u.id} className="hover:bg-black/[0.025] transition-colors" style={{ borderBottom: i < recentUsers.length - 1 ? "1px solid var(--color-border)" : undefined }}>
+                <tr key={u.id} className="hover:bg-[var(--color-surface-hover)] transition-colors" style={{ borderBottom: i < recentUsers.length - 1 ? "1px solid var(--color-border)" : undefined }}>
                   <td className="px-5 py-3 font-bold" style={{ color: "var(--color-text-primary)" }}>{u.username}</td>
                   <td className="px-5 py-3 font-medium" style={{ color: "var(--color-text-secondary)" }}>{u.email}</td>
                   <td className="px-5 py-3">
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider" style={
-                      u.roles?.includes("ADMIN") ? { background: "rgba(180,95,53,0.12)", color: "#B45F35" }
-                        : u.roles?.includes("MODERATOR") ? { background: "rgba(180,95,53,0.07)", color: "#8B4513" }
-                          : { background: "rgba(109,113,95,0.12)", color: "#6D715F" }
+                      u.roles?.includes("ADMIN") ? { background: "var(--color-accent-muted)", color: "var(--color-accent)" }
+                        : u.roles?.includes("MODERATOR") ? { background: "var(--color-accent-muted)", color: "var(--color-accent)" }
+                          : { background: "var(--color-surface-muted)", color: "var(--color-text-secondary)" }
                     }>
                       {u.roles?.includes("ADMIN") ? "Admin" : u.roles?.includes("MODERATOR") ? "Mod" : "User"}
                     </span>
                   </td>
                   <td className="px-5 py-3">
                     <span className="inline-flex items-center gap-1 text-[9px] font-black" style={{
-                      color: u.status === "ACTIVE" ? "#4a7c59" : u.status === "BANNED" ? "#b91c1c" : "#6D715F"
+                      color: u.status === "ACTIVE" ? "var(--color-success)" : u.status === "BANNED" ? "var(--color-danger)" : "var(--color-text-secondary)"
                     }}>
                       <span className="w-1.5 h-1.5 rounded-full" style={{
-                        background: u.status === "ACTIVE" ? "#4a7c59" : u.status === "BANNED" ? "#b91c1c" : "#9ca3af"
+                        background: u.status === "ACTIVE" ? "var(--color-success)" : u.status === "BANNED" ? "var(--color-danger)" : "var(--color-chart-axis)"
                       }} />
                       {u.status ?? "—"}
                     </span>

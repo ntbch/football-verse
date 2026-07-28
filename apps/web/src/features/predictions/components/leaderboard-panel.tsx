@@ -26,11 +26,11 @@ export const LeaderboardPanel = ({ error, isLoading, entries }: LeaderboardPanel
           >
             <span className={`w-5 h-5 rounded-full flex items-center justify-center font-black text-[9px] shrink-0 ${
               entry.rank === 1
-                ? "bg-amber-100 text-amber-800 border border-amber-200"
+                ? "rank-gold"
                 : entry.rank === 2
-                ? "bg-slate-100 text-slate-700 border border-slate-200"
+                ? "rank-silver"
                 : entry.rank === 3
-                ? "bg-orange-100 text-orange-800 border border-orange-200"
+                ? "rank-bronze"
                 : "text-[var(--color-text-secondary)]"
             }`}>
               {entry.rank}

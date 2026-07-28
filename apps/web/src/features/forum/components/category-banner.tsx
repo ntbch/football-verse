@@ -15,7 +15,7 @@ export function CategoryBanner({ category }: CategoryBannerProps) {
     <div className={`rounded-2xl border border-[var(--color-border)] overflow-hidden`}>
       <div className={`px-6 py-5 flex items-center justify-between gap-4 ${cfg.bg}`}>
         <div className="flex items-center gap-4">
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-white shadow-sm ${cfg.color}`}>
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-[var(--color-background-surface)] shadow-sm ${cfg.color}`}>
             <span className="scale-[1.4]">{cfg.icon}</span>
           </div>
           <div>
@@ -29,7 +29,7 @@ export function CategoryBanner({ category }: CategoryBannerProps) {
             )}
           </div>
         </div>
-        <div className={`text-center shrink-0 bg-white rounded-xl px-4 py-2.5 shadow-sm`}>
+        <div className={`text-center shrink-0 bg-[var(--color-background-surface)] rounded-xl px-4 py-2.5 shadow-sm`}>
           <div className={`font-black text-2xl tabular-nums ${cfg.color}`}>{category.threadCount}</div>
           <div className="text-[9px] uppercase font-bold tracking-wider text-[var(--color-text-secondary)]">Threads</div>
         </div>

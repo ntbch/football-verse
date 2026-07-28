@@ -25,7 +25,7 @@ export const DEFAULT_FALLBACK_SVG = "data:image/svg+xml;utf8," + encodeURICompon
 </svg>`);
 
 /**
- * Automatically upgrades low-resolution image URLs (e.g. YouTube hqdefault -> maxresdefault, Unsplash 800px -> 1600px)
+ * Automatically upgrades low-resolution image URLs when the provider exposes a larger original.
  */
 export function upgradeImageUrl(url: string): string {
   if (!url) return url;
@@ -42,6 +42,16 @@ export function upgradeImageUrl(url: string): string {
   // Upgrade Unsplash quality parameters to 1600px width & 90% quality
   if (cleanUrl.includes("images.unsplash.com")) {
     cleanUrl = cleanUrl.replace(/w=\d+/, "w=1600").replace(/q=\d+/, "q=90");
+  }
+
+  // Google News often serves a small Googleusercontent rendition such as =w120-h120.
+  if (cleanUrl.includes("googleusercontent.com")) {
+    cleanUrl = cleanUrl.replace(/=w\d+(?:-h\d+)?(?:-[a-z0-9]+)*/i, "=w1600-h900");
+  }
+
+  // WordPress feeds commonly expose a generated 300x169 thumbnail while the original is available beside it.
+  if (cleanUrl.includes("/wp-content/uploads/")) {
+    cleanUrl = cleanUrl.replace(/-\d{2,4}x\d{2,4}(?=\.(?:avif|jpe?g|png|webp)(?:[?#]|$))/i, "");
   }
 
   return cleanUrl;
@@ -82,7 +92,7 @@ export function handleImageError(e: React.SyntheticEvent<HTMLImageElement, Event
 
   if (!target.dataset.fallbackTried) {
     target.dataset.fallbackTried = "true";
-    target.src = fallbackUrl ? upgradeImageUrl(fallbackUrl) : FOOTBALL_IMAGES[0];
+    target.src = fallbackUrl || FOOTBALL_IMAGES[0];
   } else if (target.dataset.fallbackTried === "true") {
     target.dataset.fallbackTried = "done";
     target.src = DEFAULT_FALLBACK_SVG;

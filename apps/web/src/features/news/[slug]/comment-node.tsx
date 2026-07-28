@@ -81,7 +81,7 @@ export const CommentNode = ({
               <button
                 onClick={() => onReplySubmit(comment.id)}
                 disabled={isSubmittingReply}
-                className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase bg-[var(--color-accent)] text-white hover:opacity-90 disabled:opacity-50 transition-all active:scale-[0.98]"
+                className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase bg-[var(--color-accent)] text-[var(--color-text-inverse)] hover:opacity-90 disabled:opacity-50 transition-all active:scale-[0.98]"
               >
                 {isSubmittingReply
                   ? "Submitting..."
@@ -92,7 +92,7 @@ export const CommentNode = ({
                   onReplyTargetChange(null);
                   onReplyTextChange("");
                 }}
-                className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-black/5 transition-all active:scale-[0.98]"
+                className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] transition-all active:scale-[0.98]"
               >
                 Cancel
               </button>

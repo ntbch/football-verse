@@ -198,10 +198,10 @@ export default function MatchCentrePage() {
       <div className="grid xl:grid-cols-[1.25fr_1fr] gap-5 items-start">
         <div className="flex flex-col gap-5">
           <section className="card p-5">
-            <div className="aspect-video rounded-xl border border-emerald-300/20 bg-[linear-gradient(90deg,rgba(16,80,52,.94),rgba(23,105,67,.92))] grid place-items-center text-center text-white overflow-hidden relative">
-              <div className="absolute inset-y-0 left-1/2 border-l border-white/30" /><div className="absolute w-24 h-24 rounded-full border border-white/30" />
-              <div className="relative z-10 rounded-xl bg-black/45 px-5 py-4 max-w-sm">
-                <p className="text-xs uppercase tracking-widest text-white/70">{latest?.zone?.replaceAll("_", " ") ?? "Middle"}</p>
+            <div className="match-pitch aspect-video rounded-xl grid place-items-center text-center text-[var(--color-text-inverse)] overflow-hidden relative">
+              <div className="absolute inset-y-0 left-1/2 border-l border-[var(--color-text-inverse)]/30" /><div className="absolute w-24 h-24 rounded-full border border-[var(--color-text-inverse)]/30" />
+              <div className="relative z-10 rounded-xl bg-[var(--color-overlay)] px-5 py-4 max-w-sm">
+                <p className="text-xs uppercase tracking-widest text-[var(--color-story-muted)]">{latest?.zone?.replaceAll("_", " ") ?? "Middle"}</p>
                 <strong>{latest ? eventText(latest, liveTeamName(latest.team_id), latest.player_id ? names.get(latest.player_id) ?? "Player" : "") : "Kick-off ready"}</strong>
               </div>
             </div>

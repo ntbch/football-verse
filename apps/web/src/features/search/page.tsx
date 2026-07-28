@@ -61,10 +61,10 @@ function SearchContent() {
 
   return (
     <PublicShell>
-      <div className="flex flex-col gap-6 w-full max-w-7xl mx-auto animate-fade-in mt-4 px-4">
+      <div className="flex flex-col gap-8 w-full max-w-[1440px] mx-auto animate-fade-in mt-4">
         {/* Search Header */}
-        <div className="text-center py-6 border-b border-[var(--color-border)] mb-4">
-          <h1 className="m-0 font-serif-title font-black text-3xl md:text-4xl uppercase tracking-tight text-[var(--color-text-primary)]">
+        <header className="text-center py-6 border-b border-[var(--color-border)]">
+          <h1 className="m-0 font-serif-title font-black text-3xl md:text-4xl tracking-tight text-[var(--color-text-primary)]">
             Search Results
           </h1>
           {q.trim() ? (
@@ -76,12 +76,12 @@ function SearchContent() {
               Enter a search query in the header to find publications and discussions.
             </p>
           )}
-        </div>
+        </header>
 
         {q.trim() && (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+          <div className="grid grid-cols-1 xl:grid-cols-[15rem_minmax(0,1fr)] gap-8 items-start">
             {/* Sidebar Filters */}
-            <aside className="lg:col-span-1 flex flex-col gap-4 lg:sticky lg:top-24">
+            <aside className="flex flex-col gap-4 xl:sticky xl:top-24">
               {/* Category Filter */}
               <div className="card overflow-hidden">
                 <div className="px-5 py-3.5 border-b border-[var(--color-border)] bg-[var(--color-background-body)]/30">
@@ -100,7 +100,7 @@ function SearchContent() {
                     onClick={() => setSelectedCategory(null)}
                     className={`w-full px-3 py-2 rounded-xl text-left text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
                       selectedCategory === null
-                        ? "bg-[var(--color-accent)] text-white shadow-sm"
+                        ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
                         : "text-[var(--color-text-secondary)] hover:bg-[var(--color-background-body)]/40 hover:text-[var(--color-text-primary)]"
                     }`}
                   >
@@ -118,13 +118,13 @@ function SearchContent() {
                         onClick={() => setSelectedCategory(cat)}
                         className={`w-full px-3 py-2 rounded-xl text-left text-xs font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-between ${
                           selectedCategory === cat
-                            ? "bg-[var(--color-accent)] text-white shadow-sm"
+                            ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
                             : "text-[var(--color-text-secondary)] hover:bg-[var(--color-background-body)]/40 hover:text-[var(--color-text-primary)]"
                         }`}
                       >
                         <span className="truncate mr-2">{cat}</span>
                         <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${
-                          selectedCategory === cat ? "bg-white/20 text-white" : "bg-[var(--color-background-body)] text-[var(--color-text-secondary)]"
+                          selectedCategory === cat ? "bg-[var(--color-text-inverse)]/20 text-[var(--color-text-inverse)]" : "bg-[var(--color-background-body)] text-[var(--color-text-secondary)]"
                         }`}>
                           {count}
                         </span>
@@ -179,13 +179,13 @@ function SearchContent() {
                         onClick={() => setTimeFilter(val)}
                         className={`w-full px-3 py-2 rounded-xl text-left text-xs font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-between ${
                           timeFilter === val
-                            ? "bg-[var(--color-accent)] text-white shadow-sm"
+                            ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
                             : "text-[var(--color-text-secondary)] hover:bg-[var(--color-background-body)]/40 hover:text-[var(--color-text-primary)]"
                         }`}
                       >
                         <span>{label}</span>
                         <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${
-                          timeFilter === val ? "bg-white/20 text-white" : "bg-[var(--color-background-body)] text-[var(--color-text-secondary)]"
+                          timeFilter === val ? "bg-[var(--color-text-inverse)]/20 text-[var(--color-text-inverse)]" : "bg-[var(--color-background-body)] text-[var(--color-text-secondary)]"
                         }`}>
                           {count}
                         </span>
@@ -197,7 +197,7 @@ function SearchContent() {
             </aside>
 
             {/* Main Panel */}
-            <div className="lg:col-span-3">
+            <div>
               {/* Tabs */}
               <div className="flex justify-center border-b border-[var(--color-border)] mb-6 gap-6">
                 <button
@@ -251,7 +251,7 @@ function SearchContent() {
                             fetchPriority={idx < 3 ? "high" : "auto"}
                             className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
                           />
-                          <div className="absolute top-2 left-2 bg-[var(--color-accent)] text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
+                          <div className="absolute top-2 left-2 bg-[var(--color-accent)] text-[var(--color-text-inverse)] text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
                             {art.category || "Others"}
                           </div>
                         </div>

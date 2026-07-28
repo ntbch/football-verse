@@ -200,7 +200,7 @@ export default function ThreadDetailPage() {
 
   return (
     <PublicShell>
-      <div className="mx-auto mt-4 flex w-full max-w-4xl animate-fade-in flex-col gap-6">
+      <div className="mx-auto mt-4 flex w-full max-w-5xl animate-fade-in flex-col gap-7">
         <ThreadHeader
           thread={thread}
           canModerate={canModerate}

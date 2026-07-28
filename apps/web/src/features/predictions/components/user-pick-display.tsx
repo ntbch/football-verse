@@ -11,8 +11,8 @@ type UserPickDisplayProps = {
 const marketResultStyle = (hit: boolean, isResult: boolean) => {
   if (!isResult) return "border border-[var(--color-border)] px-3 py-1.5 rounded-xl text-[var(--color-text-primary)] bg-[var(--color-background-surface)] flex items-center gap-2";
   return hit
-    ? "bg-green-500 text-white px-3 py-1.5 rounded-xl border border-green-600 shadow-sm flex items-center gap-2"
-    : "bg-red-500 text-white px-3 py-1.5 rounded-xl border border-red-600 shadow-sm flex items-center gap-2";
+    ? "bg-[var(--color-success)] text-[var(--color-text-inverse)] px-3 py-1.5 rounded-xl border border-[var(--color-success)] shadow-sm flex items-center gap-2"
+    : "bg-[var(--color-danger)] text-[var(--color-text-inverse)] px-3 py-1.5 rounded-xl border border-[var(--color-danger)] shadow-sm flex items-center gap-2";
 };
 
 export const UserPickDisplay = ({ match, prediction }: UserPickDisplayProps) => {
@@ -35,14 +35,14 @@ export const UserPickDisplay = ({ match, prediction }: UserPickDisplayProps) => 
         {isResult ? (
           <span
             className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm ${
-              correct ? "bg-green-500 text-white" : "bg-red-500 text-white"
+              correct ? "bg-[var(--color-success)] text-[var(--color-text-inverse)]" : "bg-[var(--color-danger)] text-[var(--color-text-inverse)]"
             }`}
           >
             {correct ? <CheckIcon /> : <CrossIcon />}
             {correct ? `+${prediction.points} PTS` : "MISSED"}
           </span>
         ) : (
-          <span className="text-[9px] font-bold text-green-600 uppercase bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
+          <span className="text-[9px] font-bold text-[var(--color-success)] uppercase bg-[var(--color-success)]/10 px-2 py-0.5 rounded-full border border-[var(--color-success)]/30">
             Locked
           </span>
         )}
@@ -66,7 +66,7 @@ export const UserPickDisplay = ({ match, prediction }: UserPickDisplayProps) => 
 
         {prediction.pickOu25 && (
           <div className={marketResultStyle(ou25Hit, isResult)}>
-            <span className={`text-[9px] uppercase ${isResult ? "text-white/80" : "text-[var(--color-text-secondary)]"}`}>O/U 2.5:</span>
+            <span className={`text-[9px] uppercase ${isResult ? "text-[var(--color-text-inverse)]/80" : "text-[var(--color-text-secondary)]"}`}>O/U 2.5:</span>
             <span>{prediction.pickOu25.toUpperCase()}</span>
             {isResult && (ou25Hit ? <CheckIcon /> : <CrossIcon />)}
           </div>
@@ -74,7 +74,7 @@ export const UserPickDisplay = ({ match, prediction }: UserPickDisplayProps) => 
 
         {prediction.pickBtts && (
           <div className={marketResultStyle(bttsHit, isResult)}>
-            <span className={`text-[9px] uppercase ${isResult ? "text-white/80" : "text-[var(--color-text-secondary)]"}`}>BTTS:</span>
+            <span className={`text-[9px] uppercase ${isResult ? "text-[var(--color-text-inverse)]/80" : "text-[var(--color-text-secondary)]"}`}>BTTS:</span>
             <span>{prediction.pickBtts.toUpperCase()}</span>
             {isResult && (bttsHit ? <CheckIcon /> : <CrossIcon />)}
           </div>

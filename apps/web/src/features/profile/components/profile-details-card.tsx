@@ -47,7 +47,7 @@ export function ProfileDetailsCard({
 
   return (
     <div className="card overflow-hidden">
-      <div className="px-5 py-3.5 border-b border-[var(--color-border)] bg-gray-50/50">
+      <div className="px-5 py-3.5 border-b border-[var(--color-border)] bg-[var(--color-surface-subtle)]">
         <h3 className="font-serif-title font-black text-sm m-0 uppercase tracking-wider text-[var(--color-text-primary)] flex items-center gap-1.5">
           <svg className="w-4 h-4 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -140,7 +140,7 @@ export function ProfileDetailsCard({
               <span
                 id="avatar-fallback"
                 style={{ display: profile?.avatarUrl ? "none" : "flex" }}
-                className="w-20 h-20 rounded-full bg-[var(--color-accent)] flex items-center justify-center font-serif-title font-black text-3xl text-white shadow-md"
+                className="w-20 h-20 rounded-full bg-[var(--color-accent)] flex items-center justify-center font-serif-title font-black text-3xl text-[var(--color-text-inverse)] shadow-md"
               >
                 {(profile?.displayName || auth?.username)?.[0]?.toUpperCase() || "?"}
               </span>

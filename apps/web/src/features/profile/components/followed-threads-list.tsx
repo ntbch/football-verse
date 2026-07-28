@@ -18,7 +18,7 @@ export function FollowedThreadsList({ threads, isLoading }: FollowedThreadsListP
 
   if (threads.length === 0) {
     return (
-      <div className="text-center py-16 bg-white border border-[var(--color-border)] rounded-2xl p-8 flex flex-col items-center gap-3">
+      <div className="text-center py-16 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl p-8 flex flex-col items-center gap-3">
         <h3 className="m-0 font-serif-title font-black text-xl text-[var(--color-text-primary)]">
           No Followed Threads
         </h3>
@@ -37,7 +37,7 @@ export function FollowedThreadsList({ threads, isLoading }: FollowedThreadsListP
       {threads.map((thread) => (
         <div
           key={thread.id}
-          className="p-5 border border-[var(--color-border)] bg-white rounded-2xl shadow-sm hover:shadow-md hover:border-[var(--color-accent)]/30 transition-all duration-200"
+          className="p-5 border border-[var(--color-border)] bg-[var(--color-background-surface)] rounded-2xl shadow-sm hover:shadow-md hover:border-[var(--color-accent)]/30 transition-all duration-200"
         >
           <div className="flex items-start justify-between flex-wrap gap-3">
             <div className="flex flex-col gap-1.5 flex-1 min-w-0">

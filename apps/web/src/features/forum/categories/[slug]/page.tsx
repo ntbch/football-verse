@@ -41,7 +41,7 @@ export default function ForumCategoryPage() {
 
   return (
     <PublicShell>
-      <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto animate-fade-in mt-4">
+      <div className="flex flex-col gap-7 w-full max-w-5xl mx-auto animate-fade-in mt-4">
         {/* Breadcrumb */}
         <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3">
           <Link
@@ -56,8 +56,9 @@ export default function ForumCategoryPage() {
         </div>
 
         {/* Category Header */}
-        <div className="flex flex-col gap-2">
-          <h1 className="m-0 font-serif-title font-black text-2xl md:text-3xl text-[var(--color-text-primary)]">
+        <header className="editorial-panel p-6 md:p-8 flex flex-col gap-3">
+          <p className="editorial-kicker m-0">Forum category</p>
+          <h1 className="m-0 font-serif-title font-black text-3xl md:text-4xl text-[var(--color-text-primary)] leading-[1.1]">
             {categoryName}
           </h1>
           {category?.description && (
@@ -65,11 +66,11 @@ export default function ForumCategoryPage() {
               {category.description}
             </p>
           )}
-        </div>
+        </header>
 
         {/* Thread List */}
         {threads.length === 0 ? (
-          <div className="text-center py-16 bg-white border border-[var(--color-border)] rounded-2xl p-8 flex flex-col items-center gap-3">
+          <div className="editorial-panel text-center py-16 p-8 flex flex-col items-center gap-3">
             <h3 className="m-0 font-serif-title font-black text-xl text-[var(--color-text-primary)]">
               No Threads Yet
             </h3>
@@ -82,7 +83,7 @@ export default function ForumCategoryPage() {
             {threads.map((thread) => (
               <div
                 key={thread.id}
-                className="p-5 border border-[var(--color-border)] bg-white rounded-2xl shadow-sm hover:shadow-md hover:border-[var(--color-accent)]/30 transition-all duration-200"
+                className="editorial-panel p-5 hover:border-[var(--color-accent)]/30 transition-all duration-200"
               >
                 <div className="flex items-start justify-between flex-wrap gap-3">
                   <div className="flex flex-col gap-1.5 flex-1 min-w-0">
@@ -101,7 +102,7 @@ export default function ForumCategoryPage() {
                         </span>
                       )}
                       {thread.locked && (
-                        <span className="bg-red-50 text-red-600 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase">
+                        <span className="bg-[var(--color-danger)]/10 text-[var(--color-danger)] px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase">
                           Locked
                         </span>
                       )}

@@ -76,11 +76,11 @@ export default function HomePage() {
         {newsLoading ? (
           <LoadingBlock label="Loading headlines" />
         ) : hero ? (
-          <section className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          <section className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-stretch">
             {/* Main Hero — 3 cols */}
             <Link
               href={`/news/${hero.slug}`}
-              className="lg:col-span-3 relative rounded-2xl overflow-hidden min-h-[380px] md:min-h-[460px] group block shadow-lg hover:shadow-xl transition-shadow duration-500 bg-gray-100"
+              className="xl:col-span-7 editorial-story relative min-h-[390px] md:min-h-[500px] group block bg-[var(--color-surface-muted)] transition-shadow duration-500"
             >
               <img
                 src={getArticleImage(hero.id, hero.content, hero.imageUrl)}
@@ -90,18 +90,18 @@ export default function HomePage() {
                 onError={handleImageError}
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
-                <span className="inline-block px-3 py-1 rounded-full bg-[var(--color-accent)] text-white text-[10px] font-bold uppercase tracking-wider mb-3 shadow-sm">
+              <div className="story-overlay story-overlay-strong absolute inset-0" />
+              <div className="absolute bottom-0 left-0 right-0 p-6 md:p-9">
+                <span className="story-category inline-block px-3.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-4 shadow-sm">
                   {hero.category || "Top Story"}
                 </span>
-                <h1 className="font-serif-title font-black text-2xl md:text-[2.5rem] text-white leading-[1.15] tracking-tight mb-2">
+                <h2 className="font-serif-title font-black text-3xl md:text-[2.8rem] text-[var(--color-story-text)] leading-[1.08] tracking-tight mb-3 max-w-3xl">
                   {hero.title}
-                </h1>
-                <p className="text-gray-300 text-xs md:text-sm leading-relaxed line-clamp-2 max-w-lg mb-3">
+                </h2>
+                <p className="text-[var(--color-story-muted)] text-sm leading-relaxed line-clamp-2 max-w-xl mb-4">
                   {hero.summary}
                 </p>
-                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
+                <span className="text-[10px] text-[var(--color-story-muted)] font-semibold uppercase tracking-wider">
                   {timeAgo(hero.publishedAt)}
                   {hero.contentKind === "AGGREGATED_STORY" && ` · ${hero.sourceCount || 1} source${(hero.sourceCount || 1) === 1 ? "" : "s"}`}
                 </span>
@@ -109,12 +109,12 @@ export default function HomePage() {
             </Link>
 
             {/* Side stories — 2 cols stacked */}
-            <div className="lg:col-span-2 flex flex-col gap-4">
+            <div className="xl:col-span-5 flex flex-col gap-5">
               {secondary.map((art) => (
                 <Link
                   key={art.id}
                   href={`/news/${art.slug}`}
-                  className="relative flex-1 rounded-2xl overflow-hidden min-h-[180px] md:min-h-[220px] group block shadow-md hover:shadow-lg transition-shadow duration-500 bg-gray-100"
+                  className="editorial-story relative flex-1 min-h-[205px] group block bg-[var(--color-surface-muted)] transition-shadow duration-500"
                 >
                   <img
                     src={getArticleImage(art.id, art.content, art.imageUrl)}
@@ -123,15 +123,15 @@ export default function HomePage() {
                     onError={handleImageError}
                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-5">
-                    <span className="inline-block px-2 py-0.5 rounded-full bg-white/90 text-[var(--color-accent)] text-[9px] font-bold uppercase tracking-wider mb-2">
+                  <div className="story-overlay absolute inset-0" />
+                  <div className="absolute bottom-0 left-0 right-0 p-5 md:p-6">
+                    <span className="story-category story-category-light inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider mb-2">
                       {art.category || "News"}
                     </span>
-                    <h2 className="font-serif-title font-black text-sm md:text-base text-white leading-snug line-clamp-2">
+                    <h3 className="font-serif-title font-black text-base md:text-lg text-[var(--color-story-text)] leading-snug line-clamp-2">
                       {art.title}
-                    </h2>
-                    <span className="text-[10px] text-gray-400 font-semibold mt-1 block">
+                    </h3>
+                    <span className="text-[10px] text-[var(--color-story-muted)] font-semibold mt-1 block">
                       {timeAgo(art.publishedAt)}
                       {art.contentKind === "AGGREGATED_STORY" && ` · ${art.sourceCount || 1} source${(art.sourceCount || 1) === 1 ? "" : "s"}`}
                     </span>
@@ -139,7 +139,7 @@ export default function HomePage() {
                 </Link>
               ))}
               {secondary.length === 0 && (
-                <div className="flex-1 rounded-2xl bg-gradient-to-br from-[var(--color-background-body)] to-white border border-[var(--color-border)] flex items-center justify-center p-8">
+                <div className="editorial-panel flex-1 flex items-center justify-center p-8">
                   <p className="text-xs text-[var(--color-text-secondary)] font-serif italic">
                     More stories coming soon.
                   </p>
@@ -148,7 +148,7 @@ export default function HomePage() {
             </div>
           </section>
         ) : (
-          <section className="rounded-2xl bg-white border border-[var(--color-border)] p-16 text-center shadow-sm">
+          <section className="editorial-panel p-16 text-center">
             <p className="text-sm text-[var(--color-text-secondary)] font-serif italic">
               No stories published yet.
             </p>
@@ -156,13 +156,14 @@ export default function HomePage() {
         )}
 
         {/* MAIN CONTENT GRID (2/3 News Feed + 1/3 Widgets Sidebar) */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_20rem] gap-8 items-start">
           {/* Left Column — 2/3: News Feed */}
-          <div className="lg:col-span-2 flex flex-col gap-6">
+          <div className="flex flex-col gap-7">
             {mainFeed.length > 0 && (
               <section>
-                <div className="flex items-center justify-between mb-4 border-b border-[var(--color-border)] pb-2">
-                  <h3 className="font-serif-title font-black text-lg tracking-tight m-0">Latest Stories</h3>
+                <div className="flex items-center gap-4 mb-5">
+                  <h3 className="editorial-section-title m-0">Latest stories</h3>
+                  <span className="editorial-rule" />
                   <Link
                     href="/news"
                     className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-accent)] hover:underline underline-offset-4 transition-colors"
@@ -170,14 +171,14 @@ export default function HomePage() {
                     View all →
                   </Link>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {mainFeed.map((art) => (
                     <Link
                       key={art.id}
                       href={`/news/${art.slug}`}
-                      className="group card overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col"
+                      className="group editorial-panel overflow-hidden transition-all duration-300 flex flex-col"
                     >
-                      <div className="relative h-40 overflow-hidden bg-gray-100">
+                      <div className="relative h-48 overflow-hidden bg-[var(--color-surface-muted)]">
                         <img
                           src={getArticleImage(art.id, art.content, art.imageUrl)}
                           alt={art.title}
@@ -186,13 +187,13 @@ export default function HomePage() {
                           className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500 ease-out"
                         />
                         <div className="absolute top-3 left-3">
-                          <span className="px-2 py-0.5 rounded-full bg-white/90 text-[var(--color-accent)] text-[8px] font-bold uppercase tracking-wider shadow-sm backdrop-blur-sm">
+                          <span className="story-category story-category-light px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider shadow-sm backdrop-blur-sm">
                             {art.category || "News"}
                           </span>
                         </div>
                       </div>
-                      <div className="p-4 flex flex-col gap-2 flex-1">
-                        <h4 className="font-serif-title font-black text-sm leading-snug m-0 text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] transition-colors duration-200 line-clamp-2">
+                      <div className="p-5 flex flex-col gap-2.5 flex-1">
+                        <h4 className="font-serif-title font-black text-base leading-snug m-0 text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] transition-colors duration-200 line-clamp-2">
                           {art.title}
                         </h4>
                         <p className="text-[11px] text-[var(--color-text-secondary)] leading-relaxed line-clamp-2 flex-1">
@@ -204,7 +205,7 @@ export default function HomePage() {
                             {art.contentKind === "AGGREGATED_STORY" && ` · ${art.sourceCount || 1} source${(art.sourceCount || 1) === 1 ? "" : "s"}`}
                           </span>
                           {art.tags?.[0] && (
-                            <span className="text-[8px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-gray-50 text-[var(--color-text-secondary)] border border-gray-100">
+                            <span className="text-[8px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-[var(--color-surface-subtle)] text-[var(--color-text-secondary)] border border-[var(--color-border)]">
                               {art.tags[0]}
                             </span>
                           )}
@@ -218,11 +219,11 @@ export default function HomePage() {
           </div>
 
           {/* Right Column — 1/3: Widgets Sidebar */}
-          <div className="flex flex-col gap-6">
+          <aside className="flex flex-col gap-5 xl:sticky xl:top-24">
             <LeaderboardWidget leaderboard={leaderboard} />
             <CommunityWidget threads={threads} />
             <EditorsPickWidget articles={sideArticles} getImage={getArticleImage} />
-          </div>
+          </aside>
         </div>
       </div>
     </PublicShell>

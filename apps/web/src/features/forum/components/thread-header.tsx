@@ -15,7 +15,7 @@ export function ThreadHeader({
   onToggleLocked,
 }: ThreadHeaderProps) {
   return (
-    <>
+    <header className="editorial-panel p-6 md:p-8 flex flex-col gap-5">
       <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3 text-xs">
         <Link
           href="/forum"
@@ -30,7 +30,8 @@ export function ThreadHeader({
       </div>
 
       <div className="flex flex-col gap-3">
-        <h1 className="m-0 font-serif-title text-2xl font-black tracking-tight text-[var(--color-text-primary)] md:text-3xl">
+        <p className="editorial-kicker m-0">Community discussion</p>
+        <h1 className="m-0 font-serif-title text-3xl font-black tracking-tight text-[var(--color-text-primary)] md:text-4xl leading-[1.1]">
           {thread.title}
         </h1>
 
@@ -39,7 +40,7 @@ export function ThreadHeader({
             {thread.tags.map((tag) => (
               <span
                 key={tag}
-                className="rounded-full bg-gray-100 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[var(--color-text-secondary)]"
+                className="rounded-full bg-[var(--color-surface-muted)] px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[var(--color-text-secondary)]"
               >
                 {tag}
               </span>
@@ -48,14 +49,14 @@ export function ThreadHeader({
         )}
 
         {canModerate && (
-          <div className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-white p-3 text-[10px] font-bold uppercase shadow-sm">
+          <div className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background-surface)] p-3 text-[10px] font-bold uppercase shadow-sm">
             <span className="self-center px-2 text-[var(--color-text-secondary)]">Mod Ops:</span>
             <button
               onClick={onTogglePinned}
               className={`rounded-full px-3 py-1 transition-colors ${
                 thread.pinned
                   ? "bg-amber-100 text-amber-700"
-                  : "bg-gray-100 text-[var(--color-text-secondary)] hover:bg-gray-200"
+                  : "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]"
               }`}
             >
               {thread.pinned ? "Unpin" : "Pin"}
@@ -64,8 +65,8 @@ export function ThreadHeader({
               onClick={onToggleLocked}
               className={`rounded-full px-3 py-1 transition-colors ${
                 thread.locked
-                  ? "bg-red-50 text-red-600"
-                  : "bg-gray-100 text-[var(--color-text-secondary)] hover:bg-gray-200"
+                  ? "bg-[var(--color-danger)]/10 text-[var(--color-danger)]"
+                  : "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]"
               }`}
             >
               {thread.locked ? "Unlock" : "Lock"}
@@ -73,6 +74,6 @@ export function ThreadHeader({
           </div>
         )}
       </div>
-    </>
+    </header>
   );
 }

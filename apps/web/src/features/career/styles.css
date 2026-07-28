@@ -344,3 +344,52 @@
 @media (prefers-reduced-motion: reduce) {
   .career-sidebar, .career-main { transition: none; }
 }
+
+.career-theme-toggle { width: calc(100% - 1.1rem); min-height: 2.75rem; margin: 0 .55rem .55rem; border-radius: .35rem; color: #98b0ab; }
+.career-theme-toggle:hover { background: rgba(255,255,255,.045); color: #fff; }
+.career-launcher-theme { position: absolute; top: 1.25rem; right: 1.25rem; width: 2.75rem; height: 2.75rem; border: 1px solid var(--color-border); border-radius: .35rem; color: var(--color-text-secondary); }
+.career-launcher-theme:hover { background: rgba(255,255,255,.045); color: var(--color-text-primary); }
+
+html[data-theme="light"] .career-launcher,
+html[data-theme="light"] .career-workspace {
+  --color-accent: #087957;
+  --color-background-body: #edf4ef;
+  --color-background-surface: #ffffff;
+  --color-surface-secondary: #e4eee8;
+  --color-text-primary: #10231c;
+  --color-text-secondary: #597167;
+  --color-border: #bfd0c6;
+  --shadow-premium: 0 12px 34px rgba(16,35,28,.1);
+  background: radial-gradient(circle at 72% -8%,rgba(8,121,87,.12),transparent 28rem), #edf4ef;
+}
+
+html[data-theme="light"] .career-workspace .card { background: #fff; }
+html[data-theme="light"] .career-workspace .input,
+html[data-theme="light"] .career-sidebar { background: #f8fcf9; }
+html[data-theme="light"] .career-workspace .input option { background: #fff; color: #10231c; }
+html[data-theme="light"] .career-sidebar { border-right-color: #bfd0c6; }
+html[data-theme="light"] .career-sidebar-brand { background: linear-gradient(135deg,#d7eee1,#f8fcf9); }
+html[data-theme="light"] .career-nav button,
+html[data-theme="light"] .career-sidebar-footer a,
+html[data-theme="light"] .career-sidebar-footer button,
+html[data-theme="light"] .career-theme-toggle { color: #486459; }
+html[data-theme="light"] .career-nav button:hover,
+html[data-theme="light"] .career-sidebar-footer a:hover,
+html[data-theme="light"] .career-sidebar-footer button:hover,
+html[data-theme="light"] .career-theme-toggle:hover { background: #e4eee8; color: #10231c; }
+html[data-theme="light"] .career-nav button[aria-current="page"] { color: #07533d; background: linear-gradient(90deg,rgba(8,121,87,.16),rgba(8,121,87,.04)); }
+html[data-theme="light"] .career-context-header,
+html[data-theme="light"] .career-subtabs { background: rgba(237,244,239,.94); }
+html[data-theme="light"] .career-detail-panel,
+html[data-theme="light"] .career-workspace th { background: #f8fcf9; }
+html[data-theme="light"] .career-detail-panel > header { background: rgba(248,252,249,.96); }
+html[data-theme="light"] .career-tactics-actions { background: rgba(248,252,249,.97) !important; }
+html[data-theme="light"] .career-workspace .btn-secondary,
+html[data-theme="light"] .squad-toolbar > div,
+html[data-theme="light"] .instruction-control button,
+html[data-theme="light"] .tactics-squad-picker { background: #f8fcf9; }
+
+@media (max-width: 767px) {
+  .career-theme-toggle { justify-content: flex-start; gap: .75rem; padding: .65rem .75rem; }
+  .career-theme-toggle > span { display: inline; font-size: .75rem; font-weight: 700; }
+}

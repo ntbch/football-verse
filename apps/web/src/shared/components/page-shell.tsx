@@ -17,7 +17,7 @@ function StandardShell({ children, game = false }: StandardShellProps) {
   return (
     <div className="theme-magazine min-h-screen flex flex-col bg-[var(--color-background-body)] text-[var(--color-text-primary)] transition-all">
       {!game && <Navbar />}
-      <main className={game ? "flex-1 w-full animate-fade-in" : "flex-1 max-w-7xl w-full mx-auto p-4 md:p-8 animate-fade-in"}>
+      <main className={game ? "flex-1 w-full animate-fade-in" : "flex-1 max-w-[1440px] w-full mx-auto px-4 py-7 md:px-8 md:py-10 animate-fade-in"}>
         {children}
       </main>
     </div>

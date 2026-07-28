@@ -59,33 +59,33 @@ export default function NewsListingPage() {
       const upperCat = catName.toUpperCase();
 
       if (upperCat.includes("TRANSFER")) {
-        return { label: catName.toUpperCase(), color: "bg-emerald-600 text-white" };
+        return { label: catName.toUpperCase(), color: "news-badge-success" };
       }
       if (upperCat.includes("MATCH")) {
-        return { label: catName.toUpperCase(), color: "bg-sky-600 text-white" };
+        return { label: catName.toUpperCase(), color: "news-badge-info" };
       }
       if (upperCat.includes("RUMOUR")) {
-        return { label: catName.toUpperCase(), color: "bg-purple-600 text-white" };
+        return { label: catName.toUpperCase(), color: "news-badge-accent" };
       }
       if (upperCat.includes("OPINION")) {
-        return { label: catName.toUpperCase(), color: "bg-indigo-600 text-white" };
+        return { label: catName.toUpperCase(), color: "news-badge-info" };
       }
       if (upperCat.includes("OFF THE PITCH")) {
-        return { label: catName.toUpperCase(), color: "bg-amber-600 text-white" };
+        return { label: catName.toUpperCase(), color: "news-badge-warning" };
       }
       if (upperCat.includes("TACTICAL") || upperCat.includes("FACT")) {
-        return { label: catName.toUpperCase(), color: "bg-teal-600 text-white" };
+        return { label: catName.toUpperCase(), color: "news-badge-success" };
       }
       if (upperCat.includes("LEAGUE")) {
-        return { label: catName.toUpperCase(), color: "bg-blue-600 text-white" };
+        return { label: catName.toUpperCase(), color: "news-badge-info" };
       }
 
-      return { label: catName.toUpperCase(), color: "bg-slate-700 text-white" };
+      return { label: catName.toUpperCase(), color: "news-badge-neutral" };
     }
 
     // 2. Fallback when category is missing from backend
     const st = getSourceType(art);
-    if (st === "YOUTUBE") return { label: "YOUTUBE", color: "bg-red-600 text-white" };
+    if (st === "YOUTUBE") return { label: "YOUTUBE", color: "news-badge-youtube" };
 
     const title = (art.title || "").toLowerCase();
     const summary = (art.summary || "").toLowerCase();
@@ -96,15 +96,15 @@ export default function NewsListingPage() {
       "release clause", "free agent", "fee agreed", "buy player", "bought for"
     ];
     if (transferKeywords.some(kw => text.includes(kw))) {
-      return { label: "TRANSFERS", color: "bg-emerald-600 text-white" };
+      return { label: "TRANSFERS", color: "news-badge-success" };
     }
 
     const matchKeywords = ["vs", "match report", "full highlights", "final score", "preview"];
     if (matchKeywords.some(kw => text.includes(kw))) {
-      return { label: "MATCHES", color: "bg-sky-600 text-white" };
+      return { label: "MATCHES", color: "news-badge-info" };
     }
 
-    return { label: "NEWS", color: "bg-blue-600 text-white" };
+    return { label: "NEWS", color: "news-badge-info" };
   };
 
   const articles = rawArticles.filter(art => {
@@ -124,11 +124,11 @@ export default function NewsListingPage() {
 
   return (
     <PublicShell>
-      <div className="flex flex-col gap-5 w-full animate-fade-in">
+      <div className="flex flex-col gap-6 w-full animate-fade-in">
         {/* Main 2-Column Content Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-5 items-start">
+        <div className="grid grid-cols-1 xl:grid-cols-[15rem_minmax(0,1fr)] gap-8 items-start">
           {/* Left Sidebar */}
-          <aside className="lg:col-span-1 flex flex-col gap-4 lg:sticky lg:top-24 w-full">
+          <aside className="flex flex-col gap-4 xl:sticky xl:top-24 w-full">
             {/* Mobile/Tablet Category Selector (Dropdown Popover) */}
             <div className="lg:hidden relative w-full">
               {isDropdownOpen && (
@@ -143,7 +143,10 @@ export default function NewsListingPage() {
                 className="w-full px-4 py-3 rounded-xl bg-[var(--color-background-surface)] border border-[var(--color-border)] text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text-primary)] flex items-center justify-between shadow-sm active:scale-[0.99] transition-all z-40 relative cursor-pointer"
               >
                 <span className="flex items-center gap-2">
-                  📰 Source Filter:{" "}
+                  <svg className="w-4 h-4 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                  </svg>
+                  <span>Source filter:</span>
                   <span className="text-[var(--color-accent)]">
                     {selectedSourceType === "ALL"
                       ? "All Sources"
@@ -180,8 +183,8 @@ export default function NewsListingPage() {
                       }}
                       className={`w-full px-3.5 py-2 rounded-lg text-left text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                         selectedSourceType === item.id
-                          ? "bg-[var(--color-accent)] text-white shadow-sm"
-                          : "text-[var(--color-text-secondary)] hover:bg-gray-50 hover:text-[var(--color-text-primary)]"
+                          ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
+                          : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
                       }`}
                     >
                       {item.name}
@@ -193,7 +196,7 @@ export default function NewsListingPage() {
 
             {/* Desktop Source Filters Box (Peek.vn Style) */}
             <div className="card overflow-hidden hidden lg:block">
-              <div className="px-4 py-3 border-b border-[var(--color-border)] bg-gray-50/50">
+              <div className="px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface-muted)]">
                 <h3 className="font-serif-title font-black text-[11px] m-0 uppercase tracking-widest text-[var(--color-text-secondary)]">
                   SOURCE FILTERS
                 </h3>
@@ -214,7 +217,7 @@ export default function NewsListingPage() {
                     id: "NEWS" as const,
                     name: "News Outlets",
                     icon: (
-                      <svg className="w-3.5 h-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <svg className="w-3.5 h-3.5 text-[var(--color-info)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6m-6 4h6" />
                       </svg>
                     ),
@@ -223,7 +226,7 @@ export default function NewsListingPage() {
                     id: "YOUTUBE" as const,
                     name: "YouTube Highlights",
                     icon: (
-                      <svg className="w-3.5 h-3.5 text-red-500 fill-current" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5 text-[var(--color-brand-youtube)] fill-current" viewBox="0 0 24 24">
                         <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                       </svg>
                     ),
@@ -234,8 +237,8 @@ export default function NewsListingPage() {
                     onClick={() => handleSourceTypeChange(item.id)}
                     className={`px-3 py-2 rounded-lg text-left text-xs font-bold transition-all duration-200 cursor-pointer flex items-center justify-between ${
                       selectedSourceType === item.id
-                        ? "bg-[var(--color-accent)] text-white shadow-sm"
-                        : "text-[var(--color-text-secondary)] hover:bg-black/[0.04] hover:text-[var(--color-text-primary)]"
+                        ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
+                        : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
                     }`}
                   >
                     <span className="flex items-center gap-2">
@@ -249,7 +252,7 @@ export default function NewsListingPage() {
 
             {/* Category Filter Cards */}
             <div className="card overflow-hidden">
-              <div className="px-4 py-3 border-b border-[var(--color-border)] bg-gray-50/50">
+              <div className="px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface-muted)]">
                 <h3 className="font-serif-title font-black text-[11px] m-0 uppercase tracking-widest text-[var(--color-text-secondary)]">
                   CATEGORIES
                 </h3>
@@ -259,8 +262,8 @@ export default function NewsListingPage() {
                   onClick={() => handleCategoryChange(null)}
                   className={`w-full px-3 py-1.5 rounded-lg text-left text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
                     selectedCategory === null
-                      ? "bg-black text-white shadow-sm"
-                      : "text-[var(--color-text-secondary)] hover:bg-black/[0.04] hover:text-[var(--color-text-primary)]"
+                      ? "bg-[var(--color-text-primary)] text-[var(--color-text-inverse)] shadow-sm"
+                      : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
                   }`}
                 >
                   <span>All Categories</span>
@@ -271,8 +274,8 @@ export default function NewsListingPage() {
                     onClick={() => handleCategoryChange(cat.id)}
                     className={`w-full px-3 py-1.5 rounded-lg text-left text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
                       selectedCategory === cat.id
-                        ? "bg-black text-white shadow-sm"
-                        : "text-[var(--color-text-secondary)] hover:bg-black/[0.04] hover:text-[var(--color-text-primary)]"
+                        ? "bg-[var(--color-text-primary)] text-[var(--color-text-inverse)] shadow-sm"
+                        : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
                     }`}
                   >
                     <span>{cat.name}</span>
@@ -284,7 +287,7 @@ export default function NewsListingPage() {
             {/* Trending Articles Widget */}
             {articles.length > 0 && (
               <div className="card overflow-hidden hidden lg:block">
-                <div className="px-4 py-3 border-b border-[var(--color-border)] bg-gray-50/50">
+                <div className="px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface-muted)]">
                   <h3 className="font-serif-title font-black text-xs m-0 uppercase tracking-wider text-[var(--color-text-primary)] flex items-center gap-1.5">
                     <svg className="w-3.5 h-3.5 text-[var(--color-accent)] animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
@@ -293,7 +296,7 @@ export default function NewsListingPage() {
                     <span>Trending</span>
                   </h3>
                 </div>
-                <div className="p-2 flex flex-col divide-y divide-gray-50">
+                <div className="p-2 flex flex-col divide-y divide-[var(--color-border)]">
                   {[...articles]
                     .sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0))
                     .slice(0, 4)
@@ -301,7 +304,7 @@ export default function NewsListingPage() {
                       <Link
                         key={art.id}
                         href={`/news/${art.slug}`}
-                        className="flex items-start gap-2.5 py-2 px-1.5 rounded-lg hover:bg-gray-50 transition-colors group"
+                        className="flex items-start gap-2.5 py-2 px-1.5 rounded-lg hover:bg-[var(--color-surface-hover)] transition-colors group"
                       >
                         <span className="text-base font-black text-[var(--color-accent)]/50 leading-none mt-0.5 tabular-nums">
                           {idx + 1}
@@ -334,11 +337,11 @@ export default function NewsListingPage() {
           </aside>
 
           {/* Right Main Articles Panel */}
-          <div className="lg:col-span-3">
+          <div>
             {isLoading ? (
               <LoadingBlock label="Loading Publications" />
             ) : articles.length === 0 ? (
-              <div className="text-center py-12 bg-white border border-[var(--color-border)] rounded-2xl p-6 flex flex-col items-center gap-2">
+              <div className="text-center py-12 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl p-6 flex flex-col items-center gap-2">
                 <h3 className="m-0 font-serif-title font-black text-lg text-[var(--color-text-primary)]">
                   No Articles Found
                 </h3>
@@ -360,19 +363,19 @@ export default function NewsListingPage() {
                       return (
                         <div key={art.id} className="card p-4 flex flex-col gap-2.5 overflow-hidden group relative">
                           {/* Video Thumbnail with Center Play Button */}
-                          <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-black flex items-center justify-center cursor-pointer">
+                          <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-[var(--color-text-primary)] flex items-center justify-center cursor-pointer">
                             <img
                               src={getArticleImage(art.id, art.content, art.imageUrl)}
                               alt={art.title}
                               loading="lazy"
                               className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500 opacity-90"
-                              onError={handleImageError}
+                              onError={(event) => handleImageError(event, art.imageUrl)}
                             />
                             <div className={`absolute top-2 left-2 ${badge.color} text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shadow-sm z-10`}>
                               {badge.label}
                             </div>
-                            <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                              <div className="w-12 h-12 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                            <div className="absolute inset-0 bg-[var(--color-overlay)] flex items-center justify-center">
+                              <div className="w-12 h-12 rounded-full bg-[var(--color-brand-youtube)]/90 text-[var(--color-text-inverse)] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                                 <svg className="w-5 h-5 fill-current ml-0.5" viewBox="0 0 24 24">
                                   <path d="M8 5v14l11-7z" />
                                 </svg>
@@ -381,7 +384,7 @@ export default function NewsListingPage() {
                           </div>
 
                           <div className="flex items-center justify-between text-xs font-bold text-[var(--color-text-secondary)]">
-                            <span className="flex items-center gap-1 text-red-500 font-extrabold text-[11px]">
+                            <span className="flex items-center gap-1 text-[var(--color-brand-youtube)] font-extrabold text-[11px]">
                               <span>▶</span>
                               <span>{art.sourceName || "YouTube Highlights"}</span>
                             </span>
@@ -399,7 +402,7 @@ export default function NewsListingPage() {
                           <div className="flex items-center justify-end border-t border-[var(--color-border)] pt-2 mt-0.5">
                             <Link
                               href={`/news/${art.slug}`}
-                              className="text-[11px] font-black uppercase tracking-wider text-red-500 hover:underline"
+                              className="text-[11px] font-black uppercase tracking-wider text-[var(--color-brand-youtube)] hover:underline"
                             >
                               Watch Video →
                             </Link>
@@ -412,13 +415,13 @@ export default function NewsListingPage() {
                     return (
                       <div key={art.id} className="card p-3.5 md:p-4 flex flex-col md:flex-row gap-4 overflow-hidden group">
                         {/* Left image thumbnail - Compact 192px width */}
-                        <div className="aspect-[16/9] md:w-48 w-full rounded-lg overflow-hidden flex-shrink-0 bg-black/5 border border-[var(--color-border)] relative">
+                        <div className="aspect-[16/9] md:w-48 w-full rounded-lg overflow-hidden flex-shrink-0 bg-[var(--color-surface-muted)] border border-[var(--color-border)] relative">
                           <img
                             src={getArticleImage(art.id, art.content, art.imageUrl)}
                             alt={art.title}
                             loading="lazy"
                             className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
-                            onError={handleImageError}
+                            onError={(event) => handleImageError(event, art.imageUrl)}
                           />
                           <div className={`absolute top-1.5 left-1.5 ${badge.color} text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full shadow-sm`}>
                             {badge.label}
@@ -486,7 +489,7 @@ export default function NewsListingPage() {
                     <button
                       onClick={() => setPage((p) => Math.max(0, p - 1))}
                       disabled={page === 0}
-                      className="px-3.5 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-background-surface)] text-xs font-bold text-[var(--color-text-primary)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                      className="px-3.5 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-background-surface)] text-xs font-bold text-[var(--color-text-primary)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-surface-hover)] transition-colors"
                     >
                       ← Previous
                     </button>
@@ -496,7 +499,7 @@ export default function NewsListingPage() {
                     <button
                       onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                       disabled={page >= totalPages - 1}
-                      className="px-3.5 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-background-surface)] text-xs font-bold text-[var(--color-text-primary)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                      className="px-3.5 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-background-surface)] text-xs font-bold text-[var(--color-text-primary)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-surface-hover)] transition-colors"
                     >
                       Next →
                     </button>

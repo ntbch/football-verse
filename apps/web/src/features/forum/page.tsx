@@ -136,9 +136,9 @@ export default function ForumPage() {
         {isCategoriesLoading ? (
           <LoadingBlock label="Loading Forum" />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+          <div className="grid grid-cols-1 xl:grid-cols-[15rem_minmax(0,1fr)] gap-8 items-start">
             {/* ── Left Sidebar ── */}
-            <aside className="lg:col-span-1 flex flex-col gap-4 lg:sticky lg:top-24">
+            <aside className="flex flex-col gap-4 xl:sticky xl:top-24">
               <CategoryList
                 categories={categories}
                 activeCategorySlug={activeCategorySlug}
@@ -170,7 +170,7 @@ export default function ForumPage() {
             </aside>
 
             {/* ── Main Thread Feed ── */}
-            <div className="lg:col-span-3 flex flex-col gap-4 w-full">
+            <div className="flex flex-col gap-4 w-full">
               {/* Category banner header */}
               {activeCategory && <CategoryBanner category={activeCategory} />}
 
@@ -178,9 +178,9 @@ export default function ForumPage() {
               {isThreadsLoading ? (
                 <LoadingBlock label="Fetching threads" />
               ) : sortedThreads.length === 0 ? (
-                <div className="text-center py-20 bg-white border border-[var(--color-border)] rounded-2xl flex flex-col items-center gap-4 shadow-sm">
-                  <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center border border-[var(--color-border)]">
-                    <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                <div className="text-center py-20 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl flex flex-col items-center gap-4 shadow-sm">
+                  <div className="w-16 h-16 rounded-full bg-[var(--color-surface-subtle)] flex items-center justify-center border border-[var(--color-border)]">
+                    <svg className="w-8 h-8 text-[var(--color-neutral)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
                   </div>

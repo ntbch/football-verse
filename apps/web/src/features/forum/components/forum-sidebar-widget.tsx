@@ -31,7 +31,7 @@ export function ForumSidebarWidget({ categories, activeCategory, trendingThreads
               ? [{ label: activeCategory.name, value: activeCategory.threadCount, accent: false }]
               : [{ label: "Pick a topic", value: "↑", accent: false }]),
           ].map((stat, i) => (
-            <div key={i} className="bg-gray-50 rounded-xl p-3 flex flex-col gap-1">
+            <div key={i} className="bg-[var(--color-surface-muted)] rounded-xl p-3 flex flex-col gap-1">
               <span className={`font-black text-xl tabular-nums ${stat.accent ? "text-[var(--color-accent)]" : "text-[var(--color-text-primary)]"}`}>
                 {stat.value}
               </span>
@@ -54,12 +54,12 @@ export function ForumSidebarWidget({ categories, activeCategory, trendingThreads
               Hot Threads
             </h3>
           </div>
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-[var(--color-border)]">
             {trendingThreads.slice(0, 4).map((t, i) => (
               <Link
                 key={t.id}
                 href={`/forum/threads/${t.slug}`}
-                className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50/80 transition-colors"
+                className="flex items-start gap-3 px-4 py-3 hover:bg-[var(--color-surface-hover)] transition-colors"
               >
                 <span className="font-serif-title font-black text-2xl leading-none text-gray-200 tabular-nums w-6 shrink-0">
                   {i + 1}

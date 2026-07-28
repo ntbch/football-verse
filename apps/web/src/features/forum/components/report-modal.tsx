@@ -16,9 +16,9 @@ export function ReportModal({
   onSubmit,
 }: ReportModalProps) {
   return (
-    <div className="fixed inset-0 z-50 flex animate-fade-in items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-lg">
-        <div className="border-b border-[var(--color-border)] bg-gray-50/50 px-6 py-4">
+    <div className="fixed inset-0 z-50 flex animate-fade-in items-center justify-center bg-[var(--color-overlay)] p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-background-surface)] shadow-lg">
+        <div className="border-b border-[var(--color-border)] bg-[var(--color-surface-subtle)] px-6 py-4">
           <h2 className="m-0 font-serif-title text-base font-black text-[var(--color-text-primary)]">
             Report Inappropriate Content
           </h2>

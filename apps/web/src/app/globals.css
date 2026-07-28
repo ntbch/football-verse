@@ -22,18 +22,61 @@
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --shadow-premium: 0 4px 20px -2px rgba(16, 20, 15, 0.08), 0 2px 8px -1px rgba(16, 20, 15, 0.04);
   --shadow-inset: inset 0 2px 4px 0 rgba(16, 20, 15, 0.03);
+  --color-surface-hover: rgba(16, 20, 15, 0.06);
+  --color-surface-muted: #e5dfd3;
+  --color-surface-subtle: #f1eee6;
+  --color-text-inverse: #fffdf9;
+  --color-success: #4a7c59;
+  --color-danger: #b91c1c;
+  --color-warning: #b45309;
+  --color-info: #2563eb;
+  --color-neutral: #64748b;
+  --color-brand-youtube: #ff0000;
+  --color-chart-axis: #9ca3af;
+  --color-chart-secondary: #94a3b8;
+  --color-chart-tertiary: #64748b;
+  --color-accent-muted: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  --color-success-muted: color-mix(in srgb, var(--color-success) 12%, transparent);
+  --color-story-text: #fffdf9;
+  --color-story-muted: #d1d5db;
+  --color-overlay: rgb(16 20 15 / 40%);
+  --color-editorial-wash: #efe7d8;
+  --color-editorial-glow: rgb(180 95 53 / 12%);
 }
 
-.theme-magazine {
-  --color-accent: #B45F35;
-  --color-background-body: #F7F4EC;
-  --color-background-surface: #FFFDF9;
-  --color-text-primary: #10140F;
-  --color-text-secondary: #6D715F;
-  --color-border: #D8D0BC;
-  --radius-container: 16px;
-  --radius-element: 8px;
-  --shadow-premium: 0 4px 20px -2px rgba(16, 20, 15, 0.08), 0 2px 8px -1px rgba(16, 20, 15, 0.04);
+html[data-theme="dark"] {
+  --color-accent: #e98b5d;
+  --color-background-body: #151714;
+  --color-background-surface: #20231e;
+  --color-text-primary: #f4f0e7;
+  --color-text-secondary: #b9beaa;
+  --color-border: #41463b;
+  --shadow-premium: 0 4px 20px -2px rgba(0, 0, 0, 0.32), 0 2px 8px -1px rgba(0, 0, 0, 0.2);
+  --shadow-inset: inset 0 2px 4px 0 rgba(0, 0, 0, 0.18);
+  --color-surface-hover: rgba(255, 255, 255, 0.08);
+  --color-surface-muted: #2a2d27;
+  --color-surface-subtle: #282b26;
+  --color-text-inverse: #151714;
+  --color-success: #72c58d;
+  --color-danger: #ff8b8b;
+  --color-warning: #f5b971;
+  --color-info: #8ab4ff;
+  --color-neutral: #b4bdc9;
+  --color-brand-youtube: #ff5b5b;
+  --color-chart-axis: #b4bdc9;
+  --color-chart-secondary: #b4bdc9;
+  --color-chart-tertiary: #8c96a1;
+  --color-story-text: #fffdf9;
+  --color-story-muted: #d1d5db;
+  --color-overlay: rgb(0 0 0 / 55%);
+  --color-editorial-wash: #1b1e18;
+  --color-editorial-glow: rgb(233 139 93 / 14%);
+  color-scheme: dark;
+}
+
+/* ponytail: bridge legacy Tailwind neutrals to tokens; remove as pages migrate to tokens. */
+html[data-theme="dark"] .theme-magazine :is(.bg-white, [class*="bg-gray-50"], [class*="bg-gray-100"]) {
+  background-color: var(--color-background-surface);
 }
 
 /* ════════════════════════════════════════════════
@@ -48,18 +91,39 @@ body {
   overflow-x: hidden;
 }
 
-/* Custom Grid Grid Lines for Magazine feel */
-.theme-magazine::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(90deg, rgba(16, 20, 15, 0.02) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(16, 20, 15, 0.02) 1px, transparent 1px);
-  background-size: 32px 32px;
-  z-index: 100;
-}
+.theme-toggle { display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.theme-toggle svg { width: 1.2rem; height: 1.2rem; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.9; }
+.theme-toggle > span { display: none; }
+.theme-toggle:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.role-theme-toggle > span { display: inline; }
+.rank-gold { background-color: color-mix(in srgb, var(--color-warning) 16%, transparent); color: var(--color-warning); }
+.rank-silver { background-color: color-mix(in srgb, var(--color-neutral) 16%, transparent); color: var(--color-neutral); }
+.rank-bronze { background-color: color-mix(in srgb, var(--color-accent) 16%, transparent); color: var(--color-accent); }
+.story-overlay { background: linear-gradient(to top, rgb(0 0 0 / 75%), rgb(0 0 0 / 15%), transparent); }
+.story-overlay-strong { background: linear-gradient(to top, rgb(0 0 0 / 80%), rgb(0 0 0 / 25%), transparent); }
+.story-category { background-color: var(--color-accent); color: var(--color-story-text); }
+.story-category-light { background-color: color-mix(in srgb, var(--color-story-text) 90%, transparent); color: var(--color-accent); }
+.forum-hero { background: linear-gradient(135deg, #1a0a00, #3d1a08, #1a0a00); }
+.forum-hero-grid { opacity: .04; background-image: repeating-linear-gradient(0deg, transparent, transparent 30px, rgb(255 255 255 / .5) 30px, rgb(255 255 255 / .5) 31px), repeating-linear-gradient(90deg, transparent, transparent 30px, rgb(255 255 255 / .5) 30px, rgb(255 255 255 / .5) 31px); }
+.forum-category-tactics { color: var(--color-info); }.forum-category-tactics-bg { background-color: color-mix(in srgb, var(--color-info) 10%, transparent); }
+.forum-category-transfers { color: var(--color-success); }.forum-category-transfers-bg { background-color: color-mix(in srgb, var(--color-success) 10%, transparent); }
+.forum-category-matchday { color: var(--color-warning); }.forum-category-matchday-bg { background-color: color-mix(in srgb, var(--color-warning) 10%, transparent); }
+.forum-category-gossip { color: var(--color-accent); }.forum-category-gossip-bg { background-color: color-mix(in srgb, var(--color-accent) 10%, transparent); }
+.forum-category-predictions { color: var(--color-warning); }.forum-category-predictions-bg { background-color: color-mix(in srgb, var(--color-warning) 10%, transparent); }
+.forum-category-general { color: var(--color-info); }.forum-category-general-bg { background-color: color-mix(in srgb, var(--color-info) 10%, transparent); }
+.match-pitch { border: 1px solid color-mix(in srgb, var(--color-success) 35%, transparent); background: linear-gradient(90deg, rgb(16 80 52 / .94), rgb(23 105 67 / .92)); }
+.news-badge-success,.news-badge-info,.news-badge-accent,.news-badge-warning,.news-badge-neutral,.news-badge-youtube { color: var(--color-text-inverse); }
+.news-badge-success { background-color: var(--color-success); }.news-badge-info { background-color: var(--color-info); }.news-badge-accent { background-color: var(--color-accent); }.news-badge-warning { background-color: var(--color-warning); }.news-badge-neutral { background-color: var(--color-neutral); }.news-badge-youtube { background-color: var(--color-brand-youtube); }
+.prediction-detail { background: linear-gradient(135deg, color-mix(in srgb, var(--color-background-surface) 72%, var(--color-editorial-wash)), var(--color-background-surface)); }
+
+.theme-magazine { background-image: radial-gradient(circle at 88% -8%, var(--color-editorial-glow), transparent 30rem), radial-gradient(circle at -8% 36%, color-mix(in srgb, var(--color-editorial-wash) 60%, transparent), transparent 26rem); }
+.editorial-kicker { color: var(--color-accent); font-size: .68rem; font-weight: 850; letter-spacing: .14em; text-transform: uppercase; }
+.editorial-rule { height: 1px; flex: 1; background: linear-gradient(90deg, var(--color-border), transparent); }
+.editorial-panel { border: 1px solid color-mix(in srgb, var(--color-border) 76%, transparent); border-radius: 1.35rem; background: color-mix(in srgb, var(--color-background-surface) 88%, transparent); box-shadow: 0 16px 40px rgb(16 20 15 / 5%); }
+.editorial-panel:hover { transform: none; }
+.editorial-story { border-radius: 1.6rem; overflow: hidden; box-shadow: 0 20px 45px rgb(16 20 15 / 12%); }
+.editorial-section-title { font-family: var(--font-serif); font-size: clamp(1.35rem, 2vw, 1.7rem); font-weight: 900; letter-spacing: -.035em; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 
 /* ════════════════════════════════════════════════
    COMPONENTS & UTILITIES
@@ -73,14 +137,15 @@ body {
 /* Cards & Containers */
 .card {
   background-color: var(--color-background-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-container);
-  box-shadow: var(--shadow-premium);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+  border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);
+  border-radius: 1.25rem;
+  box-shadow: 0 12px 32px rgb(16 20 15 / 5%);
+  transition: border-color .2s ease, box-shadow .2s ease;
 }
 
 .card:hover {
-  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--color-accent) 30%, var(--color-border));
+  box-shadow: 0 16px 36px rgb(16 20 15 / 8%);
 }
 
 /* Inputs & Form Fields */

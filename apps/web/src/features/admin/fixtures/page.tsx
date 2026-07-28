@@ -113,14 +113,14 @@ export default function AdminFixturesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4" style={{ borderBottom: "1px solid var(--color-border)" }}>
         <div className="flex items-center gap-3 min-w-0">
           <h1 className="text-lg font-black font-serif-title tracking-tight m-0 whitespace-nowrap" style={{ color: "var(--color-text-primary)" }}>Fixtures & Predictions Control</h1>
-          <span className="text-[11px] whitespace-nowrap px-2 py-0.5 rounded-full font-bold bg-black/5" style={{ color: "var(--color-text-secondary)" }}>{totalElements} total fixtures</span>
+          <span className="text-[11px] whitespace-nowrap px-2 py-0.5 rounded-full font-bold bg-[var(--color-surface-hover)]" style={{ color: "var(--color-text-secondary)" }}>{totalElements} total fixtures</span>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => syncMutation.mutate(league || "premier-league")}
             disabled={syncMutation.isPending}
-            className="px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-150 active:scale-[0.97] bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] shadow-sm disabled:opacity-50"
+            className="px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-150 active:scale-[0.97] bg-[var(--color-accent)] text-[var(--color-text-inverse)] hover:opacity-90 shadow-sm disabled:opacity-50"
           >
             {syncMutation.isPending ? "Syncing..." : `Sync ${league || "Premier League"}`}
           </button>
@@ -218,7 +218,7 @@ export default function AdminFixturesPage() {
                   </tr>
                 ) : (
                   fixtures.map((f) => (
-                    <tr key={f.id} className="hover:bg-black/[0.01] transition-all">
+                    <tr key={f.id} className="hover:bg-[var(--color-surface-hover)] transition-all">
                       <td className="px-4 py-3">
                         <div className="font-semibold" style={{ color: "var(--color-text-primary)" }}>
                           {f.homeTeam} vs {f.awayTeam}
@@ -232,7 +232,7 @@ export default function AdminFixturesPage() {
                       </td>
                       <td className="px-4 py-3 text-center">
                         {f.status === "result" || f.homeScore !== null ? (
-                          <span className="font-mono font-black text-sm px-2 py-0.5 rounded bg-black/[0.04]">
+                          <span className="font-mono font-black text-sm px-2 py-0.5 rounded bg-[var(--color-surface-hover)]">
                             {f.homeScore} - {f.awayScore}
                           </span>
                         ) : (
@@ -244,16 +244,16 @@ export default function AdminFixturesPage() {
                           style={{
                             backgroundColor:
                               f.status === "result"
-                                ? "rgba(74,124,89,0.12)"
+                                ? "var(--color-success-muted)"
                                 : f.status === "live"
-                                ? "rgba(185,28,28,0.12)"
-                                : "rgba(100,116,139,0.12)",
+                                ? "color-mix(in srgb, var(--color-danger) 12%, transparent)"
+                                : "color-mix(in srgb, var(--color-neutral) 12%, transparent)",
                             color:
                               f.status === "result"
-                                ? "#4a7c59"
+                                ? "var(--color-success)"
                                 : f.status === "live"
-                                ? "#b91c1c"
-                                : "#64748b",
+                                ? "var(--color-danger)"
+                                : "var(--color-neutral)",
                           }}
                           className="px-2 py-0.5 rounded-full font-bold text-[10px] capitalize inline-block"
                         >
@@ -271,7 +271,7 @@ export default function AdminFixturesPage() {
                             )}
                           </div>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-full font-bold text-[10px] bg-slate-100 text-slate-500">Unscored</span>
+                          <span className="px-2 py-0.5 rounded-full font-bold text-[10px] bg-[var(--color-surface-muted)] text-[var(--color-neutral)]">Unscored</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -280,7 +280,7 @@ export default function AdminFixturesPage() {
                             <button
                               onClick={() => scoreMutation.mutate(f.id)}
                               disabled={scoreMutation.isPending}
-                              className="px-3 py-1 rounded bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition active:scale-[0.96] disabled:opacity-50"
+                              className="px-3 py-1 rounded bg-[var(--color-success)] text-[var(--color-text-inverse)] font-bold hover:opacity-90 transition active:scale-[0.96] disabled:opacity-50"
                             >
                               Score Predictions
                             </button>
@@ -289,7 +289,7 @@ export default function AdminFixturesPage() {
                             <button
                               onClick={() => rescoreMutation.mutate(f.id)}
                               disabled={rescoreMutation.isPending}
-                              className="px-3 py-1 rounded border border-red-200 text-red-600 font-bold hover:bg-red-50/50 transition active:scale-[0.96] disabled:opacity-50"
+                              className="px-3 py-1 rounded border border-[var(--color-danger)]/30 text-[var(--color-danger)] font-bold hover:bg-[var(--color-danger)]/10 transition active:scale-[0.96] disabled:opacity-50"
                             >
                               Rescore
                             </button>
@@ -309,7 +309,7 @@ export default function AdminFixturesPage() {
               <button
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 disabled={page === 0 || isPlaceholderData}
-                className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-xs font-semibold bg-[var(--color-background-surface)] hover:bg-black/5 disabled:opacity-40 transition"
+                className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-xs font-semibold bg-[var(--color-background-surface)] hover:bg-[var(--color-surface-hover)] disabled:opacity-40 transition"
               >
                 Previous Page
               </button>
@@ -319,7 +319,7 @@ export default function AdminFixturesPage() {
               <button
                 onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                 disabled={page >= totalPages - 1 || isPlaceholderData}
-                className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-xs font-semibold bg-[var(--color-background-surface)] hover:bg-black/5 disabled:opacity-40 transition"
+                className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-xs font-semibold bg-[var(--color-background-surface)] hover:bg-[var(--color-surface-hover)] disabled:opacity-40 transition"
               >
                 Next Page
               </button>

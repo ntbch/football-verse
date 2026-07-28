@@ -28,14 +28,14 @@ export const StatsBadges = ({ stats, isLoading }: StatsBadgesProps) => {
         {stats.correctPicks}/{stats.totalPicks}
       </span>
       {stats.currentStreak > 0 ? (
-        <span className="border border-[var(--color-accent)] px-2 py-1 rounded-lg bg-orange-50/50 flex items-center gap-1">
+        <span className="border border-[var(--color-accent)] px-2 py-1 rounded-lg bg-[var(--color-accent)]/10 flex items-center gap-1">
           <FlameIcon />
           <span className="font-mono">{stats.currentStreak}</span>
         </span>
       ) : null}
       {stats.badges.map((b) => (
         <span
-          className="border border-green-300 bg-green-50 px-2 py-1 rounded-lg text-green-700 font-bold flex items-center gap-1"
+          className="border border-[var(--color-success)]/30 bg-[var(--color-success)]/10 px-2 py-1 rounded-lg text-[var(--color-success)] font-bold flex items-center gap-1"
           key={b.code}
         >
           <TrophyIcon />

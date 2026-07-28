@@ -14,14 +14,14 @@ export const LoadingBlock = ({ label = "Loading" }: { label?: string }) => (
 );
 
 export const ErrorBlock = ({ message }: { message: string }) => (
-  <div className="w-full my-4 p-4 rounded-xl border border-red-500/25 bg-red-500/5 text-red-500 text-xs font-bold flex items-center gap-3" role="alert">
-    <span aria-hidden="true" className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+  <div className="w-full my-4 p-4 rounded-xl border border-[var(--color-danger)]/25 bg-[var(--color-danger)]/5 text-[var(--color-danger)] text-xs font-bold flex items-center gap-3" role="alert">
+    <span aria-hidden="true" className="w-2 h-2 rounded-full bg-[var(--color-danger)] shrink-0" />
     <span>{message}</span>
   </div>
 );
 
 export const EmptyBlock = ({ message = "No records found." }: { message?: string }) => (
-  <div className="w-full text-center py-16 px-4 border border-dashed border-[var(--color-border)] rounded-2xl bg-white/40" role="status">
+  <div className="w-full text-center py-16 px-4 border border-dashed border-[var(--color-border)] rounded-2xl bg-[var(--color-background-surface)]/40" role="status">
     <span aria-hidden="true" className="text-2xl block mb-2">📭</span>
     <p className="text-xs text-[var(--color-text-secondary)] font-serif italic">{message}</p>
   </div>

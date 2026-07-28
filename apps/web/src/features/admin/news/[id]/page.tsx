@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { qk } from "@/shared/lib/query-keys";
-import { http, data, apiErrorMessage } from "@/shared/lib/api-client";
+import { apiBaseUrl, http, data, apiErrorMessage } from "@/shared/lib/api-client";
 import type { NewsCategoryResponse, NewsArticleResponse } from "@/features/news/types";
 import { LoadingBlock, ErrorBlock } from "@/shared/components/state-blocks";
 import { useToast } from "@/shared/components/toast";
@@ -48,6 +48,7 @@ export default function EditNewsArticlePage() {
       setSlug(article.slug);
       setSummary(article.summary);
       setContent(article.content);
+      setUploadedImageUrl(article.imageUrl || null);
       setCategory(article.category || "");
       setTags(article.tags ? Array.from(article.tags).join(", ") : "");
       setStatus(article.status);
@@ -78,12 +79,13 @@ export default function EditNewsArticlePage() {
       const res = await http.post("/uploads", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      const url = res.data.data.url;
+      const uploadedUrl = res.data.data.url;
+      const url = uploadedUrl.startsWith("http") ? uploadedUrl : `${apiBaseUrl.replace(/\/$/, "")}${uploadedUrl}`;
       setUploadedImageUrl(url);
 
       // Smart insert at cursor position
       const textarea = textareaRef.current;
-      const imageMarkdown = `\n\n![Image](${url})\n\n`;
+      const imageHtml = `\n\n<img src="${url}" alt="Article image" />\n\n`;
       
       if (textarea) {
         const start = textarea.selectionStart;
@@ -92,16 +94,16 @@ export default function EditNewsArticlePage() {
         const before = text.substring(0, start);
         const after = text.substring(end);
         
-        setContent(before + imageMarkdown + after);
+        setContent(before + imageHtml + after);
         
         // Restore focus and move cursor right after the inserted markdown
         setTimeout(() => {
           textarea.focus();
-          const newPos = start + imageMarkdown.length;
+          const newPos = start + imageHtml.length;
           textarea.setSelectionRange(newPos, newPos);
         }, 50);
       } else {
-        setContent((prev) => `${prev}${imageMarkdown}`);
+        setContent((prev) => `${prev}${imageHtml}`);
       }
 
       toast({ body: "Image uploaded successfully!", type: "info" });
@@ -148,6 +150,7 @@ export default function EditNewsArticlePage() {
       slug: slug.trim(),
       summary: summary.trim(),
       content: content.trim(),
+      imageUrl: uploadedImageUrl,
       category: category || "General",
       tags: parsedTags,
       status,

@@ -39,13 +39,13 @@ export function CreateThreadModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="absolute inset-0 bg-black/25 backdrop-blur-[2px]" />
-      <div className="relative w-full max-w-xl bg-white border border-[var(--color-border)] rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
+      <div className="absolute inset-0 bg-[var(--color-overlay)] backdrop-blur-[2px]" />
+      <div className="relative w-full max-w-xl bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] bg-gradient-to-r from-[var(--color-accent)]/5 to-transparent">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-[var(--color-accent)] flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <svg className="w-4 h-4 text-[var(--color-text-inverse)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
             </div>
@@ -55,7 +55,7 @@ export function CreateThreadModal({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:bg-gray-100 hover:text-[var(--color-accent)] transition-all active:scale-90"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-accent)] transition-all active:scale-90"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -73,7 +73,7 @@ export function CreateThreadModal({
               <select
                 value={targetCategorySlug}
                 onChange={(e) => onCategoryChange(e.target.value)}
-                className="w-full bg-white border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30"
+                className="w-full bg-[var(--color-background-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30"
               >
                 {categories.map((cat) => (
                   <option key={cat.id} value={cat.slug}>{cat.name}</option>
@@ -103,7 +103,7 @@ export function CreateThreadModal({
                 value={newContent}
                 onChange={(e) => onContentChange(e.target.value)}
                 rows={6}
-                className="w-full bg-white border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 resize-none"
+                className="w-full bg-[var(--color-background-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 resize-none"
               />
             </div>
 

@@ -9,6 +9,7 @@ import { http } from "@/shared/lib/api-client";
 import { useNavbarNotifications } from "@/shared/hooks/use-navbar-notifications";
 import { DesktopNotificationMenu, MobileNotificationMenu } from "./notification-menu";
 import { DesktopNavLinks, DrawerNavLinks } from "./navbar-links";
+import { ThemeToggle } from "./theme-provider";
 
 export function Navbar() {
   const auth = useAuthStore((state) => state.auth);
@@ -76,15 +77,15 @@ export function Navbar() {
   };
 
   return (
-    <header className="w-full sticky top-0 z-50 px-4 md:px-6 bg-[var(--color-background-surface)]/90 backdrop-blur-md border-b border-[var(--color-border)] shadow-xs transition-all duration-300">
-      <div className="max-w-7xl mx-auto flex items-center justify-between h-14 gap-4">
+    <header className="w-full sticky top-3 z-50 px-3 md:px-6 transition-all duration-300">
+      <div className="max-w-[1440px] mx-auto flex items-center justify-between h-16 gap-4 px-3 md:px-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background-surface)]/90 backdrop-blur-xl shadow-[0_14px_34px_rgb(16_20_15_/_8%)]">
         {/* LEFT SECTION: Hamburger Toggle (Mobile Only) + Split Brand Logo */}
         <div className="flex items-center gap-3 shrink-0">
           <button
             onClick={() => setDrawerOpen(!drawerOpen)}
             aria-label="Toggle Side Drawer"
             title="Toggle Menu Drawer"
-            className="md:hidden p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-[var(--color-text-primary)] transition-all active:scale-95 duration-150 flex items-center justify-center cursor-pointer"
+            className="md:hidden p-1.5 rounded-lg hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] transition-all active:scale-95 duration-150 flex items-center justify-center cursor-pointer"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.25">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
@@ -135,7 +136,7 @@ export function Navbar() {
               <button
                 onClick={() => setSearchOpen(true)}
                 aria-label="Search"
-                className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[var(--color-text-primary)] transition-all active:scale-95 duration-150 flex items-center justify-center cursor-pointer"
+                className="p-2 rounded-full hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] transition-all active:scale-95 duration-150 flex items-center justify-center cursor-pointer"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.25">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -143,6 +144,8 @@ export function Navbar() {
               </button>
             )}
           </div>
+
+          <ThemeToggle className="p-2 rounded-full hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] transition-all active:scale-95 duration-150" />
 
           {/* Unified Control Hub Icon (For Admin & Moderator) */}
           {hasManagementRole && (
@@ -153,7 +156,7 @@ export function Navbar() {
                 className={`p-2 rounded-full transition-all active:scale-95 duration-150 flex items-center justify-center relative cursor-pointer ${
                   controlOpen
                     ? "bg-[var(--color-accent)] text-[var(--color-background-body)] shadow-md"
-                    : "hover:bg-black/5 dark:hover:bg-white/10 text-[var(--color-text-primary)]"
+                    : "hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)]"
                 }`}
                 title="Management Hub"
               >
@@ -219,7 +222,7 @@ export function Navbar() {
                   if (!bellOpen && unreadCount > 0) markAllRead();
                 }}
                 aria-label="Notifications"
-                className="relative p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[var(--color-text-primary)] transition-all active:scale-95 duration-150 flex items-center justify-center cursor-pointer"
+                className="relative p-2 rounded-full hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] transition-all active:scale-95 duration-150 flex items-center justify-center cursor-pointer"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                   <path
@@ -229,7 +232,7 @@ export function Navbar() {
                   />
                 </svg>
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 bg-red-600 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-xs">
+                  <span className="absolute top-1 right-1 w-4 h-4 bg-[var(--color-danger)] text-[var(--color-text-inverse)] text-[9px] font-black rounded-full flex items-center justify-center shadow-xs">
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
@@ -287,7 +290,7 @@ export function Navbar() {
                         setUserOpen(false);
                         handleLogout();
                       }}
-                      className="w-full text-left px-3.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-colors flex items-center gap-2.5 cursor-pointer"
+                      className="w-full text-left px-3.5 py-2 text-xs font-semibold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 rounded-xl transition-colors flex items-center gap-2.5 cursor-pointer"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -311,7 +314,7 @@ export function Navbar() {
       {/* OFF-CANVAS SIDE DRAWER (MOBILE ONLY) */}
       {drawerOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-50 animate-fade-in"
+          className="md:hidden fixed inset-0 bg-[var(--color-overlay)] backdrop-blur-xs z-50 animate-fade-in"
           onClick={() => setDrawerOpen(false)}
         />
       )}
@@ -328,7 +331,7 @@ export function Navbar() {
             </Link>
             <button
               onClick={() => setDrawerOpen(false)}
-              className="p-1.5 rounded-lg text-[var(--color-text-secondary)] hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+              className="p-1.5 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] transition-colors"
               title="Close Drawer"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.25">
@@ -373,7 +376,7 @@ export function Navbar() {
                     setDrawerOpen(false);
                     handleLogout();
                   }}
-                  className="w-full py-2.5 rounded-xl text-xs font-bold text-red-600 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 transition-colors cursor-pointer"
+                  className="w-full py-2.5 rounded-xl text-xs font-bold text-[var(--color-danger)] bg-[var(--color-danger)]/10 hover:bg-[var(--color-danger)]/20 transition-colors cursor-pointer"
                 >
                   Logout
                 </button>

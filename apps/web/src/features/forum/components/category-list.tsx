@@ -66,12 +66,12 @@ export function CategoryList({ categories, activeCategorySlug, onSelect }: Categ
                   }}
                   className={`w-full px-4 py-2.5 rounded-xl text-left transition-colors flex items-center gap-2.5 cursor-pointer ${
                     isActive
-                      ? "bg-[var(--color-accent)] text-white shadow-sm"
-                      : "text-[var(--color-text-secondary)] hover:bg-gray-50 hover:text-[var(--color-text-primary)]"
+                      ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
+                      : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
                   }`}
                 >
                   <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-xs ${
-                    isActive ? "bg-white/20 text-white" : `${cfg.bg} ${cfg.color}`
+                    isActive ? "bg-[var(--color-text-inverse)]/20 text-[var(--color-text-inverse)]" : `${cfg.bg} ${cfg.color}`
                   }`}>
                     {cfg.icon}
                   </span>
@@ -100,26 +100,26 @@ export function CategoryList({ categories, activeCategorySlug, onSelect }: Categ
                 onClick={() => onSelect(cat.slug)}
                 className={`w-full px-3 py-2.5 rounded-xl text-left transition-all duration-200 flex items-center gap-3 active:scale-[0.98] cursor-pointer group ${
                   isActive
-                    ? "bg-[var(--color-accent)] text-white shadow-sm"
-                    : "hover:bg-gray-50 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                    ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
+                    : "hover:bg-[var(--color-surface-hover)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                 }`}
               >
                 <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                  isActive ? "bg-white/20 text-white" : `${cfg.bg} ${cfg.color}`
+                  isActive ? "bg-[var(--color-text-inverse)]/20 text-[var(--color-text-inverse)]" : `${cfg.bg} ${cfg.color}`
                 }`}>
                   {cfg.icon}
                 </span>
 
                 <div className="flex flex-col gap-0 flex-1 min-w-0">
-                  <span className={`text-xs font-bold truncate ${isActive ? "text-white" : "text-[var(--color-text-primary)]"}`}>
+                  <span className={`text-xs font-bold truncate ${isActive ? "text-[var(--color-text-inverse)]" : "text-[var(--color-text-primary)]"}`}>
                     {cat.name}
                   </span>
-                  <span className={`text-[9px] font-semibold ${isActive ? "text-white/60" : "text-[var(--color-text-secondary)]"}`}>
+                  <span className={`text-[9px] font-semibold ${isActive ? "text-[var(--color-text-inverse)]/60" : "text-[var(--color-text-secondary)]"}`}>
                     {cat.threadCount} threads
                   </span>
                 </div>
 
-                <span className={`w-2 h-2 rounded-full shrink-0 ${isActive ? "bg-white/60" : "bg-green-400"}`} />
+                <span className={`w-2 h-2 rounded-full shrink-0 ${isActive ? "bg-[var(--color-text-inverse)]/60" : "bg-[var(--color-success)]"}`} />
               </button>
             );
           })}
