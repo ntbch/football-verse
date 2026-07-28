@@ -30,7 +30,7 @@ export const publicNavItems: NavItem[] = [
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
-          d="M10.707 2.293a1 1 0 011.414 0l8 8a1 1 0 01-1.414 1.414L20 11.414V20a1 1 0 01-1 1h-5a1 1 0 01-1-1v-5h-2v5a1 1 0 01-1 1H5a1 1 0 01-1-1v-8.586l-.293.293a1 1 0 01-1.414-1.414l8-8z"
+          d="M12 2.5L2 11h3v9a1 1 0 001 1h4v-5a1 1 0 011-1h2a1 1 0 011 1v5h4a1 1 0 001-1v-9h3L12 2.5z"
         />
       </svg>
     ),
