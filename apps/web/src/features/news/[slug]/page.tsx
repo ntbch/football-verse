@@ -323,8 +323,8 @@ export default function NewsDetailPage() {
               </div>
             )}
 
-            {/* Unified Editorial AI Summary & Key Takeaways Card */}
-            <div className="card p-6 flex flex-col gap-5 bg-white border border-[var(--color-border)] shadow-sm rounded-2xl" role="region" aria-label="AI Summary">
+            {/* Unified Article Summary & Key Takeaways Card */}
+            <div className="card p-6 flex flex-col gap-5 bg-white border border-[var(--color-border)] shadow-sm rounded-2xl" role="region" aria-label="Article Summary">
               {/* Header Bar */}
               <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3.5">
                 <div className="flex items-center gap-2.5">
@@ -333,16 +333,10 @@ export default function NewsDetailPage() {
                       <path d="M12 2L14.4 8.6L21 11L14.4 13.4L12 20L9.6 13.4L3 11L9.6 8.6L12 2Z" />
                     </svg>
                   </span>
-                  <div>
-                    <h2 className="font-serif-title font-black text-sm uppercase tracking-wider text-[var(--color-text-primary)] m-0 leading-none">
-                      Gemini AI Executive Summary
-                    </h2>
-                    <span className="text-[10px] text-[var(--color-text-secondary)] font-medium">Verified Editorial Analysis</span>
-                  </div>
+                  <h2 className="font-serif-title font-black text-sm uppercase tracking-wider text-[var(--color-text-primary)] m-0 leading-none">
+                    Summary
+                  </h2>
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-accent)] bg-black/5 border border-[var(--color-border)] px-2.5 py-1 rounded-full">
-                  100% AI Insight
-                </span>
               </div>
 
               {/* Summary Paragraphs */}
