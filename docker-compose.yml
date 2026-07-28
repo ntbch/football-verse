@@ -88,7 +88,7 @@ services:
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
       - PREDICTION_SERVICE_URL=http://prediction-service:8090
-      - APP_GATEWAY_URL=${APP_GATEWAY_URL:-https://footballverse.app}
+      - APP_GATEWAY_URL=${APP_GATEWAY_URL:-http://localhost:3000}
       - APP_CONTENT_INGESTION_URL=http://content-ingestion:8085
       - INTERNAL_TOKEN=${INTERNAL_TOKEN}
       - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me-dev-secret-change-me}
@@ -101,7 +101,7 @@ services:
       - AUTH_COOKIE_SAME_SITE=${AUTH_COOKIE_SAME_SITE:-Lax}
       - APP_UPLOAD_DIR=/app/uploads
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-1.5-flash}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.5-flash}
       - AI_DAILY_LIMIT=${AI_DAILY_LIMIT:-100}
       - TELEGRAM_ENABLED=${TELEGRAM_ENABLED:-false}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
@@ -146,7 +146,7 @@ services:
       - CRAWL_CRON=${CRAWL_CRON:-*/15 * * * *}
       - REDDIT_ACCESS_TOKEN=${REDDIT_ACCESS_TOKEN:-}
       - INGESTION_MODE=${INGESTION_MODE:-rss_metadata_publish}
-      - RUN_CRAWL_ON_STARTUP=true
+      - RUN_CRAWL_ON_STARTUP=${RUN_CRAWL_ON_STARTUP:-false}
       - PORT=8085
     expose:
       - "8085"

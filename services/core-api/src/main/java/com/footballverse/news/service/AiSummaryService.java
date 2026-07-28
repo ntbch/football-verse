@@ -23,7 +23,7 @@ public class AiSummaryService {
     @Value("${app.ai.gemini-api-key:}")
     private String apiKey;
 
-    @Value("${app.ai.gemini-model:gemini-1.5-flash}")
+    @Value("${app.ai.gemini-model:gemini-3.5-flash}")
     private String modelName;
 
     @Value("${app.ai.daily-limit:100}")

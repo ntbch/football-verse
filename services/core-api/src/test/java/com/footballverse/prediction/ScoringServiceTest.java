@@ -171,7 +171,7 @@ class ScoringServiceTest {
     }
 
     @Test
-    void leaderboard_all_returnsAllStatsRows() {
+    void leaderboard_all_returnsRankedStats() {
         scoreWinningFixture(0);
 
         List<LeaderboardEntryResponse> all = scoringService.leaderboard("all");

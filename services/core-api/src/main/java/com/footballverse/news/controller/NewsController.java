@@ -10,6 +10,8 @@ import com.footballverse.news.dto.NewsArticleResponse;
 import com.footballverse.news.dto.NewsCategoryResponse;
 import com.footballverse.news.dto.NewsTagResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -28,6 +31,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/news")
 @RequiredArgsConstructor
+@Validated
 public class NewsController {
     private final NewsArticleService articleService;
     private final NewsCommentService commentService;
@@ -37,16 +41,16 @@ public class NewsController {
             @RequestParam(required = false) List<Long> categories,
             @RequestParam(required = false) List<Long> tags,
             @RequestParam(required = false) String provider,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size
     ) {
         return ApiResponse.ok(articleService.published(categories, tags, provider, page, size));
     }
 
     @GetMapping("/trending")
     public ApiResponse<PageResponse<NewsArticleResponse>> trending(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size
     ) {
         return ApiResponse.ok(articleService.trending(page, size));
     }

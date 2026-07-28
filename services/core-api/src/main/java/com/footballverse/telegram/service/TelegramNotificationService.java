@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.net.URI;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -32,7 +33,7 @@ public class TelegramNotificationService {
     @Value("${app.telegram.channel-id:@footballverse_news}")
     private String channelId;
 
-    @Value("${app.gateway.url:https://footballverse.app}")
+    @Value("${app.gateway.url:http://localhost:3000}")
     private String gatewayUrl;
 
     // 20-minute cooldown cache to prevent duplicate breaking news pushes
@@ -80,8 +81,9 @@ public class TelegramNotificationService {
             body.put("parse_mode", "HTML");
             body.put("disable_web_page_preview", false);
 
-            if (buttonText != null && !buttonText.isBlank() && buttonUrl != null && !buttonUrl.isBlank()) {
-                Map<String, Object> button = Map.of("text", buttonText, "url", buttonUrl);
+            String telegramButtonUrl = telegramButtonUrl(buttonUrl);
+            if (buttonText != null && !buttonText.isBlank() && telegramButtonUrl != null) {
+                Map<String, Object> button = Map.of("text", buttonText, "url", telegramButtonUrl);
                 List<List<Map<String, Object>>> inlineKeyboard = List.of(List.of(button));
                 body.put("reply_markup", Map.of("inline_keyboard", inlineKeyboard));
             }
@@ -130,8 +132,9 @@ public class TelegramNotificationService {
             body.put("caption", captionHtml);
             body.put("parse_mode", "HTML");
 
-            if (buttonText != null && !buttonText.isBlank() && buttonUrl != null && !buttonUrl.isBlank()) {
-                Map<String, Object> button = Map.of("text", buttonText, "url", buttonUrl);
+            String telegramButtonUrl = telegramButtonUrl(buttonUrl);
+            if (buttonText != null && !buttonText.isBlank() && telegramButtonUrl != null) {
+                Map<String, Object> button = Map.of("text", buttonText, "url", telegramButtonUrl);
                 List<List<Map<String, Object>>> inlineKeyboard = List.of(List.of(button));
                 body.put("reply_markup", Map.of("inline_keyboard", inlineKeyboard));
             }
@@ -234,6 +237,23 @@ public class TelegramNotificationService {
         }
         if (article.getHeroRawItem() != null && article.getHeroRawItem().getImageUrl() != null && article.getHeroRawItem().getImageUrl().startsWith("http")) {
             return article.getHeroRawItem().getImageUrl();
+        }
+        return null;
+    }
+
+    static String telegramButtonUrl(String url) {
+        try {
+            URI uri = URI.create(url);
+            String host = uri.getHost();
+            if (("http".equals(uri.getScheme()) || "https".equals(uri.getScheme()))
+                    && host != null
+                    && !"localhost".equalsIgnoreCase(host)
+                    && !"127.0.0.1".equals(host)
+                    && !"::1".equals(host)) {
+                return url;
+            }
+        } catch (IllegalArgumentException ignored) {
+            // Telegram messages still go out without an invalid button.
         }
         return null;
     }

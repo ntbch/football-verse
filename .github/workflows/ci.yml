@@ -36,6 +36,7 @@ jobs:
           cache-dependency-path: |
             apps/web/package-lock.json
             services/gateway/package-lock.json
+            services/content-ingestion/package-lock.json
 
       - uses: actions/setup-java@v4
         with:
@@ -56,6 +57,7 @@ jobs:
         run: |
           npm --prefix apps/web ci
           npm --prefix services/gateway ci
+          npm --prefix services/content-ingestion ci
 
       - name: Install Python test dependencies
         shell: pwsh

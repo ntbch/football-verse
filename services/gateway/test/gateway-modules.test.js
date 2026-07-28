@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
-const { requestIdMiddleware, cachePrivacyMiddleware } = require("../dist/middleware/security");
+const { requestIdMiddleware, cachePrivacyMiddleware, corsMiddleware } = require("../dist/middleware/security");
 const { metricsMiddleware, getMetricsSummary } = require("../dist/middleware/metrics");
 const { safeErrorHandler } = require("../dist/middleware/error-handler");
 
@@ -14,6 +14,10 @@ function responseStub() {
     headers,
     setHeader(name, val) {
       headers[name.toLowerCase()] = val;
+    },
+    header(name, val) {
+      this.setHeader(name, val);
+      return this;
     },
     status(code) {
       this.statusCode = code;
@@ -52,6 +56,16 @@ test("cachePrivacyMiddleware sets private, no-store for auth routes", () => {
 
   assert.equal(res.headers["cache-control"], "private, no-store");
   assert.equal(res.headers["pragma"], "no-cache");
+});
+
+test("corsMiddleware only allows the configured origin", () => {
+  const allowed = responseStub();
+  corsMiddleware({ headers: { origin: "http://localhost:3000" }, method: "GET" }, allowed, () => {});
+  assert.equal(allowed.headers["access-control-allow-origin"], "http://localhost:3000");
+
+  const rejected = responseStub();
+  corsMiddleware({ headers: { origin: "https://attacker.pages.dev" }, method: "GET" }, rejected, () => {});
+  assert.equal(rejected.headers["access-control-allow-origin"], undefined);
 });
 
 test("metricsMiddleware records route group statistics", () => {

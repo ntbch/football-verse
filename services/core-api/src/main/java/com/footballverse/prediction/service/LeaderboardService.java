@@ -5,7 +5,6 @@ import com.footballverse.prediction.dto.LeaderboardEntryResponse;
 import com.footballverse.prediction.dto.StatsResponse;
 import com.footballverse.prediction.model.PredictionStats;
 import com.footballverse.prediction.model.UserBadge;
-import com.footballverse.prediction.model.UserPrediction;
 import com.footballverse.prediction.repository.PredictionStatsRepository;
 import com.footballverse.prediction.repository.UserBadgeRepository;
 import com.footballverse.prediction.repository.UserPredictionRepository;
@@ -13,11 +12,11 @@ import com.footballverse.user.model.UserProfile;
 import com.footballverse.user.repository.UserProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -50,36 +49,30 @@ public class LeaderboardService {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "leaderboard", key = "#period")
     public List<LeaderboardEntryResponse> leaderboard(String period) {
-        List<PredictionStats> all;
+        return leaderboard(period, 100);
+    }
+
+    @Transactional(readOnly = true)
+    @Cacheable(value = "leaderboard", key = "#period + ':' + #limit")
+    public List<LeaderboardEntryResponse> leaderboard(String period, int limit) {
         if ("weekly".equals(period)) {
             Instant weekStart = Instant.now().minusSeconds(7 * 24 * 60 * 60);
-            List<UserPrediction> weeklyPredictions = predictionRepo.findByFixtureKickoffAfter(weekStart);
-            Map<Long, Integer> weeklyPoints = weeklyPredictions.stream()
-                    .collect(Collectors.groupingBy(
-                            p -> p.getUser().getId(),
-                            Collectors.summingInt(UserPrediction::getPoints)));
-            Map<Long, Long> weeklyCorrect = weeklyPredictions.stream()
-                    .filter(UserPrediction::isCorrect)
-                    .collect(Collectors.groupingBy(p -> p.getUser().getId(), Collectors.counting()));
-
-            all = statsRepo.findAllByOrderByTotalPointsDesc().stream()
-                    .filter(s -> weeklyPoints.containsKey(s.getUser().getId()))
-                    .collect(Collectors.toList());
-
-            List<Long> userIds = all.stream().map(s -> s.getUser().getId()).collect(Collectors.toList());
+            List<UserPredictionRepository.WeeklyScore> weeklyScores = predictionRepo.findWeeklyScores(weekStart, PageRequest.of(0, limit));
+            List<Long> userIds = weeklyScores.stream().map(UserPredictionRepository.WeeklyScore::getUserId).toList();
+            Map<Long, PredictionStats> statsByUserId = statsRepo.findByUserIdIn(userIds).stream()
+                    .collect(Collectors.toMap(s -> s.getUser().getId(), s -> s));
             Map<Long, UserProfile> profilesById = profileRepo.findByUserIdIn(userIds)
                     .stream().collect(Collectors.toMap(p -> p.getUser().getId(), p -> p, (a, b) -> a));
 
             AtomicInteger rank = new AtomicInteger(1);
-            return all.stream()
-                    .sorted(Comparator.comparingInt((PredictionStats s) -> weeklyPoints.getOrDefault(s.getUser().getId(), 0)).reversed())
-                    .map(s -> leaderboardEntry(s, profilesById.get(s.getUser().getId()), weeklyPoints.getOrDefault(s.getUser().getId(), 0), weeklyCorrect.getOrDefault(s.getUser().getId(), 0L), rank.getAndIncrement()))
+            return weeklyScores.stream()
+                    .filter(score -> statsByUserId.containsKey(score.getUserId()))
+                    .map(score -> leaderboardEntry(statsByUserId.get(score.getUserId()), profilesById.get(score.getUserId()), score.getPoints(), score.getCorrectPicks(), rank.getAndIncrement()))
                     .collect(Collectors.toList());
         }
 
-        all = statsRepo.findAllByOrderByTotalPointsDesc();
+        List<PredictionStats> all = statsRepo.findAllByOrderByTotalPointsDesc(PageRequest.of(0, limit));
         if (all.isEmpty()) return List.of();
 
         List<Long> userIds = all.stream().map(s -> s.getUser().getId()).collect(Collectors.toList());

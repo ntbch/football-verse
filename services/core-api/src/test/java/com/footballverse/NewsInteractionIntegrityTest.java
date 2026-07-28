@@ -9,6 +9,7 @@ import com.footballverse.news.repository.NewsBookmarkRepository;
 import com.footballverse.news.repository.NewsCommentRepository;
 import com.footballverse.news.service.NewsCommentService;
 import com.footballverse.news.repository.NewsLikeRepository;
+import com.footballverse.news.service.NewsArticleService;
 import com.footballverse.news.dto.CommentRequest;
 import com.footballverse.security.CurrentUser;
 import com.footballverse.user.model.UserAccount;
@@ -48,6 +49,9 @@ public class NewsInteractionIntegrityTest {
     private NewsCommentService service;
 
     @Autowired
+    private NewsArticleService articleService;
+
+    @Autowired
     private UserAccountRepository users;
 
     @MockBean
@@ -64,6 +68,7 @@ public class NewsInteractionIntegrityTest {
                 "hash"
         ));
         when(currentUser.get()).thenReturn(user);
+        when(currentUser.getOrNull()).thenReturn(user);
     }
 
     @Test
@@ -111,6 +116,25 @@ public class NewsInteractionIntegrityTest {
         assertThat(service.comments(article.getSlug())).hasSize(1);
         assertThat(service.like(article.getId())).isFalse();
         assertThat(service.bookmark(article.getId())).isFalse();
+    }
+
+    @Test
+    void publishedArticlesIncludeInteractionCountsAndCurrentUserState() {
+        NewsArticle first = articles.saveAndFlush(article("First Article", "first-" + UUID.randomUUID(), ArticleStatus.PUBLISHED));
+        NewsArticle second = articles.saveAndFlush(article("Second Article", "second-" + UUID.randomUUID(), ArticleStatus.PUBLISHED));
+        service.like(first.getId());
+        service.bookmark(first.getId());
+
+        var page = articleService.published(null, null, null, 0, 20);
+        var firstResponse = page.content().stream().filter(article -> article.id().equals(first.getId())).findFirst().orElseThrow();
+        var secondResponse = page.content().stream().filter(article -> article.id().equals(second.getId())).findFirst().orElseThrow();
+
+        assertThat(firstResponse.likes()).isEqualTo(1);
+        assertThat(firstResponse.bookmarks()).isEqualTo(1);
+        assertThat(firstResponse.liked()).isTrue();
+        assertThat(firstResponse.bookmarked()).isTrue();
+        assertThat(secondResponse.likes()).isZero();
+        assertThat(secondResponse.liked()).isFalse();
     }
 
     private NewsArticle article(String title, String slug, ArticleStatus status) {

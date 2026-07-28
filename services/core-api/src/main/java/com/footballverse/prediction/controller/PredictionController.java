@@ -72,9 +72,10 @@ public class PredictionController {
 
     @GetMapping("/leaderboard")
     public ApiResponse<List<LeaderboardEntryResponse>> leaderboard(
-            @RequestParam(defaultValue = "weekly") String period
+            @RequestParam(defaultValue = "weekly") String period,
+            @RequestParam(defaultValue = "50") int limit
     ) {
-        return ApiResponse.ok(leaderboardService.leaderboard(period));
+        return ApiResponse.ok(leaderboardService.leaderboard(period, Math.min(Math.max(limit, 1), 100)));
     }
 
     @GetMapping("/match-centre")

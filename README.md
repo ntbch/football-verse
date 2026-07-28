@@ -2,7 +2,7 @@
 
 Football Verse is a full-stack football community and career-management platform. The repository is organized by deployable so code ownership, data ownership, and verification boundaries stay explicit.
 
-## Start and verify
+## Local development
 
 Prerequisites: Docker Desktop/Engine, Node.js/npm, Java/Maven, and Python with the service development requirements installed.
 
@@ -11,9 +11,14 @@ Copy-Item .env.example .env
 docker compose up --build
 ```
 
-The example token is for local development only. Replace `INTERNAL_TOKEN`,
-`JWT_SECRET`, database passwords, and OAuth credentials before any public
-deployment.
+This repository currently runs local-first: Docker Compose starts every service
+on this machine and no scheduled workflow deploys or calls a remote runtime.
+The example token is local-only; keep real credentials in the ignored `.env`.
+
+Telegram, Gemini, Google OAuth, and the Football API remain available locally.
+Add their credentials to `.env`; set `TELEGRAM_ENABLED=true` to enable Telegram,
+and authorize `http://localhost:3000` in Google OAuth. Content ingestion stays
+idle at startup; set `RUN_CRAWL_ON_STARTUP=true` only when testing it.
 
 Open the web app at `http://localhost:3000`; the only public API entry point is the Gateway at `http://localhost:8000`.
 

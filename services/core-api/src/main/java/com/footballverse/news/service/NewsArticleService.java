@@ -35,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -60,7 +61,7 @@ public class NewsArticleService {
         boolean hasTags = tagIds != null && !tagIds.isEmpty();
         boolean hasProvider = provider != null && !provider.isBlank() && !"ALL".equalsIgnoreCase(provider);
         String cleanProvider = hasProvider ? provider.trim().toLowerCase() : "";
-        return PageResponse.from(articles.filterPublishedArticles(
+        return toPage(articles.filterPublishedArticles(
                 hasCategories,
                 categoryIds,
                 hasTags,
@@ -68,13 +69,12 @@ public class NewsArticleService {
                 hasProvider,
                 cleanProvider,
                 PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "publishedAt"))
-        ).map(this::toArticle));
+        ));
     }
 
     @Transactional(readOnly = true)
     public PageResponse<NewsArticleResponse> trending(int page, int size) {
-        return PageResponse.from(articles.findTrendingArticles(PageRequest.of(page, size))
-                .map(this::toArticle));
+        return toPage(articles.findTrendingArticles(PageRequest.of(page, size)));
     }
 
     public double calculateHotScore(NewsArticle article) {
@@ -264,10 +264,37 @@ public class NewsArticleService {
     }
 
     private NewsArticleResponse toArticle(NewsArticle article, boolean includeSources) {
-        com.footballverse.user.model.UserAccount user = currentUser.getOrNull();
-        boolean isLiked = false;
-        boolean isBookmarked = false;
-        if (user != null) {
+        return toArticle(article, includeSources, null);
+    }
+
+    private PageResponse<NewsArticleResponse> toPage(org.springframework.data.domain.Page<NewsArticle> page) {
+        List<NewsArticle> pageArticles = page.getContent();
+        List<Long> articleIds = pageArticles.stream().map(NewsArticle::getId).toList();
+        if (articleIds.isEmpty()) {
+            return new PageResponse<>(List.of(), page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages());
+        }
+        Map<Long, Long> likeCounts = countByArticleId(likes.countByArticleIds(articleIds));
+        Map<Long, Long> bookmarkCounts = countByArticleId(bookmarks.countByArticleIds(articleIds));
+        UserAccount user = currentUser.getOrNull();
+        java.util.Set<Long> likedArticleIds = user == null ? Set.of() : Set.copyOf(likes.findArticleIdsByArticleIdInAndUserId(articleIds, user.getId()));
+        java.util.Set<Long> bookmarkedArticleIds = user == null ? Set.of() : Set.copyOf(bookmarks.findArticleIdsByArticleIdInAndUserId(articleIds, user.getId()));
+        ArticleInteractions interactions = new ArticleInteractions(likeCounts, bookmarkCounts, likedArticleIds, bookmarkedArticleIds);
+        return new PageResponse<>(
+                pageArticles.stream().map(article -> toArticle(article, false, interactions)).toList(),
+                page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages());
+    }
+
+    private Map<Long, Long> countByArticleId(List<Object[]> counts) {
+        return counts.stream().collect(Collectors.toMap(
+                count -> ((Number) count[0]).longValue(),
+                count -> ((Number) count[1]).longValue()));
+    }
+
+    private NewsArticleResponse toArticle(NewsArticle article, boolean includeSources, ArticleInteractions interactions) {
+        com.footballverse.user.model.UserAccount user = interactions == null ? currentUser.getOrNull() : null;
+        boolean isLiked = interactions != null && interactions.likedArticleIds().contains(article.getId());
+        boolean isBookmarked = interactions != null && interactions.bookmarkedArticleIds().contains(article.getId());
+        if (interactions == null && user != null) {
             isLiked = likes.findByArticleAndUser(article, user).isPresent();
             isBookmarked = bookmarks.findByArticleAndUser(article, user).isPresent();
         }
@@ -276,7 +303,8 @@ public class NewsArticleService {
                 article.getSummary(), article.getContent(), article.getStatus(),
                 article.getCategory() == null ? null : article.getCategory().getName(),
                 article.getTags().stream().map(NewsTag::getName).collect(Collectors.toSet()),
-                likes.countByArticleId(article.getId()), bookmarks.countByArticleId(article.getId()),
+                interactions == null ? likes.countByArticleId(article.getId()) : interactions.likeCounts().getOrDefault(article.getId(), 0L),
+                interactions == null ? bookmarks.countByArticleId(article.getId()) : interactions.bookmarkCounts().getOrDefault(article.getId(), 0L),
                 article.getPublishedAt(),
                 isLiked,
                 isBookmarked,
@@ -318,4 +346,11 @@ public class NewsArticleService {
                         : List.of()
         );
     }
+
+    private record ArticleInteractions(
+            Map<Long, Long> likeCounts,
+            Map<Long, Long> bookmarkCounts,
+            Set<Long> likedArticleIds,
+            Set<Long> bookmarkedArticleIds
+    ) {}
 }
