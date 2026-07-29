@@ -56,7 +56,6 @@ public class NewsArticleService {
     private final KeyPointEvidenceRepository evidence;
     private final RichTextSanitizer sanitizer;
     private final CurrentUser currentUser;
-    private final AiSummaryService aiSummaryService;
 
     @Transactional(readOnly = true)
     public PageResponse<NewsArticleResponse> published(List<Long> categoryIds, List<Long> tagIds, String provider, int page, int size) {
@@ -163,52 +162,11 @@ public class NewsArticleService {
         return toArticle(adminArticle(id));
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public NewsArticleResponse detail(String slug) {
         NewsArticle article = articles.findBySlugAndStatus(slug, ArticleStatus.PUBLISHED)
                 .orElseThrow(() -> new ResourceNotFoundException("Article not found"));
-
-        List<com.footballverse.news.model.StoryKeyPoint> existingPoints = keyPoints.findByStoryIdOrderByOrdinalAsc(article.getId());
-        if (existingPoints.size() <= 1) {
-            generateAiSummaryAndKeyPointsForStory(article);
-        }
-
         return toArticle(article, true);
-    }
-
-    private void generateAiSummaryAndKeyPointsForStory(NewsArticle article) {
-        String sourceText = (article.getSummary() != null && !article.getSummary().isBlank())
-                ? article.getSummary()
-                : article.getTitle();
-
-        AiSummaryService.SummaryResult result = aiSummaryService.generateSummaryAndKeyPoints(
-                article.getTitle(),
-                sourceText,
-                sourceText
-        );
-
-        if (result.summary() != null && !result.summary().isBlank()) {
-            article.setSummary(result.summary());
-            articles.save(article);
-        }
-
-        if (result.keyPoints() != null && !result.keyPoints().isEmpty()) {
-            List<com.footballverse.news.model.StoryKeyPoint> oldPoints = keyPoints.findByStoryIdOrderByOrdinalAsc(article.getId());
-            if (!oldPoints.isEmpty()) {
-                keyPoints.deleteAll(oldPoints);
-                keyPoints.flush();
-            }
-            int ordinal = 1;
-            for (String pt : result.keyPoints()) {
-                if (pt == null || pt.isBlank()) continue;
-                com.footballverse.news.model.StoryKeyPoint kp = new com.footballverse.news.model.StoryKeyPoint();
-                kp.setStory(article);
-                kp.setOrdinal(ordinal++);
-                kp.setText(pt.trim());
-                kp.setConfidence(java.math.BigDecimal.valueOf(0.95));
-                keyPoints.save(kp);
-            }
-        }
     }
 
     public NewsArticleResponse createArticle(NewsArticleRequest request) {
@@ -362,6 +320,7 @@ public class NewsArticleService {
                 article.getSource() == null ? null : article.getSource().getName(),
                 article.getSourceUrl(),
                 article.getSourceCountCached(),
+                article.getLastMaterialChangeAt(),
                 includeSources && article.getContentKind() == com.footballverse.news.model.NewsContentKind.AGGREGATED_STORY
                         ? storyItems.findSourcesByStoryId(article.getId()).stream()
                                 .map(item -> new StorySourceResponse(

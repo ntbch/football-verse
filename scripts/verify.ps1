@@ -77,6 +77,9 @@ function Stop-TestInfrastructure {
 }
 
 function Invoke-IntegratedSmoke {
+    if ([string]::IsNullOrWhiteSpace($env:SMOKE_EMAIL) -or [string]::IsNullOrWhiteSpace($env:SMOKE_PASSWORD)) {
+        throw "Integrated smoke requires SMOKE_EMAIL and SMOKE_PASSWORD for a verified non-privileged test account."
+    }
     $env:POSTGRES_PORT = "15432"
     $env:MATCH_GAME_DB_PORT = "15433"
     $env:GATEWAY_PORT = "18000"
@@ -107,7 +110,7 @@ function Invoke-IntegratedSmoke {
     try {
         docker compose -p $smokeProject up -d --build postgres redis match-game-postgres match-engine game-service prediction-service core-service gateway-service web-client
         if ($LASTEXITCODE -ne 0) { throw "Could not start integrated smoke topology" }
-        & $predictionPython (Join-Path $repoRoot "scripts/smoke.py") --base "http://127.0.0.1:18000" --web "http://127.0.0.1:13000"
+        & $predictionPython (Join-Path $repoRoot "scripts/smoke.py") --base "http://127.0.0.1:18000" --web "http://127.0.0.1:13000" --email $env:SMOKE_EMAIL --password $env:SMOKE_PASSWORD
         if ($LASTEXITCODE -ne 0) { throw "Integrated smoke failed" }
         node (Join-Path $repoRoot "scripts/browser-auth-smoke.js")
         if ($LASTEXITCODE -ne 0) { throw "Browser auth smoke failed" }

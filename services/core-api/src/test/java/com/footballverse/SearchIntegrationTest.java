@@ -102,4 +102,10 @@ public class SearchIntegrationTest {
                 .andExpect(jsonPath("$.data.forum.content").isArray())
                 .andExpect(jsonPath("$.data.forum.content[0].title").value("Is Kante the best midfielder ever?"));
     }
+
+    @Test
+    void rejectsUnboundedSearchPages() throws Exception {
+        mockMvc.perform(get("/search").param("q", "football").param("size", "51"))
+                .andExpect(status().isBadRequest());
+    }
 }

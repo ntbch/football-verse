@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 import time
 import uuid
 from urllib.error import HTTPError, URLError
@@ -10,7 +11,7 @@ class SmokeFailure(RuntimeError):
     pass
 
 
-def request(method, url, token=None, payload=None, timeout=15, return_headers=False, cookie=None):
+def request(method, url, token=None, payload=None, timeout=15, return_headers=False, cookie=None, origin=None):
     body = None if payload is None else json.dumps(payload).encode("utf-8")
     headers = {"Accept": "application/json"}
     if body is not None:
@@ -19,6 +20,8 @@ def request(method, url, token=None, payload=None, timeout=15, return_headers=Fa
         headers["Authorization"] = f"Bearer {token}"
     if cookie:
         headers["Cookie"] = cookie
+    if origin:
+        headers["Origin"] = origin
 
     try:
         with urlopen(Request(url, data=body, headers=headers, method=method), timeout=timeout) as response:
@@ -61,12 +64,12 @@ def main():
     parser = argparse.ArgumentParser(description="Football Verse production-shaped smoke")
     parser.add_argument("--base", default="http://127.0.0.1:8000")
     parser.add_argument("--web", default="http://127.0.0.1:3000")
+    parser.add_argument("--email", default=os.environ.get("SMOKE_EMAIL"))
+    parser.add_argument("--password", default=os.environ.get("SMOKE_PASSWORD"))
     args = parser.parse_args()
 
     suffix = uuid.uuid4().hex[:10]
-    email = "admin@footballverse.local"
-    username = "admin"
-    password = "ChangeMe123!"
+    require(args.email and args.password, "Set SMOKE_EMAIL and SMOKE_PASSWORD for a verified non-privileged test account")
 
     wait_for("Gateway", lambda: request("GET", f"{args.base}/health"))
     _, gateway_headers = request("GET", f"{args.base}/health", return_headers=True)
@@ -83,7 +86,7 @@ def main():
     auth, auth_headers = request(
         "POST",
         f"{args.base}/api/v1/auth/login",
-        payload={"email": email, "password": password},
+        payload={"email": args.email, "password": args.password},
         return_headers=True,
     )
     set_cookie = auth_headers.get("Set-Cookie")
@@ -92,7 +95,7 @@ def main():
     refresh_cookie = set_cookie.split(";", 1)[0]
     token = auth["accessToken"]
     me = request("GET", f"{args.base}/api/v1/auth/me", token=token)
-    require(me["email"] == email and me["username"] == username, "Current-user identity mismatch")
+    require(me["email"] == args.email, "Current-user identity mismatch")
 
     categories = request("GET", f"{args.base}/api/v1/forum/categories")
     require(categories, "Forum seed categories are missing")
@@ -131,6 +134,7 @@ def main():
         f"{args.base}/api/v1/auth/refresh",
         payload={},
         cookie=refresh_cookie,
+        origin=args.web,
         return_headers=True,
     )
     rotated_cookie = refresh_headers.get("Set-Cookie").split(";", 1)[0]
@@ -139,6 +143,7 @@ def main():
         f"{args.base}/api/v1/auth/logout",
         payload={},
         cookie=rotated_cookie,
+        origin=args.web,
     )
 
     print(json.dumps({

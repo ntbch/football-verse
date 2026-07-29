@@ -10,6 +10,7 @@ import com.footballverse.news.repository.NewsCommentRepository;
 import com.footballverse.news.service.NewsCommentService;
 import com.footballverse.news.repository.NewsLikeRepository;
 import com.footballverse.news.service.NewsArticleService;
+import com.footballverse.news.service.AiSummaryService;
 import com.footballverse.news.dto.CommentRequest;
 import com.footballverse.security.CurrentUser;
 import com.footballverse.user.model.UserAccount;
@@ -28,6 +29,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @SpringBootTest
 @TestPropertySource(properties = "app.crawl.startup-enabled=false")
@@ -56,6 +58,9 @@ public class NewsInteractionIntegrityTest {
 
     @MockBean
     private CurrentUser currentUser;
+
+    @MockBean
+    private AiSummaryService aiSummaryService;
 
     private UserAccount user;
 
@@ -143,6 +148,14 @@ public class NewsInteractionIntegrityTest {
         service.bookmark(article.getId());
 
         assertThat(articleService.bookmarked()).extracting(response -> response.id()).containsExactly(article.getId());
+    }
+
+    @Test
+    void articleDetailDoesNotInvokeAiOrMutateTheStory() {
+        NewsArticle article = articles.saveAndFlush(article("Read only article", "read-only-" + UUID.randomUUID(), ArticleStatus.PUBLISHED));
+
+        assertThat(articleService.detail(article.getSlug()).summary()).isEqualTo(article.getSummary());
+        verifyNoInteractions(aiSummaryService);
     }
 
     private NewsArticle article(String title, String slug, ArticleStatus status) {

@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.HttpHeaders;
+import org.springframework.beans.factory.annotation.Value;
 
 @RestController
 @RequestMapping("/auth")
@@ -31,6 +32,9 @@ public class AuthController {
     private final AuthService authService;
     private final RefreshCookieService refreshCookieService;
     private final com.footballverse.auth.service.AuthEmailFlowService emailFlows;
+
+    @Value("${app.cors-origin:http://localhost:3000}")
+    private String browserOrigin;
 
     @PostMapping("/register")
     public ApiResponse<VerificationPendingResponse> register(
@@ -85,6 +89,7 @@ public class AuthController {
             HttpServletRequest request,
             HttpServletResponse response
     ) {
+        requireBrowserOrigin(request);
         String refreshToken = requiredRefreshToken(refreshCookieService.resolve(request));
         return withRefreshCookie(authService.refresh(refreshToken), response);
     }
@@ -94,6 +99,7 @@ public class AuthController {
             HttpServletRequest request,
             HttpServletResponse response
     ) {
+        requireBrowserOrigin(request);
         String refreshToken = refreshCookieService.resolve(request);
         if (refreshToken != null && !refreshToken.isBlank()) {
             authService.logout(refreshToken);
@@ -117,5 +123,12 @@ public class AuthController {
             throw new BadRequestException("Refresh token is required");
         }
         return token;
+    }
+
+    private void requireBrowserOrigin(HttpServletRequest request) {
+        String origin = request.getHeader(HttpHeaders.ORIGIN);
+        if (origin != null && !browserOrigin.equals(origin)) {
+            throw new BadRequestException("Invalid browser origin");
+        }
     }
 }

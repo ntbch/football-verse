@@ -29,14 +29,16 @@ const INTERNAL_TOKEN = process.env.INTERNAL_TOKEN;
 const CRAWL_CRON = process.env.CRAWL_CRON || '*/15 * * * *';
 const INGESTION_MODE = process.env.INGESTION_MODE || 'rss_metadata_shadow';
 const WORKER_INSTANCE_ID = process.env.WORKER_INSTANCE_ID || randomUUID();
+const SPOOL_BATCH_SIZE = Math.min(Math.max(Number(process.env.SPOOL_BATCH_SIZE || 25), 1), 100);
 
 const feedCache = new Map<string, { etag?: string; lastModified?: string }>();
 let cycleRunning = false;
+let spoolRunning = false;
 const controlState: ControlState = { running: false };
 
 function internalToken(): string {
-  if (!INTERNAL_TOKEN || INTERNAL_TOKEN.length < 16) {
-    throw new Error('INTERNAL_TOKEN must be configured with at least 16 characters');
+  if (!INTERNAL_TOKEN || INTERNAL_TOKEN.length < 24) {
+    throw new Error('INTERNAL_TOKEN must be configured with at least 24 characters');
   }
   return INTERNAL_TOKEN;
 }
@@ -55,13 +57,16 @@ interface ImportResponseData {
 }
 
 export async function processSpoolQueue(): Promise<void> {
-  const pendingItems = await fetchPendingSpoolItems(100);
-  if (pendingItems.length === 0) return;
+  if (spoolRunning) return;
+  spoolRunning = true;
+  try {
+    const pendingItems = await fetchPendingSpoolItems(SPOOL_BATCH_SIZE);
+    if (pendingItems.length === 0) return;
 
   console.log(`[Worker] Processing ${pendingItems.length} pending spool items...`);
   const gotScraping = await getGotScraping();
 
-  for (const item of pendingItems) {
+    for (const item of pendingItems) {
     try {
       if (!isValidIngestionUrl(item.sourceUrl)) {
         await updateSpoolItemSuccess(item.id, 'SKIPPED', { status: 'REJECTED', message: 'Unsafe source URL' });
@@ -102,6 +107,9 @@ export async function processSpoolQueue(): Promise<void> {
       console.error(`[Worker] Spool item #${item.id} import failed: ${safeError}`);
       await updateSpoolItemFailure(item.id, item.attempts, safeError);
     }
+    }
+  } finally {
+    spoolRunning = false;
   }
 }
 

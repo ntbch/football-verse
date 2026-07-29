@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import Link from "next/link";
 import { useParams, usePathname, useSearchParams } from "next/navigation";
 import { PublicShell } from "@/shared/components/page-shell";
@@ -89,6 +89,20 @@ export default function PredictionDetailPage() {
   const [tab, setTab] = useState<DetailTab>("overview");
   const [now, setNow] = useState(() => Date.now());
   const timezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", []);
+
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    const tabs: DetailTab[] = ["overview", "lineups", "analysis"];
+    const current = tabs.indexOf(tab);
+    const next = event.key === "ArrowRight" ? tabs[(current + 1) % tabs.length]
+      : event.key === "ArrowLeft" ? tabs[(current + tabs.length - 1) % tabs.length]
+      : event.key === "Home" ? tabs[0]
+      : event.key === "End" ? tabs[tabs.length - 1]
+      : null;
+    if (!next) return;
+    event.preventDefault();
+    setTab(next);
+    document.getElementById(`match-tab-${next}`)?.focus();
+  };
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 60_000);
@@ -194,13 +208,17 @@ export default function PredictionDetailPage() {
             <div aria-label="Match information" className="grid grid-cols-3 rounded-xl bg-[var(--color-surface-muted)] p-1 border border-[var(--color-border)]/60" role="tablist">
               {(["overview", "lineups", "analysis"] as DetailTab[]).map((item) => (
                 <button
+                  aria-controls={`match-panel-${item}`}
                   aria-selected={tab === item}
                   className={`min-h-11 rounded-lg px-2 text-sm font-bold capitalize transition-all cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] ${
                     tab === item ? "bg-[var(--color-background-surface)] text-[var(--color-text-primary)] shadow-sm" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                   }`}
                   key={item}
+                  id={`match-tab-${item}`}
                   onClick={() => setTab(item)}
+                  onKeyDown={handleTabKeyDown}
                   role="tab"
+                  tabIndex={tab === item ? 0 : -1}
                   type="button"
                 >
                   {item}
@@ -210,6 +228,7 @@ export default function PredictionDetailPage() {
 
             <div className="mt-4">
               {tab === "overview" && (
+                <div aria-labelledby="match-tab-overview" id="match-panel-overview" role="tabpanel" tabIndex={0}>
                 <section className="card p-5 sm:p-6 border border-[var(--color-border)] rounded-2xl shadow-xs space-y-6">
                   {/* Match Details Grid */}
                   <div>
@@ -321,10 +340,11 @@ export default function PredictionDetailPage() {
                     </div>
                   )}
                 </section>
+                </div>
               )}
 
               {tab === "lineups" && (
-                data.lineups.coverage === "PUBLISHED" ? (
+                <div aria-labelledby="match-tab-lineups" id="match-panel-lineups" role="tabpanel" tabIndex={0}>{data.lineups.coverage === "PUBLISHED" ? (
                   <section className="card p-5 sm:p-6 border border-[var(--color-border)] rounded-2xl shadow-xs">
                     <div className="grid gap-4 md:grid-cols-2">
                       {data.lineups.teams.map((team) => (
@@ -339,11 +359,11 @@ export default function PredictionDetailPage() {
                       Check again
                     </button>
                   </section>
-                )
+                )}</div>
               )}
 
               {tab === "analysis" && (
-                <section className="card p-5 sm:p-6 border border-[var(--color-border)] rounded-2xl shadow-xs">
+                <div aria-labelledby="match-tab-analysis" id="match-panel-analysis" role="tabpanel" tabIndex={0}><section className="card p-5 sm:p-6 border border-[var(--color-border)] rounded-2xl shadow-xs">
                   {fixture.aiPrediction ? (
                     <MatchAnalytics match={fixture} />
                   ) : (
@@ -353,6 +373,7 @@ export default function PredictionDetailPage() {
                     </div>
                   )}
                 </section>
+                </div>
               )}
             </div>
           </div>

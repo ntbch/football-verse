@@ -34,6 +34,7 @@ spring:
 
 app:
   environment: ${APP_ENV:development}
+  cors-origin: ${CORS_ORIGIN:http://localhost:3000}
   internal:
     token: ${INTERNAL_TOKEN}
   gateway:
@@ -41,11 +42,9 @@ app:
   content-ingestion:
     url: ${APP_CONTENT_INGESTION_URL:http://localhost:8085}
   seed:
-    enabled: ${APP_SEED_ENABLED:true}
-    admin-email: ${APP_ADMIN_EMAIL:admin@footballverse.local}
-    admin-password: ${APP_ADMIN_PASSWORD:ChangeMe123!}
-    moderator-email: ${APP_MODERATOR_EMAIL:moderator@footballverse.local}
-    moderator-password: ${APP_MODERATOR_PASSWORD:ChangeMe123!}
+    enabled: ${APP_SEED_ENABLED:false}
+    admin-password: ${APP_ADMIN_PASSWORD:}
+    moderator-password: ${APP_MODERATOR_PASSWORD:}
     news-categories: ${APP_SEED_NEWS_CATEGORIES:League News=league-tournament-news;Match Analysis=match-preview-analysis;Transfers=transfer-news;Off the Pitch=off-the-pitch;Opinions=expert-fan-opinions;Football Facts=football-facts-tactical-insights;Others=others}
     forum-categories: ${APP_SEED_FORUM_CATEGORIES:League News=league-tournament-news;Match Analysis=match-preview-analysis;Transfers=transfer-news;Off the Pitch=off-the-pitch;Opinions=expert-fan-opinions;Football Facts=football-facts-tactical-insights;Others=others}
     news-sources: ${APP_SEED_NEWS_SOURCES:ESPN Soccer=https://www.espn.com/espn/rss/soccer/news;BBC Sport Football=https://feeds.bbci.co.uk/sport/football/rss.xml;Transfermarkt=https://www.transfermarkt.co.uk/rss/news;Tribuna.com=https://tribuna.com/rss/news;The Guardian Football=https://www.theguardian.com/football/rss;Mirror Football=https://www.mirror.co.uk/sport/football/rss.xml;The Athletic Football=https://www.nytimes.com/athletic/rss/football/;Daily Mail Football=https://www.dailymail.co.uk/sport/football/index.rss}
@@ -86,6 +85,7 @@ app:
     enabled: ${TELEGRAM_ENABLED:false}
     bot-token: ${TELEGRAM_BOT_TOKEN:}
     channel-id: ${TELEGRAM_CHANNEL_ID:@footballverse_news}
+    outbox-poll-ms: ${TELEGRAM_OUTBOX_POLL_MS:30000}
   ai:
     gemini-api-key: ${GEMINI_API_KEY:}
     gemini-model: ${GEMINI_MODEL:gemini-3.5-flash}

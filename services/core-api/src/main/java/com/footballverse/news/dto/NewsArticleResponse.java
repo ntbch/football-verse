@@ -29,6 +29,7 @@ public record NewsArticleResponse(
         String sourceName,
         String sourceUrl,
         int sourceCount,
+        Instant lastMaterialChangeAt,
         List<StorySourceResponse> sources,
         List<StoryKeyPointResponse> keyPoints
 ) {

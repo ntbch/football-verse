@@ -19,6 +19,7 @@ export type NewsArticleResponse = {
   sourceName?: string;
   sourceUrl?: string;
   sourceCount?: number;
+  lastMaterialChangeAt?: string;
   sources?: StorySourceResponse[];
   keyPoints?: StoryKeyPointResponse[];
 };

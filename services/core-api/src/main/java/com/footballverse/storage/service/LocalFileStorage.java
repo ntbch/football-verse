@@ -13,7 +13,9 @@ import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.io.ByteArrayInputStream;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.util.Set;
 import java.util.UUID;
 
@@ -23,6 +25,7 @@ public class LocalFileStorage {
 
     private final Path rootLocation;
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "webp");
+    private static final long MAX_BYTES = 8L * 1024 * 1024;
 
     public LocalFileStorage(@Value("${app.upload.dir}") String uploadDir) {
         this.rootLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
@@ -48,10 +51,10 @@ public class LocalFileStorage {
             throw new IllegalArgumentException("Invalid file name");
         }
 
-        // Extract and validate extension and content type
+        // Extension and MIME are hints only; bytes decide whether this is an image.
         String extension = getFileExtension(originalFilename).toLowerCase();
         String contentType = file.getContentType();
-        if (!ALLOWED_EXTENSIONS.contains(extension) || contentType == null || !contentType.startsWith("image/")) {
+        if (!ALLOWED_EXTENSIONS.contains(extension) || contentType == null || !contentType.startsWith("image/") || file.getSize() > MAX_BYTES) {
             throw new IllegalArgumentException("Unsupported file type. Only images are allowed (jpg, jpeg, png, gif, webp).");
         }
 
@@ -59,6 +62,8 @@ public class LocalFileStorage {
         String safeFilename = UUID.randomUUID().toString() + "." + extension;
 
         try {
+            byte[] bytes = file.getBytes();
+            validateImage(bytes, extension);
             Path destinationFile = this.rootLocation.resolve(Paths.get(safeFilename)).normalize().toAbsolutePath();
             
             // Prevent Path Traversal
@@ -66,7 +71,7 @@ public class LocalFileStorage {
                 throw new SecurityException("Cannot store file outside current directory.");
             }
 
-            Files.copy(file.getInputStream(), destinationFile, StandardCopyOption.REPLACE_EXISTING);
+            Files.write(destinationFile, bytes);
             log.info("Saved file {} successfully", safeFilename);
             return safeFilename;
         } catch (IOException e) {
@@ -84,7 +89,7 @@ public class LocalFileStorage {
             }
 
             Resource resource = new UrlResource(file.toUri());
-            if (resource.exists() || resource.isReadable()) {
+            if (resource.exists() && resource.isReadable()) {
                 return resource;
             } else {
                 throw new RuntimeException("Could not read file: " + filename);
@@ -100,5 +105,32 @@ public class LocalFileStorage {
             return "";
         }
         return filename.substring(lastIndex + 1);
+    }
+
+    private void validateImage(byte[] bytes, String extension) {
+        boolean png = bytes.length >= 8 && bytes[0] == (byte) 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4e && bytes[3] == 0x47;
+        boolean jpeg = bytes.length >= 3 && bytes[0] == (byte) 0xff && bytes[1] == (byte) 0xd8 && bytes[2] == (byte) 0xff;
+        boolean gif = bytes.length >= 6 && new String(bytes, 0, 6, java.nio.charset.StandardCharsets.US_ASCII).matches("GIF8[79]a");
+        boolean webp = bytes.length >= 12 && new String(bytes, 0, 4, java.nio.charset.StandardCharsets.US_ASCII).equals("RIFF")
+                && new String(bytes, 8, 4, java.nio.charset.StandardCharsets.US_ASCII).equals("WEBP");
+        boolean extensionMatches = switch (extension) {
+            case "png" -> png;
+            case "jpg", "jpeg" -> jpeg;
+            case "gif" -> gif;
+            case "webp" -> webp;
+            default -> false;
+        };
+        if (!extensionMatches) throw new IllegalArgumentException("Uploaded bytes do not match the file extension");
+        if (!"webp".equals(extension)) {
+            BufferedImage image;
+            try {
+                image = ImageIO.read(new ByteArrayInputStream(bytes));
+            } catch (IOException exception) {
+                throw new IllegalArgumentException("Invalid image bytes");
+            }
+            if (image == null || image.getWidth() < 1 || image.getHeight() < 1 || image.getWidth() > 8000 || image.getHeight() > 8000) {
+                throw new IllegalArgumentException("Invalid image dimensions");
+            }
+        }
     }
 }

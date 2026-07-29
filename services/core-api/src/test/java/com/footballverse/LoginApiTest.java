@@ -21,7 +21,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestPropertySource(properties = "app.crawl.startup-enabled=false")
+@TestPropertySource(properties = {"app.crawl.startup-enabled=false", "app.cors-origin=http://localhost:3000"})
 public class LoginApiTest {
     @Autowired
     private TestRestTemplate restTemplate;
@@ -61,7 +61,7 @@ public class LoginApiTest {
                 new HttpEntity<>("{}", cookieHeaders),
                 String.class
         );
-        assertEquals(HttpStatus.OK, refreshed.getStatusCode());
+        assertEquals(HttpStatus.OK, refreshed.getStatusCode(), refreshed.getBody());
         org.junit.jupiter.api.Assertions.assertFalse(refreshed.getHeaders().getOrEmpty(HttpHeaders.SET_COOKIE).isEmpty());
     }
 }

@@ -4,6 +4,7 @@ import axios from "axios";
 import type { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { getAuthToken, useAuthStore } from "./auth-store";
 import { apiBaseUrl, apiOrigin } from "./api-config";
+import type { AuthResponse } from "@/features/auth/types";
 
 export interface ApiEnvelope<T> {
   success: boolean;
@@ -16,6 +17,18 @@ export { apiBaseUrl } from "./api-config";
 export const http = axios.create({ baseURL: apiBaseUrl, timeout: 15_000, withCredentials: true });
 
 type RetryConfig = InternalAxiosRequestConfig & { _retry?: boolean };
+let refreshPromise: Promise<AuthResponse> | null = null;
+
+const refreshAccessToken = () => {
+  if (!refreshPromise) {
+    refreshPromise = axios.post<ApiEnvelope<AuthResponse>>(
+      `${apiBaseUrl}/auth/refresh`,
+      {},
+      { withCredentials: true, headers: { "Cache-Control": "no-store" } }
+    ).then((response) => response.data.data).finally(() => { refreshPromise = null; });
+  }
+  return refreshPromise;
+};
 
 http.interceptors.request.use((config) => {
   const token = getAuthToken();
@@ -40,13 +53,9 @@ http.interceptors.response.use(
     if (error.response?.status === 401 && original && !original._retry && currentAuth) {
       original._retry = true;
       try {
-        const refreshed = await axios.post<ApiEnvelope<{ accessToken: string; refreshToken: string }>>(
-          `${apiBaseUrl}/auth/refresh`,
-          {},
-          { withCredentials: true, headers: { "Cache-Control": "no-store" } }
-        );
-        authState.setAuth(refreshed.data.data as import("@/features/auth/types").AuthResponse);
-        original.headers.Authorization = `Bearer ${refreshed.data.data.accessToken}`;
+        const refreshed = await refreshAccessToken();
+        authState.setAuth(refreshed);
+        original.headers.Authorization = `Bearer ${refreshed.accessToken}`;
         return http(original);
       } catch {
         authState.logout();

@@ -22,6 +22,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
 import java.util.Set;
+import java.io.ByteArrayOutputStream;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -69,7 +72,7 @@ public class UploadIntegrationTest {
                 "file",
                 "test-image.png",
                 MediaType.IMAGE_PNG_VALUE,
-                "fake image content".getBytes()
+                png()
         );
 
         // 1. POST - Only an admin can upload public article media.
@@ -112,6 +115,13 @@ public class UploadIntegrationTest {
     }
 
     @Test
+    void rejectsImageMimeWithNonImageBytes() throws Exception {
+        MockMultipartFile fakeImage = new MockMultipartFile("file", "fake.png", MediaType.IMAGE_PNG_VALUE, "not an image".getBytes());
+        mockMvc.perform(multipart("/uploads").file(fakeImage).header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void testUploadRequiresAdmin() throws Exception {
         MockMultipartFile imageFile = new MockMultipartFile(
                 "file", "test-image.png", MediaType.IMAGE_PNG_VALUE, "fake image content".getBytes()
@@ -136,5 +146,11 @@ public class UploadIntegrationTest {
         mockMvc.perform(multipart("/uploads")
                         .file(imageFile))
                 .andExpect(status().isForbidden());
+    }
+
+    private byte[] png() throws Exception {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ImageIO.write(new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB), "png", output);
+        return output.toByteArray();
     }
 }

@@ -12,6 +12,7 @@ import com.footballverse.common.exception.BadRequestException;
 import com.footballverse.security.CurrentUser;
 import com.footballverse.security.JwtService;
 import com.footballverse.user.model.UserAccount;
+import com.footballverse.user.model.UserStatus;
 import com.footballverse.user.repository.UserAccountRepository;
 import com.footballverse.user.model.UserProfile;
 import com.footballverse.user.repository.UserProfileRepository;
@@ -200,6 +201,9 @@ public class AuthService {
     }
 
     private AuthResponse tokens(UserAccount user) {
+        if (user.getStatus() == UserStatus.BANNED) {
+            throw new BadRequestException("Invalid credentials");
+        }
         RefreshToken refreshToken = refreshTokens.save(new RefreshToken(
                 user,
                 UUID.randomUUID().toString(),

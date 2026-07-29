@@ -32,6 +32,22 @@ export default function ProfilePage() {
   const [editMode, setEditMode] = useState(false);
   const [activeTab, setActiveTab] = useState<"threads" | "bookmarks">("threads");
 
+  const selectTab = (tab: "threads" | "bookmarks") => setActiveTab(tab);
+
+  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    const tabs = ["threads", "bookmarks"] as const;
+    const current = tabs.indexOf(activeTab);
+    const next = event.key === "ArrowRight" ? tabs[(current + 1) % tabs.length]
+      : event.key === "ArrowLeft" ? tabs[(current + tabs.length - 1) % tabs.length]
+      : event.key === "Home" ? tabs[0]
+      : event.key === "End" ? tabs[tabs.length - 1]
+      : null;
+    if (!next) return;
+    event.preventDefault();
+    selectTab(next);
+    document.getElementById(`saved-tab-${next}`)?.focus();
+  };
+
   // Redirect to login if user is not authenticated
   React.useEffect(() => {
     if (ready && !auth) {
@@ -185,8 +201,13 @@ export default function ProfilePage() {
             {/* Tab Switcher */}
             <div aria-label="Saved content" className="editorial-panel grid grid-cols-2 gap-1 p-1.5" role="tablist">
               <button
-                aria-pressed={activeTab === "threads"}
-                onClick={() => setActiveTab("threads")}
+                aria-controls="saved-panel-threads"
+                aria-selected={activeTab === "threads"}
+                id="saved-tab-threads"
+                onClick={() => selectTab("threads")}
+                onKeyDown={handleTabKeyDown}
+                role="tab"
+                tabIndex={activeTab === "threads" ? 0 : -1}
                 type="button"
                 className={`min-h-11 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5 ${
                   activeTab === "threads"
@@ -201,8 +222,13 @@ export default function ProfilePage() {
                 <span className={`min-w-5 rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${activeTab === "threads" ? "bg-white/20" : "bg-[var(--color-surface-hover)]"}`}>{followedThreads.length}</span>
               </button>
               <button
-                aria-pressed={activeTab === "bookmarks"}
-                onClick={() => setActiveTab("bookmarks")}
+                aria-controls="saved-panel-bookmarks"
+                aria-selected={activeTab === "bookmarks"}
+                id="saved-tab-bookmarks"
+                onClick={() => selectTab("bookmarks")}
+                onKeyDown={handleTabKeyDown}
+                role="tab"
+                tabIndex={activeTab === "bookmarks" ? 0 : -1}
                 type="button"
                 className={`min-h-11 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5 ${
                   activeTab === "bookmarks"
@@ -219,10 +245,14 @@ export default function ProfilePage() {
             </div>
 
             {activeTab === "threads" && (
-              <FollowedThreadsList threads={followedThreads} isLoading={isThreadsLoading} error={isThreadsError} onRetry={() => void refetchThreads()} />
+              <div aria-labelledby="saved-tab-threads" id="saved-panel-threads" role="tabpanel" tabIndex={0}>
+                <FollowedThreadsList threads={followedThreads} isLoading={isThreadsLoading} error={isThreadsError} onRetry={() => void refetchThreads()} />
+              </div>
             )}
             {activeTab === "bookmarks" && (
-              <BookmarkedArticlesList articles={bookmarkedArticles} isLoading={isBookmarksLoading} error={isBookmarksError} onRetry={() => void refetchBookmarks()} />
+              <div aria-labelledby="saved-tab-bookmarks" id="saved-panel-bookmarks" role="tabpanel" tabIndex={0}>
+                <BookmarkedArticlesList articles={bookmarkedArticles} isLoading={isBookmarksLoading} error={isBookmarksError} onRetry={() => void refetchBookmarks()} />
+              </div>
             )}
           </div>
         </div>

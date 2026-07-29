@@ -1,8 +1,8 @@
 import type { AuthResponse } from "@/features/auth/types";
 
-export type BrowserAuth = Omit<AuthResponse, "refreshToken">;
+export type BrowserAuth = AuthResponse;
 
-export const toBrowserAuth = ({ refreshToken: _refreshToken, ...auth }: AuthResponse): BrowserAuth => ({
+export const toBrowserAuth = (auth: AuthResponse): BrowserAuth => ({
   ...auth,
   roles: Array.isArray(auth.roles) ? auth.roles : [],
 });

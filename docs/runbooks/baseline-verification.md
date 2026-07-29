@@ -79,6 +79,9 @@ ports 55432/55433.
 The same command finishes with a production-shaped smoke covering web, auth,
 news, forum, Prediction, Career, refresh, logout, browser reload, and Back
 privacy in an isolated Compose project.
+Set `SMOKE_EMAIL` and `SMOKE_PASSWORD` to a verified, non-privileged test
+account before invoking the integrated smoke; credentials are never seeded or
+stored in this repository.
 
 ## Replay failed ingestion
 

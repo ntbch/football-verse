@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
-const { requestIdMiddleware, cachePrivacyMiddleware, corsMiddleware } = require("../dist/middleware/security");
+const { requestIdMiddleware, cachePrivacyMiddleware, browserSecurityHeaders, corsMiddleware } = require("../dist/middleware/security");
 const { metricsMiddleware, getMetricsSummary } = require("../dist/middleware/metrics");
 const { safeErrorHandler } = require("../dist/middleware/error-handler");
 
@@ -27,6 +27,7 @@ function responseStub() {
       this.body = body;
       return this;
     },
+    end() {},
     on(event, cb) {
       if (event === 'finish') finishCallback = cb;
     },
@@ -66,6 +67,18 @@ test("corsMiddleware only allows the configured origin", () => {
   const rejected = responseStub();
   corsMiddleware({ headers: { origin: "https://attacker.pages.dev" }, method: "GET" }, rejected, () => {});
   assert.equal(rejected.headers["access-control-allow-origin"], undefined);
+
+  const noOrigin = responseStub();
+  corsMiddleware({ headers: {}, method: "GET" }, noOrigin, () => {});
+  assert.equal(noOrigin.headers["access-control-allow-origin"], undefined);
+  assert.equal(noOrigin.headers["access-control-allow-credentials"], undefined);
+});
+
+test("browser security headers are present", () => {
+  const res = responseStub();
+  browserSecurityHeaders({}, res, () => {});
+  assert.equal(res.headers["x-content-type-options"], "nosniff");
+  assert.equal(res.headers["x-frame-options"], "DENY");
 });
 
 test("metricsMiddleware records route group statistics", () => {

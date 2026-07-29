@@ -1,7 +1,7 @@
 import express from 'express';
 import { createServer } from 'http';
 import { getConfig, validateSecurityEnvironment } from './config';
-import { requestIdMiddleware, cachePrivacyMiddleware, corsMiddleware } from './middleware/security';
+import { requestIdMiddleware, cachePrivacyMiddleware, browserSecurityHeaders, corsMiddleware } from './middleware/security';
 import { metricsMiddleware } from './middleware/metrics';
 import { safeErrorHandler } from './middleware/error-handler';
 import { createRateLimitMiddleware } from './middleware/rate-limit';
@@ -19,6 +19,7 @@ const server = createServer(app);
 app.use(requestIdMiddleware);
 app.use(metricsMiddleware);
 app.use(cachePrivacyMiddleware);
+app.use(browserSecurityHeaders);
 app.use(corsMiddleware);
 app.use(createRateLimitMiddleware({ limit: config.rateLimit, windowMs: config.rateLimitWindowMs }));
 

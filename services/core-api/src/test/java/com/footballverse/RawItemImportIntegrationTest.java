@@ -6,6 +6,7 @@ import com.footballverse.news.model.NewsSource;
 import com.footballverse.news.model.Publisher;
 import com.footballverse.news.model.RawContentType;
 import com.footballverse.news.model.RawItem;
+import com.footballverse.news.model.StoryKeyPoint;
 import com.footballverse.news.model.VerificationStatus;
 import com.footballverse.news.repository.NewsSourceRepository;
 import com.footballverse.news.repository.PublisherRepository;
@@ -80,6 +81,10 @@ class RawItemImportIntegrationTest {
         assertThat(firstMembership.getStory().getContentKind()).isEqualTo(NewsContentKind.AGGREGATED_STORY);
         assertThat(firstMembership.getStory().getContent()).isEmpty();
         assertThat(firstMembership.getStory().getSourceUrl()).contains("/story");
+        StoryKeyPoint keyPoint = keyPoints.findByStoryIdOrderByOrdinalAsc(storyId).getFirst();
+        assertThat(evidence.findWithSourcesByKeyPointId(keyPoint.getId()))
+                .singleElement()
+                .satisfies(item -> assertThat(item.getRelation()).isEqualTo("SUPPORT"));
 
         var duplicate = importService.importItem(request(
                 source.getId(),
@@ -141,6 +146,10 @@ class RawItemImportIntegrationTest {
                 .isEqualTo(VerificationStatus.OFFICIAL);
         assertThat(storyItems.findSourcesByStoryId(firstMembership.getStory().getId())).hasSize(2);
         assertThat(secondMembership.getStory().getHeroRawItem().getId()).isEqualTo(secondRaw.getId());
+        StoryKeyPoint keyPoint = keyPoints.findByStoryIdOrderByOrdinalAsc(firstMembership.getStory().getId()).getFirst();
+        assertThat(evidence.findWithSourcesByKeyPointId(keyPoint.getId()))
+                .extracting(item -> item.getRelation())
+                .contains("SUPPORT", "CONTEXT");
     }
 
     private NewsSource source(String name, String path) {

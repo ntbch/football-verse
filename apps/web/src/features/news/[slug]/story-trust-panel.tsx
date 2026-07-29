@@ -27,7 +27,9 @@ export function StoryTrustPanel({ article }: { article: NewsArticleResponse }) {
       <div className="flex items-center justify-between gap-4 border-b border-[var(--color-border)] pb-3">
         <div>
           <h2 id="story-evidence-title" className="m-0 font-serif-title text-lg font-black text-[var(--color-text-primary)]">Story evidence</h2>
-          <p className="m-0 mt-1 text-xs font-semibold text-[var(--color-text-secondary)]">{sourceCount} source{sourceCount === 1 ? "" : "s"}</p>
+          <p className="m-0 mt-1 text-xs font-semibold text-[var(--color-text-secondary)]">
+            {sourceCount} source{sourceCount === 1 ? "" : "s"}{article.lastMaterialChangeAt ? ` · Updated ${formatDateTime(article.lastMaterialChangeAt)}` : ""}
+          </p>
         </div>
         {status ? <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-subtle)] px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[var(--color-text-primary)]">{status}</span> : null}
       </div>

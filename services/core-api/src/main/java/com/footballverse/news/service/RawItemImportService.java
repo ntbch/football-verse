@@ -132,8 +132,21 @@ public class RawItemImportService {
                 .setScale(4, RoundingMode.HALF_UP));
         storyItems.save(membership);
         updateStoryAfterAttach(story, savedRawItem, cluster == null ? 1.0 : cluster.score());
+        linkEvidence(story, savedRawItem, cluster == null);
         telegramNotificationService.checkAndPushBreakingNews(story);
         return new ArticleImportResponse("ACCEPTED", "Raw item imported");
+    }
+
+    private void linkEvidence(NewsArticle story, RawItem rawItem, boolean primarySource) {
+        for (StoryKeyPoint keyPoint : keyPoints.findByStoryIdOrderByOrdinalAsc(story.getId())) {
+            KeyPointEvidence item = new KeyPointEvidence();
+            item.setKeyPoint(keyPoint);
+            item.setRawItem(rawItem);
+            item.setEvidenceField("description");
+            // A clustered source is context until a claim-level verifier can classify it.
+            item.setRelation(primarySource ? "SUPPORT" : "CONTEXT");
+            evidence.save(item);
+        }
     }
 
     private ClusterMatch findCluster(RawItem rawItem) {

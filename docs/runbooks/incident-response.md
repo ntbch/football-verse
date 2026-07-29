@@ -33,6 +33,16 @@ body as a metric label or log field. Keep request IDs random and short-lived.
 6. Close only after service recovery, data verification, stakeholder update,
    and a follow-up owner/date are recorded.
 
+## Bootstrap credential exposure
+
+Migration `V48` disables the historical `admin@footballverse.local` and
+`moderator@footballverse.local` accounts only when they still have a known
+bootstrap password hash, and revokes their refresh sessions. Before production
+deployment, an operator must still inspect authentication logs, rotate any
+affected administrator or moderator credentials, revoke their active sessions,
+and record the owner and UTC completion time. Do not re-enable `APP_SEED_ENABLED`
+or configure `ChangeMe123!`; production startup rejects both.
+
 The repository defines thresholds but does not invent an alert provider. Wire
 these signals to the selected production runtime before launch and test one
 dependency failure plus one stale-backup alert each quarter.

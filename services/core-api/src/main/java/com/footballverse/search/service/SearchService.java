@@ -76,6 +76,7 @@ public class SearchService {
                 article.getSource() == null ? null : article.getSource().getName(),
                 article.getSourceUrl(),
                 article.getSourceCountCached(),
+                article.getLastMaterialChangeAt(),
                 java.util.List.of(),
                 java.util.List.of()
         );

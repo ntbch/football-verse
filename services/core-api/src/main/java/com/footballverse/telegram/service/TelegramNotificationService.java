@@ -1,19 +1,22 @@
 package com.footballverse.telegram.service;
 
 import com.footballverse.news.model.NewsArticle;
+import com.footballverse.telegram.model.TelegramDeliveryOutbox;
+import com.footballverse.telegram.repository.TelegramDeliveryOutboxRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.net.URI;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +39,7 @@ public class TelegramNotificationService {
 
     @Value("${app.gateway.url:http://localhost:3000}")
     private String gatewayUrl;
+    private final TelegramDeliveryOutboxRepository outbox;
 
     // 20-minute cooldown cache to prevent duplicate breaking news pushes
     private final ConcurrentHashMap<Long, Instant> pushedArticlesCache = new ConcurrentHashMap<>();
@@ -158,13 +162,9 @@ public class TelegramNotificationService {
     /**
      * Checks if an imported article qualifies as High-Trust Breaking News and pushes it instantly.
      */
-    @Async
+    @Transactional
     public void checkAndPushBreakingNews(NewsArticle article) {
         if (article == null || article.getId() == null) return;
-
-        // Clean cache entries older than 30 minutes
-        Instant expireTime = Instant.now().minus(30, ChronoUnit.MINUTES);
-        pushedArticlesCache.entrySet().removeIf(entry -> entry.getValue().isBefore(expireTime));
 
         // Deduplication check
         if (pushedArticlesCache.containsKey(article.getId())) {
@@ -175,7 +175,7 @@ public class TelegramNotificationService {
         // Trust score check (publisher trust >= 0.90 or trusted sources)
         double trustScore = (article.getSource() != null && article.getSource().getPublisher() != null && article.getSource().getPublisher().getTrustScore() != null)
                 ? article.getSource().getPublisher().getTrustScore().doubleValue()
-                : 0.95;
+                : 0.0;
         if (trustScore < 0.90) {
             log.debug("[Telegram] Article {} trust score ({}) below threshold 0.90. Skipping instant push.", article.getId(), trustScore);
             return;
@@ -187,8 +187,29 @@ public class TelegramNotificationService {
             return;
         }
 
-        // Mark as pushed
-        pushedArticlesCache.put(article.getId(), Instant.now());
+        if (!outbox.existsByArticleId(article.getId())) {
+            outbox.save(new TelegramDeliveryOutbox(article));
+        }
+    }
+
+    @Scheduled(fixedDelayString = "${app.telegram.outbox-poll-ms:30000}")
+    @Transactional
+    public void deliverPending() {
+        for (TelegramDeliveryOutbox delivery : outbox.findPendingForUpdate(Instant.now(), PageRequest.of(0, 20))) {
+            if (sendBreaking(delivery.getArticle())) {
+                delivery.setSentAt(Instant.now());
+                delivery.setLastError(null);
+            } else {
+                int attempts = delivery.getAttempts() + 1;
+                delivery.setAttempts(attempts);
+                delivery.setLastError("SEND_FAILED");
+                if (attempts >= 5) delivery.setFailedAt(Instant.now());
+                else delivery.setNextAttemptAt(Instant.now().plusSeconds(60L * attempts));
+            }
+        }
+    }
+
+    private boolean sendBreaking(NewsArticle article) {
 
         // Construct HTML Message
         String webNewsUrl = gatewayUrl + "/news/" + article.getSlug();
@@ -203,7 +224,9 @@ public class TelegramNotificationService {
         String realImageUrl = resolveArticleImage(article);
 
         log.info("[Telegram] Instant Breaking News detected for article id={}: {}", article.getId(), article.getTitle());
-        sendPhotoMessage(realImageUrl, htmlMessage, "📖 Đọc bài viết trên FootballVerse ➔", webNewsUrl);
+        boolean sent = sendPhotoMessage(realImageUrl, htmlMessage, "📖 Đọc bài viết trên FootballVerse ➔", webNewsUrl);
+        if (sent) pushedArticlesCache.put(article.getId(), Instant.now());
+        return sent;
     }
 
     /**

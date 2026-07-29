@@ -51,7 +51,7 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    @org.springframework.beans.factory.annotation.Value("${CORS_ORIGIN:http://localhost:3000}")
+    @org.springframework.beans.factory.annotation.Value("${app.cors-origin:http://localhost:3000}")
     private String corsOrigin;
 
     @Bean

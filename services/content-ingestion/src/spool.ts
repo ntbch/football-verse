@@ -1,10 +1,21 @@
 import { pool } from './db/pool';
+import type { PoolClient } from 'pg';
 import { URL } from 'url';
 import crypto from 'crypto';
 import { assertSafeHttpUrl } from './crawler/secure-fetch';
 import { CollectionStats, NormalizedItemV1, ProviderCheckpoint } from './contracts/normalized-item';
 
 export const MAX_SPOOL_ATTEMPTS = 8;
+const MAX_PENDING_SPOOL_ITEMS = Math.min(Math.max(Number(process.env.MAX_PENDING_SPOOL_ITEMS || 10_000), 100), 100_000);
+
+async function ensureSpoolCapacity(client: PoolClient): Promise<void> {
+  const result = await client.query(
+    "SELECT COUNT(*)::int AS count FROM ingestion_spool WHERE state IN ('PENDING', 'PROCESSING')",
+  );
+  if (result.rows[0].count >= MAX_PENDING_SPOOL_ITEMS) {
+    throw new Error('SPOOL_CAPACITY_REACHED');
+  }
+}
 
 export interface SourceSyncRun {
   sourceId: number;
@@ -219,6 +230,7 @@ export async function enqueueNormalizedBatch(
   let inserted = 0;
   try {
     await client.query('BEGIN');
+    await ensureSpoolCapacity(client);
     for (const item of items) {
       if (item.connectorId !== sourceId || !isValidIngestionUrl(item.originalUrl)) continue;
       const normalizedUrl = normalizeSourceUrl(item.originalUrl);
@@ -293,6 +305,7 @@ export async function enqueueSpoolItem(
   const itemKey = computeItemKey(normalizedUrl, payload);
   const client = await pool.connect();
   try {
+    await ensureSpoolCapacity(client);
     const res = await client.query(
       `INSERT INTO ingestion_spool (item_key, source_id, source_url, payload, state, attempts, next_attempt_at, updated_at)
        VALUES ($1, $2, $3, $4, 'PENDING', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)

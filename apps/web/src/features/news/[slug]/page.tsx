@@ -315,6 +315,8 @@ export default function NewsDetailPage() {
           </div>
         </div>
 
+        {article.contentKind === "AGGREGATED_STORY" && <StoryTrustPanel article={article} />}
+
         {/* Hero Media (Peek.vn Style) */}
         {article.contentKind === "AGGREGATED_STORY" ? (
           <div className="flex flex-col gap-6">
@@ -391,8 +393,6 @@ export default function NewsDetailPage() {
                 </div>
               )}
             </div>
-
-            <StoryTrustPanel article={article} />
 
             {article.sourceUrl && (
               <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-surface-subtle)] border border-[var(--color-border)] text-xs">
