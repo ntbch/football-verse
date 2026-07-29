@@ -251,6 +251,7 @@ public class RawItemImportService {
     private void updateStoryAfterAttach(NewsArticle story, RawItem rawItem, double similarity) {
         long sourceCount = Math.max(1, storyItems.countDistinctPublishersByStoryId(story.getId()));
         story.setSourceCountCached((int) sourceCount);
+        storyClusteringService.updateStoryClusterProfile(story.getId(), rawItem.getEmbeddingModel(), rawItem.getEmbeddingRevision(), (int) sourceCount);
         if (rawItem.getPublisher() != null && rawItem.getPublisher().isOfficial()) {
             story.setVerificationStatus(VerificationStatus.OFFICIAL);
         } else if (story.getVerificationStatus() != VerificationStatus.OFFICIAL

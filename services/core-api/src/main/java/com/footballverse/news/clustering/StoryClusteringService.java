@@ -25,13 +25,35 @@ public class StoryClusteringService {
 
     private final NewsArticleRepository stories;
     private final ClusterDecisionRepository decisionRepository;
+    private final StoryClusterProfileRepository profileRepository;
     private final RuleBasedEventClassifier eventClassifier;
     private final EntityFingerprintExtractor entityExtractor;
     private final ClusterScorer clusterScorer;
     private final ClusterConfiguration clusterConfig;
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
+    public void acquireAdvisoryLock() {
+        try {
+            entityManager.createNativeQuery("SELECT pg_advisory_xact_lock(hashtext('football-verse-news-clustering'))").getSingleResult();
+        } catch (Exception ignored) {
+            // Non-PostgreSQL or H2 test environment fallback
+        }
+    }
+
+    public void updateStoryClusterProfile(Long storyId, String model, String modelRevision, int memberCount) {
+        if (storyId == null) return;
+        StoryClusterProfile profile = profileRepository.findById(storyId)
+                .orElseGet(() -> new StoryClusterProfile(storyId, model != null ? model : "intfloat/multilingual-e5-small", modelRevision != null ? modelRevision : "v1.0", memberCount));
+        profile.setMemberCount(memberCount);
+        profile.setUpdatedAt(Instant.now());
+        profileRepository.save(profile);
+    }
+
     @Transactional
     public ClusterResult decide(RawItem rawItem) {
+        acquireAdvisoryLock();
         Instant anchor = rawItem.getPublishedAt() == null ? rawItem.getDiscoveredAt() : rawItem.getPublishedAt();
         if (anchor == null) anchor = Instant.now();
 
