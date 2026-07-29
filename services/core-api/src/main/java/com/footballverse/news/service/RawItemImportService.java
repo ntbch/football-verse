@@ -10,65 +10,44 @@ import com.footballverse.news.model.NewsSource;
 import com.footballverse.news.model.RawItem;
 import com.footballverse.news.model.StoryItem;
 import com.footballverse.news.model.StoryKeyPoint;
-import com.footballverse.news.model.KeyPointEvidence;
 import com.footballverse.news.model.VerificationStatus;
 import com.footballverse.news.repository.NewsArticleRepository;
 import com.footballverse.news.repository.NewsSourceRepository;
-import com.footballverse.news.repository.NewsCategoryRepository;
 import com.footballverse.news.repository.RawItemRepository;
 import com.footballverse.news.repository.StoryItemRepository;
 import com.footballverse.news.repository.StoryKeyPointRepository;
-import com.footballverse.news.repository.KeyPointEvidenceRepository;
+import com.footballverse.telegram.service.TelegramNotificationService;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.text.Normalizer;
-import java.time.Duration;
 import java.time.Instant;
-import java.math.RoundingMode;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HexFormat;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Set;
-import java.net.URI;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import com.footballverse.telegram.service.TelegramNotificationService;
-import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class RawItemImportService {
-    private static final Duration CLUSTER_WINDOW = Duration.ofHours(48);
-    private static final Pattern TRANSFER_FEE = Pattern.compile("(?:€|£|\\$)\\s*\\d+(?:[.,]\\d+)?\\s*(?:m|million|bn|billion)?", Pattern.CASE_INSENSITIVE);
-    private static final Set<String> STOP_WORDS = Set.of(
-            "a", "an", "and", "are", "as", "at", "be", "before", "but", "by",
-            "for", "from", "has", "have", "in", "into", "is", "latest", "live",
-            "news", "of", "on", "or", "report", "reports", "said", "says", "soccer",
-            "the", "to", "update", "updates", "was", "were", "will", "with"
-    );
 
     private final RawItemRepository rawItems;
     private final StoryItemRepository storyItems;
     private final NewsArticleRepository stories;
     private final NewsSourceRepository sources;
-    private final NewsCategoryRepository categories;
     private final StoryKeyPointRepository keyPoints;
-    private final KeyPointEvidenceRepository evidence;
     private final TelegramNotificationService telegramNotificationService;
     private final AiSummaryService aiSummaryService;
     private final NewsCategoryClassifierService categoryClassifier;
+    private final NewsClusteringService clusteringService;
+    private final NewsEmbeddingService embeddingService;
 
     @Transactional
     public ArticleImportResponse importItem(NormalizedItemImportRequest request) {
@@ -116,12 +95,13 @@ public class RawItemImportService {
     }
 
     private ArticleImportResponse projectRawItem(NewsSource source, RawItem savedRawItem) {
-        ClusterMatch cluster = stories.findBySourceUrl(savedRawItem.getOriginalUrl())
+        NewsClusteringService.ClusterDecision cluster = stories.findBySourceUrl(savedRawItem.getOriginalUrl())
                 .filter(candidate -> candidate.getContentKind() == NewsContentKind.AGGREGATED_STORY)
-                .map(candidate -> new ClusterMatch(candidate, 1.0))
-                .orElseGet(() -> findCluster(savedRawItem));
+                .map(candidate -> new NewsClusteringService.ClusterDecision(candidate, 1.0, null))
+                .orElseGet(() -> clusteringService.findCluster(savedRawItem));
+
         NewsArticle story = cluster == null
-                ? stories.save(createStory(source, savedRawItem))
+                ? createStory(source, savedRawItem)
                 : cluster.story();
 
         StoryItem membership = new StoryItem();
@@ -131,83 +111,16 @@ public class RawItemImportService {
         membership.setRelevanceScore(BigDecimal.valueOf(cluster == null ? 1.0 : cluster.score())
                 .setScale(4, RoundingMode.HALF_UP));
         storyItems.save(membership);
+
+        if (cluster != null && cluster.incomingEmbedding() != null && story.getClusterEmbedding() == null) {
+            story.setClusterEmbedding(embeddingService.serialize(cluster.incomingEmbedding()));
+            story.setClusterEmbeddingModel(cluster.incomingEmbedding().model());
+        }
         updateStoryAfterAttach(story, savedRawItem, cluster == null ? 1.0 : cluster.score());
         telegramNotificationService.checkAndPushBreakingNews(story);
-        return new ArticleImportResponse("ACCEPTED", "Raw item imported");
-    }
-
-    private ClusterMatch findCluster(RawItem rawItem) {
-        Instant anchor = rawItem.getPublishedAt() == null ? rawItem.getDiscoveredAt() : rawItem.getPublishedAt();
-        Set<String> incomingTokens = tokens(rawItem.getTitle(), rawItem.getDescription());
-        if (incomingTokens.size() < 3) return null;
-        String incomingEvent = eventType(rawItem.getTitle(), rawItem.getDescription());
-
-        // ponytail: bounded O(n) title scan is enough for the MVP; replace with embeddings when 200 candidates/window is insufficient.
-        return stories.findClusterCandidates(
-                        NewsContentKind.AGGREGATED_STORY,
-                        ArticleStatus.PUBLISHED,
-                        anchor.minus(CLUSTER_WINDOW),
-                        anchor.plus(CLUSTER_WINDOW),
-                        PageRequest.of(0, 200)
-                ).stream()
-                .map(candidate -> match(candidate, incomingTokens, incomingEvent))
-                .filter(Objects::nonNull)
-                .max(Comparator.comparingDouble(ClusterMatch::score))
-                .orElse(null);
-    }
-
-    private ClusterMatch match(NewsArticle candidate, Set<String> incomingTokens, String incomingEvent) {
-        String candidateEvent = eventType(candidate.getTitle(), candidate.getSummary());
-        if (!incomingEvent.equals(candidateEvent) && !"OTHER".equals(incomingEvent) && !"OTHER".equals(candidateEvent)) {
-            return null;
-        }
-        Set<String> candidateTokens = tokens(candidate.getTitle(), candidate.getSummary());
-        Set<String> common = new HashSet<>(incomingTokens);
-        common.retainAll(candidateTokens);
-        if (common.size() < 3) return null;
-        Set<String> union = new HashSet<>(incomingTokens);
-        union.addAll(candidateTokens);
-        double score = (double) common.size() / union.size();
-        return score >= 0.50 ? new ClusterMatch(candidate, score) : null;
-    }
-
-    private Set<String> tokens(String... values) {
-        String text = Arrays.stream(values)
-                .filter(Objects::nonNull)
-                .collect(java.util.stream.Collectors.joining(" "));
-        if (text.isBlank()) return Set.of();
-        String normalized = Normalizer.normalize(text, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}+", "")
-                .toLowerCase(Locale.ROOT)
-                .replaceAll("[^\\p{L}\\p{N}]+", " ");
-        Set<String> result = new HashSet<>();
-        Arrays.stream(normalized.trim().split("\\s+"))
-                .filter(token -> token.length() > 2 && !STOP_WORDS.contains(token))
-                .map(this::stem)
-                .forEach(result::add);
-        return result;
-    }
-
-    private String eventType(String... values) {
-        String text = String.join(" ", Arrays.stream(values).filter(Objects::nonNull).toList()).toLowerCase(Locale.ROOT);
-        if (containsAny(text, "rumour", "rumor", "linked", "gossip", "claim", "claims", "interest in")) return "RUMOUR";
-        if (containsAny(text, "sign", "signs", "signed", "signing", "signings", "transfer", "transfers", "bid", "bids", "loan", "loans", "release clause", "medical", "bought", "free agent")) return "TRANSFER";
-        if (containsAny(text, "injury", "injured", "fitness", "ruled out", "hamstring", "acl")) return "INJURY";
-        if (containsAny(text, "beat", "draw", "wins", "won", "score", "scores", "match report", "highlight", "highlights")) return "MATCH";
-        return "OTHER";
-    }
-
-    private boolean containsAny(String text, String... terms) {
-        return Arrays.stream(terms).anyMatch(text::contains);
-    }
-
-    private String stem(String token) {
-        String stem = token;
-        if (stem.length() > 5 && stem.endsWith("ing")) stem = stem.substring(0, stem.length() - 3);
-        else if (stem.length() > 4 && stem.endsWith("ed")) stem = stem.substring(0, stem.length() - 2);
-        else if (stem.length() > 4 && stem.endsWith("s")) stem = stem.substring(0, stem.length() - 1);
-        if (stem.length() > 4 && stem.endsWith("e")) stem = stem.substring(0, stem.length() - 1);
-        return stem;
+        return new ArticleImportResponse("ACCEPTED", cluster == null
+                ? "Raw item imported as a new story"
+                : "Raw item grouped into an existing story");
     }
 
     private void updateStoryAfterAttach(NewsArticle story, RawItem rawItem, double similarity) {
@@ -216,12 +129,12 @@ public class RawItemImportService {
         if (rawItem.getPublisher() != null && rawItem.getPublisher().isOfficial()) {
             story.setVerificationStatus(VerificationStatus.OFFICIAL);
         } else if (story.getVerificationStatus() != VerificationStatus.OFFICIAL
-                && "RUMOUR".equals(eventType(rawItem.getTitle(), rawItem.getDescription()))) {
+                && "RUMOUR".equals(clusteringService.eventType(rawItem.getTitle(), rawItem.getDescription()))) {
             story.setVerificationStatus(VerificationStatus.RUMOUR);
         } else if (story.getVerificationStatus() != VerificationStatus.OFFICIAL && sourceCount > 1) {
             story.setVerificationStatus(VerificationStatus.MULTIPLE_REPORTS);
         }
-        Instant sourceTime = rawItem.getPublishedAt() == null ? rawItem.getDiscoveredAt() : rawItem.getPublishedAt();
+        Instant sourceTime = sourceTime(rawItem);
         if (story.getFirstSourceAt() == null || sourceTime.isBefore(story.getFirstSourceAt())) {
             story.setFirstSourceAt(sourceTime);
         }
@@ -242,9 +155,7 @@ public class RawItemImportService {
                         .thenComparing(item -> item.getRawItem().getPublisher() == null
                                 ? BigDecimal.ZERO
                                 : item.getRawItem().getPublisher().getTrustScore())
-                        .thenComparing(item -> item.getRawItem().getPublishedAt() == null
-                                ? item.getRawItem().getDiscoveredAt()
-                                : item.getRawItem().getPublishedAt())
+                        .thenComparing(item -> sourceTime(item.getRawItem()))
                         .thenComparing(item -> item.getRawItem().getDescription() != null
                                 && !item.getRawItem().getDescription().isBlank()))
                 .orElseThrow();
@@ -296,11 +207,7 @@ public class RawItemImportService {
         }
     }
 
-    private void apply(
-            RawItem rawItem,
-            NewsSource source,
-            NormalizedItemImportRequest request
-    ) {
+    private void apply(RawItem rawItem, NewsSource source, NormalizedItemImportRequest request) {
         rawItem.setConnector(source);
         rawItem.setPublisher(source.getPublisher());
         rawItem.setProvider(request.provider().trim().toLowerCase(Locale.ROOT));
@@ -327,34 +234,28 @@ public class RawItemImportService {
     }
 
     private NewsArticle createStory(NewsSource source, RawItem rawItem) {
-        Instant publishedAt = rawItem.getPublishedAt() == null ? Instant.now() : rawItem.getPublishedAt();
+        Instant publishedAt = sourceTime(rawItem);
         NewsArticle story = new NewsArticle();
         story.setTitle(limit(rawItem.getTitle(), 200));
         story.setSlug(SlugUtil.uniqueSlug(story.getTitle()));
 
         AiSummaryService.SummaryResult aiRes = aiSummaryService.generateSummaryAndKeyPoints(
-                rawItem.getTitle(),
-                rawItem.getDescription(),
-                storySummary(rawItem)
-        );
+                rawItem.getTitle(), rawItem.getDescription(), storySummary(rawItem));
         story.setSummary(aiRes.summary());
-
         story.setContent("");
         story.setContentKind(NewsContentKind.AGGREGATED_STORY);
         story.setStatus(ArticleStatus.PUBLISHED);
         story.setSource(source);
-
         story.setCategory(categoryClassifier.classify(
-                rawItem.getTitle(),
-                rawItem.getDescription(),
-                aiRes.category()
-        ));
+                rawItem.getTitle(), rawItem.getDescription(), aiRes.category()));
         story.setSourceUrl(rawItem.getOriginalUrl());
         story.setContentHash(sha256(rawItem.getIdentityKey()));
         story.setPublishedAt(publishedAt);
         story.setVerificationStatus(source.getPublisher() != null && source.getPublisher().isOfficial()
                 ? VerificationStatus.OFFICIAL
-                : VerificationStatus.SINGLE_REPORT);
+                : "RUMOUR".equals(clusteringService.eventType(rawItem.getTitle(), rawItem.getDescription()))
+                    ? VerificationStatus.RUMOUR
+                    : VerificationStatus.SINGLE_REPORT);
         story.setImageUrl(rawItem.getImageUrl());
         story.setMediaType(rawItem.getEmbedUrl() != null ? "EMBED" : rawItem.getImageUrl() != null ? "IMAGE" : "NONE");
         story.setFirstSourceAt(publishedAt);
@@ -364,21 +265,26 @@ public class RawItemImportService {
         story.setSummaryBasisHash(rawItem.getRevisionFingerprint());
         story.setHeroRawItem(rawItem);
 
-        NewsArticle savedStory = stories.save(story);
+        clusteringService.createEmbedding(rawItem).ifPresent(embedding -> {
+            story.setClusterEmbedding(embeddingService.serialize(embedding));
+            story.setClusterEmbeddingModel(embedding.model());
+        });
 
+        NewsArticle savedStory = stories.save(story);
         if (aiRes.keyPoints() != null && !aiRes.keyPoints().isEmpty()) {
             int ordinal = 1;
-            for (String pt : aiRes.keyPoints()) {
-                if (pt == null || pt.isBlank()) continue;
-                StoryKeyPoint kp = new StoryKeyPoint();
-                kp.setStory(savedStory);
-                kp.setOrdinal(ordinal++);
-                kp.setText(pt.trim());
-                kp.setConfidence(BigDecimal.valueOf(0.95));
-                keyPoints.save(kp);
+            for (String point : aiRes.keyPoints()) {
+                if (point == null || point.isBlank()) {
+                    continue;
+                }
+                StoryKeyPoint keyPoint = new StoryKeyPoint();
+                keyPoint.setStory(savedStory);
+                keyPoint.setOrdinal(ordinal++);
+                keyPoint.setText(point.trim());
+                keyPoint.setConfidence(BigDecimal.valueOf(0.95));
+                keyPoints.save(keyPoint);
             }
         }
-
         return savedStory;
     }
 
@@ -414,17 +320,13 @@ public class RawItemImportService {
     }
 
     private String blankToNull(String value) {
-        if (value == null || value.isBlank()) return null;
-        return value.trim();
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private String storySummary(RawItem rawItem) {
-        return limit(
-                rawItem.getDescription() == null || rawItem.getDescription().isBlank()
-                        ? rawItem.getTitle()
-                        : rawItem.getDescription(),
-                500
-        );
+        return limit(rawItem.getDescription() == null || rawItem.getDescription().isBlank()
+                ? rawItem.getTitle()
+                : rawItem.getDescription(), 500);
     }
 
     private String limit(String value, int max) {
@@ -436,11 +338,16 @@ public class RawItemImportService {
         try {
             return HexFormat.of().formatHex(
                     MessageDigest.getInstance("SHA-256")
-                            .digest(value.getBytes(StandardCharsets.UTF_8))
-            );
+                            .digest(value.getBytes(StandardCharsets.UTF_8)));
         } catch (Exception exception) {
             throw new IllegalStateException("Unable to calculate content identity", exception);
         }
+    }
+
+    private Instant sourceTime(RawItem rawItem) {
+        if (rawItem.getPublishedAt() != null) return rawItem.getPublishedAt();
+        if (rawItem.getDiscoveredAt() != null) return rawItem.getDiscoveredAt();
+        return Instant.now();
     }
 
     private boolean isFootballRelated(NormalizedItemImportRequest request) {
@@ -459,14 +366,9 @@ public class RawItemImportService {
             "wimbledon", "atp tour", "wta tour", "us open tennis", "dc open", "matchplay darts", "silver dominion",
             "pat eddery stakes", "nba draft", "t20 world cup", "pga tour", "super bowl", "tour de france"
         };
-        for (String kw : nonFootballKeywords) {
-            if (text.contains(kw)) {
-                return false;
-            }
+        for (String keyword : nonFootballKeywords) {
+            if (text.contains(keyword)) return false;
         }
         return true;
-    }
-
-    private record ClusterMatch(NewsArticle story, double score) {
     }
 }
