@@ -30,8 +30,34 @@ public record NormalizedItemImportRequest(
         Instant publishedAt,
         Instant modifiedAt,
         @NotNull Instant collectedAt,
-        Map<String, Long> metrics
+        Map<String, Long> metrics,
+        @Valid EmbeddingPayload embedding
 ) {
+    public NormalizedItemImportRequest(
+            int schemaVersion,
+            String idempotencyKey,
+            String identityKey,
+            String revisionFingerprint,
+            Long connectorId,
+            String provider,
+            String externalId,
+            RawContentType contentType,
+            String originalUrl,
+            String canonicalUrl,
+            String title,
+            String description,
+            Author author,
+            List<Media> media,
+            String language,
+            Instant publishedAt,
+            Instant modifiedAt,
+            Instant collectedAt,
+            Map<String, Long> metrics
+    ) {
+        this(schemaVersion, idempotencyKey, identityKey, revisionFingerprint, connectorId, provider,
+                externalId, contentType, originalUrl, canonicalUrl, title, description, author,
+                media, language, publishedAt, modifiedAt, collectedAt, metrics, null);
+    }
     public record Author(
             @NotBlank @Size(max = 200) String name,
             @Size(max = 120) String username
@@ -43,6 +69,14 @@ public record NormalizedItemImportRequest(
             @URL String url,
             @URL String thumbnailUrl,
             @Size(max = 500) String providerMediaId
+    ) {
+    }
+
+    public record EmbeddingPayload(
+            @NotBlank @Size(max = 160) String model,
+            @NotBlank @Size(max = 120) String revision,
+            int dimensions,
+            List<Float> vector
     ) {
     }
 }

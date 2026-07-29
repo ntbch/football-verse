@@ -69,6 +69,8 @@ public class RawItemImportService {
     private final TelegramNotificationService telegramNotificationService;
     private final AiSummaryService aiSummaryService;
     private final NewsCategoryClassifierService categoryClassifier;
+    private final com.footballverse.news.clustering.StoryClusteringService storyClusteringService;
+    private final com.footballverse.news.clustering.ClusterConfiguration clusterConfig;
 
     @Transactional
     public ArticleImportResponse importItem(NormalizedItemImportRequest request) {
@@ -116,23 +118,46 @@ public class RawItemImportService {
     }
 
     private ArticleImportResponse projectRawItem(NewsSource source, RawItem savedRawItem) {
-        ClusterMatch cluster = stories.findBySourceUrl(savedRawItem.getOriginalUrl())
-                .filter(candidate -> candidate.getContentKind() == NewsContentKind.AGGREGATED_STORY)
-                .map(candidate -> new ClusterMatch(candidate, 1.0))
-                .orElseGet(() -> findCluster(savedRawItem));
-        NewsArticle story = cluster == null
-                ? stories.save(createStory(source, savedRawItem))
-                : cluster.story();
+        String mode = clusterConfig == null ? "vector-shadow" : clusterConfig.getMode();
+
+        var shadowResult = storyClusteringService.decide(savedRawItem);
+
+        ClusterMatch legacyCluster = null;
+        if (!"vector".equalsIgnoreCase(mode)) {
+            legacyCluster = stories.findBySourceUrl(savedRawItem.getOriginalUrl())
+                    .filter(candidate -> candidate.getContentKind() == NewsContentKind.AGGREGATED_STORY)
+                    .map(candidate -> new ClusterMatch(candidate, 1.0))
+                    .orElseGet(() -> findCluster(savedRawItem));
+        }
+
+        NewsArticle story;
+        boolean matched;
+        double score;
+
+        if ("vector".equalsIgnoreCase(mode)) {
+            matched = shadowResult.matched();
+            story = !matched ? stories.save(createStory(source, savedRawItem)) : shadowResult.story();
+            score = !matched ? 1.0 : shadowResult.decision().getFinalScore().doubleValue();
+        } else {
+            matched = legacyCluster != null;
+            story = !matched ? stories.save(createStory(source, savedRawItem)) : legacyCluster.story();
+            score = !matched ? 1.0 : legacyCluster.score();
+        }
 
         StoryItem membership = new StoryItem();
         membership.setStory(story);
         membership.setRawItem(savedRawItem);
-        membership.setRole(cluster == null ? "PRIMARY" : "SUPPORTING");
-        membership.setRelevanceScore(BigDecimal.valueOf(cluster == null ? 1.0 : cluster.score())
-                .setScale(4, RoundingMode.HALF_UP));
+        membership.setRole(!matched ? "PRIMARY" : "SUPPORTING");
+        membership.setRelevanceScore(BigDecimal.valueOf(score).setScale(4, RoundingMode.HALF_UP));
+        if (shadowResult.decision() != null) {
+            membership.setSemanticScore(shadowResult.decision().getSemanticScore());
+            membership.setLexicalScore(shadowResult.decision().getLexicalScore());
+            membership.setFinalClusterScore(shadowResult.decision().getFinalScore());
+            membership.setClusterMethod("vector".equalsIgnoreCase(mode) ? "HYBRID_SCORE" : "LEGACY_SHADOW");
+        }
         storyItems.save(membership);
-        updateStoryAfterAttach(story, savedRawItem, cluster == null ? 1.0 : cluster.score());
-        linkEvidence(story, savedRawItem, cluster == null);
+        updateStoryAfterAttach(story, savedRawItem, score);
+        linkEvidence(story, savedRawItem, !matched);
         telegramNotificationService.checkAndPushBreakingNews(story);
         return new ArticleImportResponse("ACCEPTED", "Raw item imported");
     }
@@ -177,11 +202,11 @@ public class RawItemImportService {
         Set<String> candidateTokens = tokens(candidate.getTitle(), candidate.getSummary());
         Set<String> common = new HashSet<>(incomingTokens);
         common.retainAll(candidateTokens);
-        if (common.size() < 3) return null;
+        if (common.size() < 2) return null;
         Set<String> union = new HashSet<>(incomingTokens);
         union.addAll(candidateTokens);
         double score = (double) common.size() / union.size();
-        return score >= 0.50 ? new ClusterMatch(candidate, score) : null;
+        return score >= 0.25 ? new ClusterMatch(candidate, score) : null;
     }
 
     private Set<String> tokens(String... values) {
@@ -278,8 +303,14 @@ public class RawItemImportService {
     }
 
     private void validateContract(NormalizedItemImportRequest request) {
-        if (request.schemaVersion() != 1) {
+        if (request.schemaVersion() != 1 && request.schemaVersion() != 2) {
             throw new IllegalArgumentException("Unsupported schema version");
+        }
+        if (request.schemaVersion() == 2 && request.embedding() != null) {
+            var emb = request.embedding();
+            if (emb.dimensions() != 384 || emb.vector() == null || emb.vector().size() != 384) {
+                throw new IllegalArgumentException("Invalid embedding dimensions");
+            }
         }
         if (!request.idempotencyKey().matches("(?i)[a-f0-9]{64}")
                 || !request.revisionFingerprint().matches("(?i)[a-f0-9]{64}")) {
@@ -337,6 +368,12 @@ public class RawItemImportService {
         rawItem.setModifiedAt(request.modifiedAt());
         rawItem.setDiscoveredAt(request.collectedAt());
         rawItem.setPayloadVersion(request.schemaVersion());
+        if (request.embedding() != null) {
+            rawItem.setEmbeddingModel(request.embedding().model());
+            rawItem.setEmbeddingRevision(request.embedding().revision());
+            rawItem.setEmbeddedAt(Instant.now());
+            rawItem.setClusterStatus("EMBEDDED");
+        }
     }
 
     private NewsArticle createStory(NewsSource source, RawItem rawItem) {

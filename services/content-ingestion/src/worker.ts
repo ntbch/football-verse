@@ -73,7 +73,7 @@ export async function processSpoolQueue(): Promise<void> {
         continue;
       }
 
-      const normalizedItem = item.payload?.schemaVersion === 1;
+      const normalizedItem = item.payload?.schemaVersion === 1 || item.payload?.schemaVersion === 2;
       const response = await gotScraping({
         url: `${BACKEND_URL}/api/v1/internal/news/${normalizedItem ? 'raw-items' : 'import'}`,
         method: 'POST',

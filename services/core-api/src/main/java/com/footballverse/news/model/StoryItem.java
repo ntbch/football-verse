@@ -40,6 +40,18 @@ public class StoryItem {
     @Column(name = "relevance_score", precision = 5, scale = 4)
     private BigDecimal relevanceScore;
 
+    @Column(name = "semantic_score", precision = 6, scale = 5)
+    private BigDecimal semanticScore;
+
+    @Column(name = "lexical_score", precision = 6, scale = 5)
+    private BigDecimal lexicalScore;
+
+    @Column(name = "final_cluster_score", precision = 6, scale = 5)
+    private BigDecimal finalClusterScore;
+
+    @Column(name = "cluster_method", length = 40)
+    private String clusterMethod;
+
     @Column(name = "added_at", nullable = false)
     private Instant addedAt = Instant.now();
 }

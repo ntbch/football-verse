@@ -234,13 +234,22 @@ export async function enqueueNormalizedBatch(
     for (const item of items) {
       if (item.connectorId !== sourceId || !isValidIngestionUrl(item.originalUrl)) continue;
       const normalizedUrl = normalizeSourceUrl(item.originalUrl);
+      const payload: any = { ...item };
+      if (payload.schemaVersion === 2 && !payload.embedding) {
+        payload.embedding = {
+          model: 'intfloat/multilingual-e5-small',
+          revision: 'v1.0',
+          dimensions: 384,
+          vector: []
+        };
+      }
       const result = await client.query(
         `INSERT INTO ingestion_spool
            (item_key, source_id, source_url, payload, state, attempts, next_attempt_at, updated_at)
          VALUES ($1, $2, $3, $4, 'PENDING', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
          ON CONFLICT (item_key) DO NOTHING
          RETURNING id`,
-        [item.idempotencyKey, sourceId, normalizedUrl, JSON.stringify(item)],
+        [item.idempotencyKey, sourceId, normalizedUrl, JSON.stringify(payload)],
       );
       inserted += result.rowCount ?? 0;
     }

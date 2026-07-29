@@ -1,0 +1,19 @@
+package com.footballverse.news.clustering;
+
+public enum EventFamily {
+    TRANSFER_RUMOUR,
+    TRANSFER_INTEREST,
+    TRANSFER_BID,
+    TRANSFER_AGREEMENT,
+    TRANSFER_OFFICIAL,
+    INJURY,
+    INJURY_UPDATE,
+    MATCH_PREVIEW,
+    LINEUP,
+    MATCH_RESULT,
+    MANAGER_APPOINTMENT,
+    MANAGER_SACKING,
+    CONTRACT_RENEWAL,
+    GENERAL,
+    UNKNOWN
+}

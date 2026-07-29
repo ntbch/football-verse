@@ -35,6 +35,20 @@ export interface NormalizedItemV1 {
   metrics?: Record<string, number>;
 }
 
+export interface EmbeddingPayload {
+  model: string;
+  revision: string;
+  dimensions: number;
+  vector: number[];
+}
+
+export interface NormalizedItemV2 extends Omit<NormalizedItemV1, 'schemaVersion'> {
+  schemaVersion: 2;
+  embedding?: EmbeddingPayload;
+}
+
+export type NormalizedItem = NormalizedItemV1 | NormalizedItemV2;
+
 export interface SourceDescriptor {
   id: number;
   name: string;

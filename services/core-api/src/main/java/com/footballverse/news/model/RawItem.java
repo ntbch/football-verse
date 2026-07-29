@@ -96,4 +96,16 @@ public class RawItem extends AuditableEntity {
 
     @Column(nullable = false, length = 20)
     private String status = "ACTIVE";
+
+    @Column(name = "embedding_model", length = 160)
+    private String embeddingModel;
+
+    @Column(name = "embedding_revision", length = 120)
+    private String embeddingRevision;
+
+    @Column(name = "embedded_at")
+    private Instant embeddedAt;
+
+    @Column(name = "cluster_status", nullable = false, length = 32)
+    private String clusterStatus = "PENDING";
 }

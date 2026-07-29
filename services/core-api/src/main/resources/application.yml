@@ -41,6 +41,15 @@ app:
     url: ${APP_GATEWAY_URL:http://localhost:3000}
   content-ingestion:
     url: ${APP_CONTENT_INGESTION_URL:http://localhost:8085}
+  clustering:
+    mode: ${APP_CLUSTERING_MODE:vector-shadow}
+    window-hours: 48
+    candidate-limit: 20
+    semantic-weight: 0.75
+    lexical-weight: 0.10
+    entity-weight: 0.10
+    time-weight: 0.05
+    auto-merge-threshold: 0.25
   seed:
     enabled: ${APP_SEED_ENABLED:false}
     admin-password: ${APP_ADMIN_PASSWORD:}

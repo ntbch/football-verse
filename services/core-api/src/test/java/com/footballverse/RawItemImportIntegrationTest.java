@@ -252,6 +252,54 @@ class RawItemImportIntegrationTest {
         );
     }
 
+    @Test
+    void supportsSchemaV2WithEmbeddingPayload() {
+        String suffix = UUID.randomUUID().toString();
+        Publisher publisher = publishers.save(new Publisher("V2 Publisher " + suffix));
+        NewsSource source = new NewsSource(
+                "V2 Feed " + suffix,
+                "https://v2.example.com/rss-" + suffix
+        );
+        source.setPublisher(publisher);
+        source.setProvider("rss");
+        source.setAutoPublish(true);
+        source = sources.save(source);
+
+        String fingerprint = "a".repeat(64);
+        var v2Embedding = new NormalizedItemImportRequest.EmbeddingPayload(
+                "intfloat/multilingual-e5-small",
+                "revision-1",
+                384,
+                java.util.Collections.nCopies(384, 0.01f)
+        );
+
+        var requestV2 = new NormalizedItemImportRequest(
+                2,
+                fingerprint,
+                "v2-item-" + suffix,
+                fingerprint,
+                source.getId(),
+                "rss",
+                "v2-ext-1",
+                RawContentType.ARTICLE,
+                "https://v2.example.com/story-" + suffix,
+                "https://v2.example.com/story-" + suffix,
+                "Liverpool sign Player V2 " + suffix,
+                "Liverpool complete deal for Player V2",
+                new NormalizedItemImportRequest.Author("V2 Author", null),
+                List.of(),
+                "en",
+                Instant.now(),
+                Instant.now(),
+                Instant.now(),
+                Map.of(),
+                v2Embedding
+        );
+
+        var response = importService.importItem(requestV2);
+        assertThat(response.status()).isEqualTo("ACCEPTED");
+    }
+
     private NormalizedItemImportRequest request(
             Long sourceId,
             String identity,
