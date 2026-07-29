@@ -26,7 +26,7 @@ public class NewsEmbeddingService {
     @Value("${app.ai.embedding-enabled:true}")
     private boolean enabled;
 
-    @Value("${app.ai.embedding-model:gemini-embedding-2}")
+    @Value("${app.ai.embedding-model:gemini-embedding-001}")
     private String modelName;
 
     @Value("${app.ai.embedding-dimensions:768}")
@@ -59,7 +59,7 @@ public class NewsEmbeddingService {
             Map<String, Object> requestBody = Map.of(
                     "model", "models/" + modelName,
                     "content", Map.of("parts", List.of(Map.of("text", text))),
-                    "output_dimensionality", dimensions
+                    "outputDimensionality", dimensions
             );
 
             String responseJson = restClient.post()
