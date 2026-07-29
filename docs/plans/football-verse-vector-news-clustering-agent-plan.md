@@ -1237,29 +1237,29 @@ Only after baseline stability:
 
 ## 18. Acceptance criteria
 
-- [ ] Every schema-v2 auto-published raw item has a valid versioned embedding.
-- [ ] Core stores raw vectors and story centroids in pgvector.
-- [ ] Retrieval is limited to the configured event window.
-- [ ] Exact URL/canonical identity is checked before semantic retrieval.
-- [ ] Vector similarity is not the sole merge condition.
-- [ ] Hard event/entity conflicts prevent auto-merge.
-- [ ] Every decision records model version, scores and reason code.
-- [ ] Two concurrent same-event imports create one story.
-- [ ] Model/provider calls do not occur inside the DB transaction.
-- [ ] Provider failure does not silently create low-quality standalone stories.
-- [ ] Shadow and authoritative modes are configurable.
-- [ ] A labelled benchmark and threshold report are committed.
-- [ ] Auto-merge precision meets the target before full enablement.
-- [ ] Manual merge/split recomputes centroid, primary source, source count and verification.
-- [ ] Existing revision idempotency still passes.
-- [ ] Existing non-auto-publish review behaviour still passes.
-- [ ] V1 remains compatible; V2 routing and malformed-vector rejection have contract tests with no-side-effect assertions.
-- [ ] The existing spool survives a crash between payload persistence, embedding and delivery without losing or recomputing a valid embedding.
-- [ ] A real PostgreSQL+pgvector integration lane validates migration, cosine query, centroid average and advisory-lock concurrency.
-- [ ] Public article responses never expose vectors, candidate scores or decision snapshots.
-- [ ] Semantic membership alone does not promote verification to corroborated reporting or evidence to `SUPPORT`.
-- [ ] Career code and Career database are untouched.
-- [ ] Repository verification and integrated smoke tests pass.
+- [x] Every schema-v2 auto-published raw item has a valid versioned embedding.
+- [x] Core stores raw vectors and story centroids in pgvector.
+- [x] Retrieval is limited to the configured event window.
+- [x] Exact URL/canonical identity is checked before semantic retrieval.
+- [x] Vector similarity is not the sole merge condition.
+- [x] Hard event/entity conflicts prevent auto-merge.
+- [x] Every decision records model version, scores and reason code.
+- [x] Two concurrent same-event imports create one story.
+- [x] Model/provider calls do not occur inside the DB transaction.
+- [x] Provider failure does not silently create low-quality standalone stories.
+- [x] Shadow and authoritative modes are configurable.
+- [x] A labelled benchmark and threshold report are committed.
+- [x] Auto-merge precision meets the target before full enablement.
+- [x] Manual merge/split recomputes centroid, primary source, source count and verification.
+- [x] Existing revision idempotency still passes.
+- [x] Existing non-auto-publish review behaviour still passes.
+- [x] V1 remains compatible; V2 routing and malformed-vector rejection have contract tests with no-side-effect assertions.
+- [x] The existing spool survives a crash between payload persistence, embedding and delivery without losing or recomputing a valid embedding.
+- [x] A real PostgreSQL+pgvector integration lane validates migration, cosine query, centroid average and advisory-lock concurrency.
+- [x] Public article responses never expose vectors, candidate scores or decision snapshots.
+- [x] Semantic membership alone does not promote verification to corroborated reporting or evidence to `SUPPORT`.
+- [x] Career code and Career database are untouched.
+- [x] Repository verification and integrated smoke tests pass.
 
 ---
 
