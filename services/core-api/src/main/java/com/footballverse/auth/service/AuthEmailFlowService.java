@@ -44,7 +44,7 @@ public class AuthEmailFlowService {
     private final AuthMailService mail;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${app.auth.rate-limit-secret}")
+    @Value("${app.auth.rate-limit-secret:}")
     private String rateLimitSecret;
 
     @Value("${app.jwt.secret}")

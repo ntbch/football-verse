@@ -13,7 +13,7 @@ export const ScorePicker = ({ value, onChange, label }: ScorePickerProps) => {
         type="button"
         onClick={() => onChange(Math.max(0, value - 1))}
         aria-label={`Decrease ${label} score`}
-        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)] active:scale-90 transition-all text-xs font-bold text-[var(--color-text-secondary)] border-0 bg-transparent cursor-pointer"
+        className="h-11 w-11 flex items-center justify-center rounded-lg hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)] active:scale-90 transition-all text-xs font-bold text-[var(--color-text-secondary)] border-0 bg-transparent cursor-pointer"
       >
         −
       </button>
@@ -24,7 +24,7 @@ export const ScorePicker = ({ value, onChange, label }: ScorePickerProps) => {
         type="button"
         onClick={() => onChange(Math.min(15, value + 1))}
         aria-label={`Increase ${label} score`}
-        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)] active:scale-90 transition-all text-xs font-bold text-[var(--color-text-secondary)] border-0 bg-transparent cursor-pointer"
+        className="h-11 w-11 flex items-center justify-center rounded-lg hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)] active:scale-90 transition-all text-xs font-bold text-[var(--color-text-secondary)] border-0 bg-transparent cursor-pointer"
       >
         +
       </button>

@@ -10,6 +10,7 @@ import { useNavbarNotifications } from "@/shared/hooks/use-navbar-notifications"
 import { DesktopNotificationMenu, MobileNotificationMenu } from "./notification-menu";
 import { DesktopNavLinks, DrawerNavLinks } from "./navbar-links";
 import { ThemeToggle } from "./theme-provider";
+import { useAccessibleDialog } from "@/shared/hooks/use-accessible-dialog";
 
 export function Navbar() {
   const auth = useAuthStore((state) => state.auth);
@@ -28,8 +29,11 @@ export function Navbar() {
   const userRef = useRef<HTMLDivElement>(null);
   const controlRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const drawerRef = useRef<HTMLElement>(null);
+  const drawerSearchInputRef = useRef<HTMLInputElement>(null);
 
   const { notifications, unreadCount, markAllRead, markRead, deleteNotification } = useNavbarNotifications();
+  useAccessibleDialog(drawerOpen, drawerRef, drawerSearchInputRef, () => setDrawerOpen(false));
 
   const isAdmin = auth?.roles.includes("ADMIN");
   const isMod = auth?.roles.includes("MODERATOR");
@@ -84,8 +88,11 @@ export function Navbar() {
           <button
             onClick={() => setDrawerOpen(!drawerOpen)}
             aria-label="Toggle Side Drawer"
+            aria-controls="mobile-navigation-drawer"
+            aria-expanded={drawerOpen}
+            aria-haspopup="dialog"
             title="Toggle Menu Drawer"
-            className="md:hidden p-1.5 rounded-lg hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] transition-all active:scale-95 duration-150 flex items-center justify-center cursor-pointer"
+            className="md:hidden min-h-11 min-w-11 rounded-lg hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] transition-all active:scale-95 duration-150 flex items-center justify-center cursor-pointer"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.25">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
@@ -93,7 +100,7 @@ export function Navbar() {
           </button>
 
           <Link href="/" className="flex items-center gap-2 group">
-            <span className="font-sans text-lg md:text-xl font-black tracking-wider uppercase cursor-pointer select-none">
+            <span className="font-sans text-lg md:text-xl font-black tracking-wider uppercase select-none">
               <span className="text-[var(--color-text-primary)] group-hover:opacity-90">FOOTBALL</span>{" "}
               <span className="text-[var(--color-accent)] font-black group-hover:opacity-90">VERSE</span>
             </span>
@@ -120,12 +127,13 @@ export function Navbar() {
                     if (!q.trim()) setSearchOpen(false);
                   }}
                   placeholder="Search news, posts..."
-                  className="w-44 md:w-56 px-3.5 py-1.5 text-xs font-semibold rounded-full border border-[var(--color-border)] bg-[var(--color-background-body)] text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)] transition-all shadow-inner"
+                  className="h-11 w-44 md:w-56 px-3.5 py-1.5 text-xs font-semibold rounded-full border border-[var(--color-border)] bg-[var(--color-background-body)] text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)] transition-all shadow-inner"
                 />
                 <button
                   type="button"
                   onClick={() => setSearchOpen(false)}
-                  className="p-1 rounded-full text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] cursor-pointer"
+                  aria-label="Close search"
+                  className="min-h-11 min-w-11 rounded-full text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] cursor-pointer"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -136,7 +144,7 @@ export function Navbar() {
               <button
                 onClick={() => setSearchOpen(true)}
                 aria-label="Search"
-                className="p-2 rounded-full hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] transition-all active:scale-95 duration-150 flex items-center justify-center cursor-pointer"
+                className="min-h-11 min-w-11 rounded-full hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] transition-all active:scale-95 duration-150 flex items-center justify-center cursor-pointer"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.25">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -145,7 +153,7 @@ export function Navbar() {
             )}
           </div>
 
-          <ThemeToggle className="p-2 rounded-full hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] transition-all active:scale-95 duration-150" />
+          <ThemeToggle className="min-h-11 min-w-11 rounded-full hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] transition-all active:scale-95 duration-150" />
 
           {/* Unified Control Hub Icon (For Admin & Moderator) */}
           {hasManagementRole && (
@@ -153,7 +161,7 @@ export function Navbar() {
               <button
                 onClick={() => setControlOpen(!controlOpen)}
                 aria-label="Management Hub"
-                className={`p-2 rounded-full transition-all active:scale-95 duration-150 flex items-center justify-center relative cursor-pointer ${
+                className={`min-h-11 min-w-11 rounded-full transition-all active:scale-95 duration-150 flex items-center justify-center relative cursor-pointer ${
                   controlOpen
                     ? "bg-[var(--color-accent)] text-[var(--color-background-body)] shadow-md"
                     : "hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)]"
@@ -187,7 +195,7 @@ export function Navbar() {
                       <Link
                         href="/admin"
                         onClick={() => setControlOpen(false)}
-                        className="px-3.5 py-2 text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-accent)]/10 hover:text-[var(--color-accent)] rounded-xl transition-colors flex items-center gap-2.5"
+                        className="min-h-11 px-3.5 py-2 text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-accent)]/10 hover:text-[var(--color-accent)] rounded-xl transition-colors flex items-center gap-2.5"
                       >
                         <svg className="w-4 h-4 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -199,7 +207,7 @@ export function Navbar() {
                       <Link
                         href="/moderator"
                         onClick={() => setControlOpen(false)}
-                        className="px-3.5 py-2 text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-accent)]/10 hover:text-[var(--color-accent)] rounded-xl transition-colors flex items-center gap-2.5"
+                        className="min-h-11 px-3.5 py-2 text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-accent)]/10 hover:text-[var(--color-accent)] rounded-xl transition-colors flex items-center gap-2.5"
                       >
                         <svg className="w-4 h-4 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -222,7 +230,7 @@ export function Navbar() {
                   if (!bellOpen && unreadCount > 0) markAllRead();
                 }}
                 aria-label="Notifications"
-                className="relative p-2 rounded-full hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] transition-all active:scale-95 duration-150 flex items-center justify-center cursor-pointer"
+                className="relative min-h-11 min-w-11 rounded-full hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] transition-all active:scale-95 duration-150 flex items-center justify-center cursor-pointer"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                   <path
@@ -255,9 +263,9 @@ export function Navbar() {
             <div ref={userRef} className="relative">
               <button
                 onClick={() => setUserOpen(!userOpen)}
-                aria-label="Account menu"
+                aria-label="Open account menu"
                 aria-expanded={userOpen}
-                className="w-8 h-8 rounded-full bg-[var(--color-background-body)] border border-[var(--color-border)] hover:border-[var(--color-accent)] text-[var(--color-text-primary)] font-extrabold text-xs flex items-center justify-center shadow-xs active:scale-95 transition-all duration-150 cursor-pointer"
+                className="min-h-11 min-w-11 rounded-full bg-[var(--color-background-body)] border border-[var(--color-border)] hover:border-[var(--color-accent)] text-[var(--color-text-primary)] font-extrabold text-xs flex items-center justify-center shadow-xs active:scale-95 transition-all duration-150 cursor-pointer"
               >
                 <svg className="w-4 h-4 text-[var(--color-text-primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.25">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -278,7 +286,7 @@ export function Navbar() {
                     <Link
                       href="/profile"
                       onClick={() => setUserOpen(false)}
-                      className="px-3.5 py-2 text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-accent)]/10 hover:text-[var(--color-accent)] rounded-xl transition-colors flex items-center gap-2.5"
+                      className="min-h-11 px-3.5 py-2 text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-accent)]/10 hover:text-[var(--color-accent)] rounded-xl transition-colors flex items-center gap-2.5"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -290,7 +298,7 @@ export function Navbar() {
                         setUserOpen(false);
                         handleLogout();
                       }}
-                      className="w-full text-left px-3.5 py-2 text-xs font-semibold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 rounded-xl transition-colors flex items-center gap-2.5 cursor-pointer"
+                      className="min-h-11 w-full text-left px-3.5 py-2 text-xs font-semibold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 rounded-xl transition-colors flex items-center gap-2.5 cursor-pointer"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -302,10 +310,8 @@ export function Navbar() {
               )}
             </div>
           ) : (
-            <Link href="/login">
-              <button className="px-4 py-1.5 rounded-full text-xs font-bold text-[var(--color-background-body)] bg-[var(--color-accent)] hover:opacity-90 active:scale-95 transition-all shadow-xs cursor-pointer">
-                Login
-              </button>
+            <Link href="/login" className="min-h-11 px-4 py-1.5 rounded-full text-xs font-bold text-[var(--color-background-body)] bg-[var(--color-accent)] hover:opacity-90 active:scale-95 transition-all shadow-xs cursor-pointer flex items-center">
+              Login
             </Link>
           )}
         </div>
@@ -320,7 +326,7 @@ export function Navbar() {
       )}
 
       {drawerOpen && (
-        <aside className="md:hidden fixed top-0 left-0 w-80 max-w-[85vw] h-screen bg-[var(--color-background-surface)] border-r border-[var(--color-border)] p-6 flex flex-col gap-6 shadow-2xl z-50 animate-slide-down overflow-y-auto">
+        <aside ref={drawerRef} id="mobile-navigation-drawer" role="dialog" aria-modal="true" aria-label="Navigation" tabIndex={-1} className="md:hidden fixed top-0 left-0 w-80 max-w-[85vw] h-screen bg-[var(--color-background-surface)] border-r border-[var(--color-border)] p-6 flex flex-col gap-6 shadow-2xl z-50 animate-slide-down overflow-y-auto">
           {/* Drawer Header */}
           <div className="flex items-center justify-between pb-4 border-b border-[var(--color-border)]">
             <Link href="/" onClick={() => setDrawerOpen(false)} className="flex items-center gap-2">
@@ -331,7 +337,8 @@ export function Navbar() {
             </Link>
             <button
               onClick={() => setDrawerOpen(false)}
-              className="p-1.5 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] transition-colors"
+              aria-label="Close navigation"
+              className="min-h-11 min-w-11 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] transition-colors"
               title="Close Drawer"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.25">
@@ -342,7 +349,8 @@ export function Navbar() {
 
           {/* Search Field inside Drawer */}
           <form onSubmit={handleSearchSubmit} className="w-full relative">
-            <input
+              <input
+                ref={drawerSearchInputRef}
               type="text"
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -376,16 +384,14 @@ export function Navbar() {
                     setDrawerOpen(false);
                     handleLogout();
                   }}
-                  className="w-full py-2.5 rounded-xl text-xs font-bold text-[var(--color-danger)] bg-[var(--color-danger)]/10 hover:bg-[var(--color-danger)]/20 transition-colors cursor-pointer"
+              className="min-h-11 w-full py-2.5 rounded-xl text-xs font-bold text-[var(--color-danger)] bg-[var(--color-danger)]/10 hover:bg-[var(--color-danger)]/20 transition-colors cursor-pointer"
                 >
                   Logout
                 </button>
               </div>
             ) : (
-              <Link href="/login" onClick={() => setDrawerOpen(false)} className="w-full block">
-                <button className="w-full py-2.5 rounded-xl text-xs font-bold text-[var(--color-background-body)] bg-[var(--color-accent)] hover:opacity-90 transition-colors cursor-pointer">
-                  Login
-                </button>
+              <Link href="/login" onClick={() => setDrawerOpen(false)} className="min-h-11 w-full py-2.5 rounded-xl text-center text-xs font-bold text-[var(--color-background-body)] bg-[var(--color-accent)] hover:opacity-90 transition-colors cursor-pointer block">
+                Login
               </Link>
             )}
           </div>

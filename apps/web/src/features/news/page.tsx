@@ -9,7 +9,8 @@ import { http, data } from "@/shared/lib/api-client";
 import type { NewsArticleResponse, NewsCategoryResponse } from "./types";
 import type { PageResponse } from "@/shared/lib/api-types";
 import { getArticleImage, handleImageError } from "@/shared/lib/images";
-import { LoadingBlock } from "@/shared/components/state-blocks";
+import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
+import { formatDate } from "@/shared/lib/format";
 
 export default function NewsListingPage() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
@@ -25,7 +26,7 @@ export default function NewsListingPage() {
   });
 
   // 2. Fetch news articles page
-  const { data: pageData, isLoading } = useQuery({
+  const { data: pageData, isLoading, isError, refetch } = useQuery({
     queryKey: [qk.news.list()[0], selectedCategory, selectedSourceType, page] as const,
     queryFn: () => {
       const params: any = { page, size, sort: "createdAt,desc" };
@@ -39,7 +40,8 @@ export default function NewsListingPage() {
       }
       return data<PageResponse<NewsArticleResponse>>(http.get("/news", { params }));
     },
-    refetchInterval: 30_000,
+    staleTime: 2 * 60_000,
+    refetchOnWindowFocus: true,
   });
 
   const rawArticles = pageData?.content || [];
@@ -87,23 +89,6 @@ export default function NewsListingPage() {
     const st = getSourceType(art);
     if (st === "YOUTUBE") return { label: "YOUTUBE", color: "news-badge-youtube" };
 
-    const title = (art.title || "").toLowerCase();
-    const summary = (art.summary || "").toLowerCase();
-    const text = `${title} ${summary}`;
-
-    const transferKeywords = [
-      "transfer", "transfers", "signing", "signed", "sign contract", "loan deal",
-      "release clause", "free agent", "fee agreed", "buy player", "bought for"
-    ];
-    if (transferKeywords.some(kw => text.includes(kw))) {
-      return { label: "TRANSFERS", color: "news-badge-success" };
-    }
-
-    const matchKeywords = ["vs", "match report", "full highlights", "final score", "preview"];
-    if (matchKeywords.some(kw => text.includes(kw))) {
-      return { label: "MATCHES", color: "news-badge-info" };
-    }
-
     return { label: "NEWS", color: "news-badge-info" };
   };
 
@@ -140,7 +125,7 @@ export default function NewsListingPage() {
 
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="w-full px-4 py-3 rounded-xl bg-[var(--color-background-surface)] border border-[var(--color-border)] text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text-primary)] flex items-center justify-between shadow-sm active:scale-[0.99] transition-all z-40 relative cursor-pointer"
+                className="min-h-11 w-full px-4 py-3 rounded-xl bg-[var(--color-background-surface)] border border-[var(--color-border)] text-left text-xs font-bold uppercase tracking-wider text-[var(--color-text-primary)] flex items-center justify-between shadow-sm active:scale-[0.99] transition-all z-40 relative cursor-pointer"
               >
                 <span className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -181,7 +166,7 @@ export default function NewsListingPage() {
                         handleSourceTypeChange(item.id);
                         setIsDropdownOpen(false);
                       }}
-                      className={`w-full px-3.5 py-2 rounded-lg text-left text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                      className={`min-h-11 w-full px-3.5 py-2 rounded-lg text-left text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                         selectedSourceType === item.id
                           ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
                           : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
@@ -235,7 +220,7 @@ export default function NewsListingPage() {
                   <button
                     key={item.id}
                     onClick={() => handleSourceTypeChange(item.id)}
-                    className={`px-3 py-2 rounded-lg text-left text-xs font-bold transition-all duration-200 cursor-pointer flex items-center justify-between ${
+                    className={`min-h-11 px-3 py-2 rounded-lg text-left text-xs font-bold transition-all duration-200 cursor-pointer flex items-center justify-between ${
                       selectedSourceType === item.id
                         ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
                         : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
@@ -260,7 +245,7 @@ export default function NewsListingPage() {
               <div className="p-1.5 flex flex-col gap-0.5 max-h-[320px] overflow-y-auto custom-scrollbar">
                 <button
                   onClick={() => handleCategoryChange(null)}
-                  className={`w-full px-3 py-1.5 rounded-lg text-left text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
+                  className={`min-h-11 w-full px-3 py-1.5 rounded-lg text-left text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
                     selectedCategory === null
                       ? "bg-[var(--color-text-primary)] text-[var(--color-text-inverse)] shadow-sm"
                       : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
@@ -272,7 +257,7 @@ export default function NewsListingPage() {
                   <button
                     key={cat.id}
                     onClick={() => handleCategoryChange(cat.id)}
-                    className={`w-full px-3 py-1.5 rounded-lg text-left text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
+                    className={`min-h-11 w-full px-3 py-1.5 rounded-lg text-left text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
                       selectedCategory === cat.id
                         ? "bg-[var(--color-text-primary)] text-[var(--color-text-inverse)] shadow-sm"
                         : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
@@ -284,7 +269,7 @@ export default function NewsListingPage() {
               </div>
             </div>
 
-            {/* Trending Articles Widget */}
+            {/* Most liked articles in this page */}
             {articles.length > 0 && (
               <div className="card overflow-hidden hidden lg:block">
                 <div className="px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface-muted)]">
@@ -293,7 +278,7 @@ export default function NewsListingPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 16.121A3 3 0 1014.12 11.88" />
                     </svg>
-                    <span>Trending</span>
+                    <span>Most liked on this page</span>
                   </h3>
                 </div>
                 <div className="p-2 flex flex-col divide-y divide-[var(--color-border)]">
@@ -340,6 +325,8 @@ export default function NewsListingPage() {
           <div>
             {isLoading ? (
               <LoadingBlock label="Loading Publications" />
+            ) : isError ? (
+              <ErrorBlock message="Could not load articles." onRetry={() => void refetch()} />
             ) : articles.length === 0 ? (
               <div className="text-center py-12 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl p-6 flex flex-col items-center gap-2">
                 <h3 className="m-0 font-serif-title font-black text-lg text-[var(--color-text-primary)]">
@@ -363,7 +350,7 @@ export default function NewsListingPage() {
                       return (
                         <div key={art.id} className="card p-4 flex flex-col gap-2.5 overflow-hidden group relative">
                           {/* Video Thumbnail with Center Play Button */}
-                          <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-[var(--color-text-primary)] flex items-center justify-center cursor-pointer">
+                          <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-[var(--color-text-primary)] flex items-center justify-center">
                             <img
                               src={getArticleImage(art.id, art.content, art.imageUrl)}
                               alt={art.title}
@@ -389,7 +376,7 @@ export default function NewsListingPage() {
                               <span>{art.sourceName || "YouTube Highlights"}</span>
                             </span>
                             <span className="text-[11px]">
-                              {new Date(art.publishedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                              {formatDate(art.publishedAt)}
                             </span>
                           </div>
 
@@ -436,7 +423,7 @@ export default function NewsListingPage() {
                                 {art.sourceName || "Football News"}
                               </span>
                               <span>
-                                {new Date(art.publishedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                {formatDate(art.publishedAt)}
                               </span>
                             </div>
 
@@ -455,13 +442,13 @@ export default function NewsListingPage() {
 
                           <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-2 mt-0.5 text-[11px] font-bold text-[var(--color-text-secondary)]">
                             <div className="flex items-center gap-3">
-                              <span className="flex items-center gap-1 hover:text-[var(--color-accent)] transition-colors cursor-pointer">
+                              <span className="flex items-center gap-1">
                                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
                                 </svg>
                                 {art.likes}
                               </span>
-                              <span className="flex items-center gap-1 hover:text-[var(--color-accent)] transition-colors cursor-pointer">
+                              <span className="flex items-center gap-1">
                                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                                 </svg>
@@ -489,7 +476,7 @@ export default function NewsListingPage() {
                     <button
                       onClick={() => setPage((p) => Math.max(0, p - 1))}
                       disabled={page === 0}
-                      className="px-3.5 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-background-surface)] text-xs font-bold text-[var(--color-text-primary)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-surface-hover)] transition-colors"
+                      className="min-h-11 px-3.5 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-background-surface)] text-xs font-bold text-[var(--color-text-primary)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-surface-hover)] transition-colors"
                     >
                       ← Previous
                     </button>
@@ -499,7 +486,7 @@ export default function NewsListingPage() {
                     <button
                       onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                       disabled={page >= totalPages - 1}
-                      className="px-3.5 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-background-surface)] text-xs font-bold text-[var(--color-text-primary)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-surface-hover)] transition-colors"
+                      className="min-h-11 px-3.5 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-background-surface)] text-xs font-bold text-[var(--color-text-primary)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-surface-hover)] transition-colors"
                     >
                       Next →
                     </button>

@@ -2,7 +2,7 @@ import React from "react";
 import "./globals.css";
 import { AppProviders } from "@/shared/components/app-providers";
 
-const themeInitScript = `try { var theme = localStorage.getItem("football-verse-theme"); document.documentElement.dataset.theme = theme === "dark" ? "dark" : "light"; } catch (_) { document.documentElement.dataset.theme = "light"; }`;
+const themeInitScript = `try { var theme = localStorage.getItem("football-verse-theme"); document.documentElement.dataset.theme = theme === "dark" || theme === "light" ? theme : matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; } catch (_) { document.documentElement.dataset.theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; }`;
 
 export const metadata = {
   title: "Football Verse",

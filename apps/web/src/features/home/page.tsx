@@ -8,11 +8,13 @@ import { qk } from "@/shared/lib/query-keys";
 import { http, data } from "@/shared/lib/api-client";
 import type { PageResponse } from "@/shared/lib/api-types";
 import type { NewsArticleResponse } from "@/features/news/types";
-import type { LeaderboardEntryResponse } from "@/features/predictions/types";
+import type { LeaderboardEntryResponse, MatchCentreResponse } from "@/features/predictions/types";
 import type { ForumCategoryResponse, ThreadResponse } from "@/features/forum/types";
 import { getArticleImage, handleImageError } from "@/shared/lib/images";
-import { LoadingBlock } from "@/shared/components/state-blocks";
-import { LeaderboardWidget, CommunityWidget, EditorsPickWidget } from "./_components";
+import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
+import { LeaderboardWidget, CommunityWidget, EditorsPickWidget, MatchdayPulseWidget } from "./_components";
+import { FollowTargetButton, followTopics, useFollowingFeed, useSetFollowTarget } from "@/features/following";
+import { useAuthStore } from "@/shared/lib/auth-store";
 
 function timeAgo(dateStr: string) {
   const now = Date.now();
@@ -27,8 +29,11 @@ function timeAgo(dateStr: string) {
 }
 
 export default function HomePage() {
+  const auth = useAuthStore((state) => state.auth);
+  const [playerName, setPlayerName] = React.useState("");
+  const setFollowTarget = useSetFollowTarget();
   /* 1 — News */
-  const { data: newsPage, isLoading: newsLoading } = useQuery({
+  const { data: newsPage, isLoading: newsLoading, isError: newsError, refetch: refetchNews } = useQuery({
     queryKey: ["home-news"] as const,
     queryFn: () =>
       data<PageResponse<NewsArticleResponse>>(
@@ -45,21 +50,28 @@ export default function HomePage() {
   const sideArticles = articles.slice(11, 15);
 
   /* 2 — Leaderboard */
-  const { data: leaderboard = [] } = useQuery({
+  const { data: leaderboard = [], isError: leaderboardError, refetch: refetchLeaderboard } = useQuery({
     queryKey: qk.predictions.leaderboard("weekly"),
     queryFn: () =>
       data<LeaderboardEntryResponse[]>(
-        http.get("/predictions/leaderboard", { params: { period: "weekly" } })
+        http.get("/predictions/leaderboard", { params: { period: "weekly", limit: 5 } })
       ),
   });
 
+  const { data: matchday, isError: matchdayError, refetch: refetchMatchday } = useQuery({
+    queryKey: ["home-matchday-pulse"] as const,
+    queryFn: () => data<MatchCentreResponse>(http.get("/predictions/match-centre", { params: { league: "premier-league" } })),
+    staleTime: 120_000,
+  });
+  const matchdayFixtures = (matchday?.fixtures ?? []).filter((fixture) => fixture.status === "upcoming" || fixture.status === "live");
+
   /* 3 — Forum */
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [], isError: categoriesError, refetch: refetchCategories } = useQuery({
     queryKey: qk.forum.categories(),
     queryFn: () => data<ForumCategoryResponse[]>(http.get("/forum/categories")),
   });
   const firstCatSlug = categories[0]?.slug ?? "";
-  const { data: threadsPage } = useQuery({
+  const { data: threadsPage, isError: threadsError, refetch: refetchThreads } = useQuery({
     queryKey: qk.forum.threads(firstCatSlug),
     queryFn: () =>
       data<PageResponse<ThreadResponse>>(
@@ -68,6 +80,7 @@ export default function HomePage() {
     enabled: !!firstCatSlug,
   });
   const threads = threadsPage?.content?.slice(0, 4) ?? [];
+  const { data: followingFeed, isLoading: followingLoading, isError: followingError, refetch: refetchFollowing } = useFollowingFeed(Boolean(auth));
 
   return (
     <PublicShell>
@@ -75,6 +88,8 @@ export default function HomePage() {
         {/* HERO + SECONDARY */}
         {newsLoading ? (
           <LoadingBlock label="Loading headlines" />
+        ) : newsError ? (
+          <ErrorBlock message="Could not load headlines." onRetry={() => void refetchNews()} />
         ) : hero ? (
           <section className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-stretch">
             {/* Main Hero — 3 cols */}
@@ -216,12 +231,60 @@ export default function HomePage() {
                 </div>
               </section>
             )}
+
+            {auth ? (
+              <section className="editorial-panel p-5 sm:p-6">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="editorial-kicker m-0">Your selection</p>
+                    <h3 className="editorial-section-title m-0 mt-1">Following</h3>
+                  </div>
+                  {followingFeed?.follows.length ? <span className="text-xs font-semibold text-[var(--color-text-secondary)]">{followingFeed.follows.length} followed</span> : null}
+                </div>
+
+                {followingLoading ? <LoadingBlock label="Loading following feed" /> : followingError ? <ErrorBlock message="Following feed could not be loaded." onRetry={() => void refetchFollowing()} /> : !followingFeed?.follows.length ? (
+                  <div className="flex flex-col gap-3">
+                    <p className="m-0 text-sm text-[var(--color-text-secondary)]">Choose a topic now, or follow clubs and leagues from any Matchday.</p>
+                    <div className="flex flex-wrap gap-2">
+                      {followTopics.map((target) => <FollowTargetButton follows={[]} key={target.targetKey} target={target} />)}
+                    </div>
+                    <form className="flex gap-2" onSubmit={(event) => { event.preventDefault(); const name = playerName.trim(); if (name) setFollowTarget.mutate({ targetType: "PLAYER", targetKey: name, targetName: name, following: true }, { onSuccess: () => setPlayerName("") }); }}>
+                      <input aria-label="Player name" className="min-w-0 flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-background-surface)] px-3 text-sm" maxLength={120} onChange={(event) => setPlayerName(event.target.value)} placeholder="Follow a player" required value={playerName} />
+                      <button className="min-h-11 rounded-xl border border-[var(--color-border)] px-3 text-xs font-bold text-[var(--color-text-primary)] disabled:opacity-50" disabled={setFollowTarget.isPending} type="submit">Follow</button>
+                    </form>
+                  </div>
+                ) : followingFeed.items.length === 0 ? (
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="m-0 text-sm text-[var(--color-text-secondary)]">No recent stories match your follows yet.</p>
+                    <Link className="min-h-11 inline-flex items-center text-xs font-bold text-[var(--color-accent)] hover:underline" href="/news">Browse latest news</Link>
+                  </div>
+                ) : (
+                  <div className="grid gap-3">
+                    {followingFeed.items.map(({ article, reasons }) => (
+                      <Link className="rounded-xl border border-[var(--color-border)] px-4 py-3 transition-colors hover:border-[var(--color-accent)]" href={`/news/${article.slug}`} key={article.id}>
+                        <p className="m-0 text-[10px] font-bold uppercase tracking-wide text-[var(--color-accent)]">Because you follow {reasons.join(", ")}</p>
+                        <h4 className="m-0 mt-1 font-serif-title text-base font-black text-[var(--color-text-primary)]">{article.title}</h4>
+                        <p className="m-0 mt-1 line-clamp-2 text-xs text-[var(--color-text-secondary)]">{article.summary}</p>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </section>
+            ) : null}
           </div>
 
           {/* Right Column — 1/3: Widgets Sidebar */}
           <aside className="flex flex-col gap-5 xl:sticky xl:top-24">
-            <LeaderboardWidget leaderboard={leaderboard} />
-            <CommunityWidget threads={threads} />
+            <MatchdayPulseWidget error={matchdayError} fixtures={matchdayFixtures} onRetry={() => void refetchMatchday()} />
+            <LeaderboardWidget leaderboard={leaderboard} error={leaderboardError} onRetry={() => void refetchLeaderboard()} />
+            <CommunityWidget
+              threads={threads}
+              error={categoriesError || threadsError}
+              onRetry={() => {
+                void refetchCategories();
+                void refetchThreads();
+              }}
+            />
             <EditorsPickWidget articles={sideArticles} getImage={getArticleImage} />
           </aside>
         </div>

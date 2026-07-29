@@ -1,12 +1,21 @@
 package com.footballverse.common.text;
 
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Element;
 import org.jsoup.safety.Safelist;
 import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Component;
 
+import java.net.URI;
+import java.util.Locale;
+import java.util.Set;
+
 @Component
 public class RichTextSanitizer {
+
+    private static final Set<String> EMBED_HOSTS = Set.of(
+            "youtube.com", "www.youtube.com", "youtube-nocookie.com", "www.youtube-nocookie.com", "players.brightcove.net"
+    );
 
     // ponytail: jsoup Safelist là trust boundary — OWASP sanitizer không cần.
     // Safelist.relaxed() keeps p, h1-h6, a, img, b, i, em, strong, ul, ol, li, br, etc.
@@ -40,6 +49,19 @@ public class RichTextSanitizer {
         if (value == null || value.isBlank()) {
             return "";
         }
-        return Jsoup.clean(value, "", SAFELIST, OUTPUT_SETTINGS);
+        Document document = Jsoup.parseBodyFragment(Jsoup.clean(value, "", SAFELIST, OUTPUT_SETTINGS));
+        document.select("iframe[src]").removeIf(frame -> !allowedEmbed(frame));
+        return document.body().html();
+    }
+
+    private boolean allowedEmbed(Element frame) {
+        try {
+            URI uri = URI.create(frame.attr("src"));
+            return "https".equalsIgnoreCase(uri.getScheme())
+                    && uri.getHost() != null
+                    && EMBED_HOSTS.contains(uri.getHost().toLowerCase(Locale.ROOT));
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
     }
 }

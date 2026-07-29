@@ -1,6 +1,8 @@
 package com.footballverse.prediction.service;
 
 import com.footballverse.common.exception.BadRequestException;
+import com.footballverse.common.exception.ResourceNotFoundException;
+import com.footballverse.prediction.dto.CommunityPredictionDistributionResponse;
 import com.footballverse.prediction.dto.FixtureResponse;
 import com.footballverse.prediction.dto.PredictionRequest;
 import com.footballverse.prediction.dto.PredictionResponse;
@@ -59,6 +61,27 @@ public class UserPredictionService {
                 .stream()
                 .map(this::toPredictionResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public CommunityPredictionDistributionResponse communityDistribution(Long fixtureId) {
+        if (!fixtureRepo.existsById(fixtureId)) {
+            throw new ResourceNotFoundException("Fixture not found");
+        }
+
+        long home = 0;
+        long draw = 0;
+        long away = 0;
+        for (UserPredictionRepository.PickCount count : predictionRepo.countPicksByFixtureId(fixtureId)) {
+            long value = count.getCount() == null ? 0 : count.getCount();
+            switch (count.getPick()) {
+                case "home" -> home = value;
+                case "draw" -> draw = value;
+                case "away" -> away = value;
+                default -> { }
+            }
+        }
+        return new CommunityPredictionDistributionResponse(fixtureId, home, draw, away, home + draw + away);
     }
 
     @Transactional

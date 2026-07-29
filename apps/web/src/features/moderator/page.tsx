@@ -4,7 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { qk } from "@/shared/lib/query-keys";
 import { http, data } from "@/shared/lib/api-client";
-import { LoadingBlock } from "@/shared/components/state-blocks";
+import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
+import { formatDate } from "@/shared/lib/format";
 
 type ModStats = {
   pendingReports: number;
@@ -37,7 +38,7 @@ export default function ModeratorDashboardPage() {
   useEffect(() => { setMounted(true); }, []);
 
   // Fetch mod dashboard stats
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading, error, refetch } = useQuery({
     queryKey: qk.moderator.stats(),
     queryFn: () => data<ModStats>(http.get("/moderator/dashboard/stats")),
   });
@@ -45,6 +46,7 @@ export default function ModeratorDashboardPage() {
   if (isLoading) {
     return <LoadingBlock label="Fetching moderation statistics" />;
   }
+  if (error && !stats) return <ErrorBlock message="Moderation statistics could not be loaded." onRetry={() => refetch()} />;
 
   return (
     <div className="flex flex-col gap-5 w-full">
@@ -55,7 +57,7 @@ export default function ModeratorDashboardPage() {
             Moderator Console
           </h1>
           <p className="text-[11px] font-medium mt-0.5" style={{ color: "var(--color-text-secondary)" }}>
-            {mounted ? new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) : "—"}
+            {mounted ? formatDate(new Date().toISOString(), { weekday: "long", year: "numeric", month: "long", day: "numeric" }) : "—"}
           </p>
         </div>
         <div className="flex items-center gap-1.5 text-[10px] font-bold" style={{ color: "#B45F35" }}>
@@ -63,6 +65,8 @@ export default function ModeratorDashboardPage() {
           LIVE
         </div>
       </div>
+
+      {error ? <ErrorBlock message="Moderation statistics could not be refreshed. Showing the last available results." onRetry={() => refetch()} /> : null}
 
       {/* ── KPI tiles ── */}
       {stats && (

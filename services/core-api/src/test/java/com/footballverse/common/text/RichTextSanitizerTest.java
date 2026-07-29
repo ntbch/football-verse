@@ -37,6 +37,12 @@ class RichTextSanitizerTest {
     }
 
     @Test
+    void stripsIframeFromUntrustedHost() {
+        assertThat(sanitizer.sanitize("<iframe src=\"https://example.test/embed\"></iframe>"))
+                .isEmpty();
+    }
+
+    @Test
     void keepsInnerParagraphStripsWrapperDivAndScript() {
         assertThat(sanitizer.sanitize("<div><p>keep</p><script>bad</script></div>"))
                 .isEqualTo("<p>keep</p>");

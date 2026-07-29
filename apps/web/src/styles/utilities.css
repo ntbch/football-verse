@@ -1,0 +1,9 @@
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fade-in { animation: fadeIn .4s cubic-bezier(.16, 1, .3, 1) forwards; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+.animate-slide-down { animation: slideDown .35s cubic-bezier(.16, 1, .3, 1) forwards; }
+@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+.animate-slide-in-right { animation: slideInRight .28s cubic-bezier(.16, 1, .3, 1) forwards; }
+.scrollbar-none::-webkit-scrollbar, .scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-none, .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+input::-ms-reveal, input::-ms-clear { display: none; }

@@ -1,10 +1,25 @@
 import type { CommentResponse } from "../types";
 
+const embedHosts = new Set(["youtube.com", "www.youtube.com", "youtube-nocookie.com", "www.youtube-nocookie.com", "players.brightcove.net"]);
+
+function allowedEmbedUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && embedHosts.has(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
 export function preprocessArticleContent(html: string, coverImageUrl?: string): string {
   if (typeof window === "undefined" || !html) return html;
   try {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
+
+    doc.querySelectorAll("iframe[src]").forEach((frame) => {
+      if (!allowedEmbedUrl(frame.getAttribute("src") || "")) frame.remove();
+    });
 
     const videos = doc.querySelectorAll("video");
     videos.forEach((video) => {
@@ -36,7 +51,7 @@ export function preprocessArticleContent(html: string, coverImageUrl?: string): 
           || src.toLowerCase().endsWith(".m3u8")
           || src.toLowerCase().includes(".mp4?")
           || src.toLowerCase().includes(".m3u8?");
-        if (!isDirect) {
+        if (!isDirect && allowedEmbedUrl(src)) {
           const iframe = doc.createElement("iframe");
           iframe.setAttribute("src", src);
           iframe.setAttribute("width", "100%");

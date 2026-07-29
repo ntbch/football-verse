@@ -1,0 +1,69 @@
+:root {
+  --color-accent: #B45F35;
+  --color-background-body: #F7F4EC;
+  --color-background-surface: #FFFDF9;
+  --color-text-primary: #10140F;
+  --color-text-secondary: #6D715F;
+  --color-border: #D8D0BC;
+  --radius-container: 16px;
+  --radius-element: 8px;
+  --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --shadow-premium: 0 4px 20px -2px rgba(16, 20, 15, .08), 0 2px 8px -1px rgba(16, 20, 15, .04);
+  --shadow-inset: inset 0 2px 4px 0 rgba(16, 20, 15, .03);
+  --color-surface-hover: rgba(16, 20, 15, .06);
+  --color-surface-muted: #e5dfd3;
+  --color-surface-subtle: #f1eee6;
+  --color-text-inverse: #fffdf9;
+  --color-success: #4a7c59;
+  --color-danger: #b91c1c;
+  --color-warning: #b45309;
+  --color-info: #2563eb;
+  --color-neutral: #64748b;
+  --color-brand-youtube: #ff0000;
+  --color-chart-axis: #9ca3af;
+  --color-chart-secondary: #94a3b8;
+  --color-chart-tertiary: #64748b;
+  --color-accent-muted: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  --color-success-muted: color-mix(in srgb, var(--color-success) 12%, transparent);
+  --color-story-text: #fffdf9;
+  --color-story-muted: #d1d5db;
+  --color-overlay: rgb(16 20 15 / 40%);
+  --color-editorial-wash: #efe7d8;
+  --color-editorial-glow: rgb(180 95 53 / 12%);
+}
+
+html[data-theme="dark"] {
+  --color-accent: #e98b5d;
+  --color-background-body: #151714;
+  --color-background-surface: #20231e;
+  --color-text-primary: #f4f0e7;
+  --color-text-secondary: #b9beaa;
+  --color-border: #41463b;
+  --shadow-premium: 0 4px 20px -2px rgba(0, 0, 0, .32), 0 2px 8px -1px rgba(0, 0, 0, .2);
+  --shadow-inset: inset 0 2px 4px 0 rgba(0, 0, 0, .18);
+  --color-surface-hover: rgba(255, 255, 255, .08);
+  --color-surface-muted: #2a2d27;
+  --color-surface-subtle: #282b26;
+  --color-text-inverse: #151714;
+  --color-success: #72c58d;
+  --color-danger: #ff8b8b;
+  --color-warning: #f5b971;
+  --color-info: #8ab4ff;
+  --color-neutral: #b4bdc9;
+  --color-brand-youtube: #ff5b5b;
+  --color-chart-axis: #b4bdc9;
+  --color-chart-secondary: #b4bdc9;
+  --color-chart-tertiary: #8c96a1;
+  --color-story-text: #fffdf9;
+  --color-story-muted: #d1d5db;
+  --color-overlay: rgb(0 0 0 / 55%);
+  --color-editorial-wash: #1b1e18;
+  --color-editorial-glow: rgb(233 139 93 / 14%);
+  color-scheme: dark;
+}
+
+/* ponytail: bridge legacy Tailwind neutrals to tokens; remove as pages migrate to tokens. */
+html[data-theme="dark"] .theme-magazine :is(.bg-white, [class*="bg-gray-50"], [class*="bg-gray-100"]) {
+  background-color: var(--color-background-surface);
+}

@@ -66,8 +66,26 @@ public class ForumThreadService {
 
     @Transactional(readOnly = true)
     public PageResponse<ThreadResponse> threads(String categorySlug, int page, int size, String sort) {
-        var pageable = PageRequest.of(page, size);
-        var result = switch (sort == null ? "latest" : sort) {
+        return threads(categorySlug, page, size, sort, false, false);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<ThreadResponse> threads(String categorySlug, int page, int size, String sort, boolean unanswered) {
+        return threads(categorySlug, page, size, sort, unanswered, false);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<ThreadResponse> threads(String categorySlug, int page, int size, String sort, boolean unanswered, boolean following) {
+        if (unanswered && following) {
+            throw new BadRequestException("Choose either unanswered or following threads");
+        }
+
+        var pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 50));
+        var result = following
+                ? threads.findFollowedByUserAndCategorySlug(currentUser.get().getId(), categorySlug, pageable)
+                : unanswered
+                ? threads.findByCategorySlugAndHiddenFalseAndSolvedFalseOrderByPinnedDescLastActivityAtDesc(categorySlug, pageable)
+                : switch (sort == null ? "latest" : sort) {
             case "top" -> threads.topThreads(categorySlug, pageable);
             case "hot" -> threads.hotThreads(categorySlug, pageable);
             default -> threads.findByCategorySlugAndHiddenFalseOrderByPinnedDescLastActivityAtDesc(categorySlug, pageable);

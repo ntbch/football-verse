@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { qk } from "@/shared/lib/query-keys";
 import { http, data, apiErrorMessage } from "@/shared/lib/api-client";
-import { LoadingBlock } from "@/shared/components/state-blocks";
+import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
+import { formatDate } from "@/shared/lib/format";
 import type { NewsArticleResponse, NewsCategoryResponse } from "@/features/news/types";
 import type { PageResponse } from "@/shared/lib/api-types";
 import { useToast } from "@/shared/components/toast";
@@ -67,7 +68,7 @@ export default function AdminNewsPage() {
   });
 
   // 2. Fetch page filtered by status, search, date range, and categoryId on backend
-  const { data: pageData, isLoading } = useQuery({
+  const { data: pageData, isLoading, error, refetch } = useQuery({
     queryKey: [qk.admin.news()[0], page, size, tab, search, dateParams.startDate, dateParams.endDate, selectedCategoryId],
     queryFn: () => data<PageResponse<NewsArticleResponse>>(http.get("/admin/news", { 
       params: { 
@@ -127,9 +128,11 @@ export default function AdminNewsPage() {
   }, [allArticles, tab]);
 
   if (isLoading) return <LoadingBlock label="Fetching article repository" />;
+  if (error && !pageData) return <ErrorBlock message="Article repository could not be loaded." onRetry={() => refetch()} />;
 
   return (
     <div className="flex flex-col gap-5 w-full">
+      {error ? <ErrorBlock message="Article repository could not be refreshed. Showing the last available results." onRetry={() => refetch()} /> : null}
       {/* Header */}
       <div className="flex items-center justify-between gap-4 pb-4" style={{ borderBottom: "1px solid var(--color-border)" }}>
         <div className="flex items-center gap-3 min-w-0">
@@ -274,7 +277,7 @@ export default function AdminNewsPage() {
                       </select>
                     </td>
                     <td className="py-3 px-4 font-mono text-[10px]" style={{ color: "var(--color-text-secondary)" }}>
-                      {art.publishedAt ? new Date(art.publishedAt).toLocaleDateString() : "—"}
+                      {formatDate(art.publishedAt)}
                     </td>
                      <td className="py-2 px-4 text-right">
                       <div className="flex items-center gap-1.5 justify-end">

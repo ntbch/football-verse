@@ -2,13 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, usePathname, useSearchParams } from "next/navigation";
 import { PublicShell } from "@/shared/components/page-shell";
 import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import { useAuthStore } from "@/shared/lib/auth-store";
-import { useMatchDetail } from "./api";
+import { formatDate } from "@/shared/lib/format";
+import { useCommunityPredictionDistribution, useMatchDetail, useMatchRelatedContent } from "./api";
 import { MatchAnalytics, PickForm } from "./components";
 import type { LineupTeam, MatchCentreFixture } from "./types";
+import { FollowTargetButton, useFollowTargets } from "@/features/following";
 
 type DetailTab = "overview" | "lineups" | "analysis";
 
@@ -22,7 +24,7 @@ function countdown(kickoff: string, now: number) {
 }
 
 function formatKickoff(kickoff: string, timeZone: string) {
-  return new Intl.DateTimeFormat("en-US", {
+  return formatDate(kickoff, {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -31,7 +33,7 @@ function formatKickoff(kickoff: string, timeZone: string) {
     minute: "2-digit",
     hour12: false,
     timeZone,
-  }).format(new Date(kickoff));
+  });
 }
 
 function score(fixture: MatchCentreFixture) {
@@ -75,6 +77,7 @@ function LineupList({ team }: { team: LineupTeam }) {
 
 export default function PredictionDetailPage() {
   const params = useParams<{ fixtureId: string }>();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const fixtureId = params.fixtureId;
   const league = searchParams.get("league") ?? "premier-league";
@@ -82,6 +85,7 @@ export default function PredictionDetailPage() {
   const fromTab = searchParams.get("tab") ?? "upcoming";
   const { data, isLoading, error, refetch } = useMatchDetail(fixtureId, league);
   const auth = useAuthStore((state) => state.auth);
+  const { data: follows = [] } = useFollowTargets(Boolean(auth));
   const [tab, setTab] = useState<DetailTab>("overview");
   const [now, setNow] = useState(() => Date.now());
   const timezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", []);
@@ -94,12 +98,21 @@ export default function PredictionDetailPage() {
   const returnParams = new URLSearchParams({ league, tab: fromTab, focus: fixtureId });
   if (round) returnParams.set("round", round);
   const returnHref = `/predictions?${returnParams.toString()}`;
-  const loginHref = `/login?next=${encodeURIComponent(`/predictions/${fixtureId}?${searchParams.toString()}`)}`;
+  const loginHref = `/login?next=${encodeURIComponent(`${pathname}?${searchParams.toString()}`)}`;
+  const fixture = data?.fixture;
+  const { data: related, isLoading: relatedLoading, isError: relatedError, refetch: refetchRelated } = useMatchRelatedContent(
+    fixture?.homeTeam ?? "",
+    fixture?.awayTeam ?? "",
+    Boolean(fixture),
+  );
+  const { data: communityDistribution, isError: communityDistributionError, refetch: refetchCommunityDistribution } = useCommunityPredictionDistribution(
+    fixture?.id ?? 0,
+    Boolean(fixture),
+  );
 
   if (isLoading) return <PublicShell><LoadingBlock label="Loading match" /></PublicShell>;
-  if (error || !data) return <PublicShell><ErrorBlock message="This fixture is unavailable. Return to fixtures and try again." /></PublicShell>;
+  if (error || !fixture) return <PublicShell><ErrorBlock message="This fixture is unavailable. Return to fixtures and try again." onRetry={() => refetch()} /></PublicShell>;
 
-  const fixture = data.fixture;
   const prediction = fixture.userPrediction;
 
   return (
@@ -137,6 +150,44 @@ export default function PredictionDetailPage() {
           </div>
         </section>
 
+        <section aria-label="Follow this match" className="flex flex-wrap items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background-surface)] px-4 py-3">
+          <span className="mr-1 text-xs font-bold text-[var(--color-text-secondary)]">Follow this matchday:</span>
+          <FollowTargetButton follows={follows} loginHref={auth ? undefined : loginHref} target={{ targetType: "CLUB", targetKey: fixture.homeTeam, targetName: fixture.homeTeam }} />
+          {auth ? <FollowTargetButton follows={follows} target={{ targetType: "CLUB", targetKey: fixture.awayTeam, targetName: fixture.awayTeam }} /> : null}
+          {auth ? <FollowTargetButton follows={follows} target={{ targetType: "LEAGUE", targetKey: fixture.league, targetName: fixture.league.replaceAll("-", " ") }} /> : null}
+        </section>
+
+        <section aria-label="Related match coverage" className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background-surface)] p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="m-0 font-serif-title text-lg font-black text-[var(--color-text-primary)]">Related coverage</h2>
+              <Link className="min-h-11 inline-flex items-center text-xs font-bold text-[var(--color-accent)] hover:underline" href={`/search?q=${encodeURIComponent(fixture.homeTeam)}`}>Search news</Link>
+            </div>
+            {relatedLoading ? <LoadingBlock label="Loading related coverage" /> : relatedError ? <ErrorBlock message="Related coverage is unavailable." onRetry={() => void refetchRelated()} /> : related?.articles.length ? (
+              <div className="grid gap-3">
+                {related.articles.map((article) => <Link className="rounded-xl border border-[var(--color-border)] p-3 transition-colors hover:border-[var(--color-accent)]" href={`/news/${article.slug}`} key={article.id}>
+                  <p className="m-0 text-[10px] font-bold uppercase tracking-wide text-[var(--color-text-secondary)]">{article.category || "News"}</p>
+                  <h3 className="m-0 mt-1 text-sm font-black text-[var(--color-text-primary)]">{article.title}</h3>
+                </Link>)}
+              </div>
+            ) : <p className="m-0 text-sm text-[var(--color-text-secondary)]">No published coverage for these teams yet.</p>}
+          </div>
+          <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background-surface)] p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="m-0 font-serif-title text-lg font-black text-[var(--color-text-primary)]">Community discussion</h2>
+              <Link className="min-h-11 inline-flex items-center text-xs font-bold text-[var(--color-accent)] hover:underline" href={`/search?q=${encodeURIComponent(fixture.homeTeam)}`}>Search all</Link>
+            </div>
+            {relatedLoading ? <LoadingBlock label="Loading discussions" /> : relatedError ? <ErrorBlock message="Discussions are unavailable." onRetry={() => void refetchRelated()} /> : related?.threads.length ? (
+              <div className="grid gap-3">
+                {related.threads.map((thread) => <Link className="rounded-xl border border-[var(--color-border)] p-3 transition-colors hover:border-[var(--color-accent)]" href={`/forum/threads/${thread.slug}`} key={thread.id}>
+                  <p className="m-0 text-[10px] font-bold uppercase tracking-wide text-[var(--color-text-secondary)]">{thread.categoryName}</p>
+                  <h3 className="m-0 mt-1 text-sm font-black text-[var(--color-text-primary)]">{thread.title}</h3>
+                </Link>)}
+              </div>
+            ) : <p className="m-0 text-sm text-[var(--color-text-secondary)]">No public discussion for these teams yet.</p>}
+          </div>
+        </section>
+
         {/* Tab Navigation & Content */}
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
           <div className="order-2 lg:order-1">
@@ -144,7 +195,7 @@ export default function PredictionDetailPage() {
               {(["overview", "lineups", "analysis"] as DetailTab[]).map((item) => (
                 <button
                   aria-selected={tab === item}
-                  className={`min-h-10 rounded-lg px-2 text-sm font-bold capitalize transition-all cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] ${
+                  className={`min-h-11 rounded-lg px-2 text-sm font-bold capitalize transition-all cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] ${
                     tab === item ? "bg-[var(--color-background-surface)] text-[var(--color-text-primary)] shadow-sm" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                   }`}
                   key={item}
@@ -224,6 +275,29 @@ export default function PredictionDetailPage() {
                       </div>
                     </div>
                   )}
+
+                  {communityDistribution?.total ? (
+                    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)]/70 p-4 sm:p-5">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <h3 className="m-0 text-xs font-black uppercase tracking-[0.16em] text-[var(--color-accent)]">Community picks</h3>
+                        <span className="text-[10px] font-bold text-[var(--color-text-secondary)]">{communityDistribution.total} picks</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                        {[
+                          [fixture.homeTeam, communityDistribution.home],
+                          ["Draw", communityDistribution.draw],
+                          [fixture.awayTeam, communityDistribution.away],
+                        ].map(([label, count]) => (
+                          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background-surface)] px-2 py-3" key={String(label)}>
+                            <span className="block truncate text-[10px] font-bold text-[var(--color-text-secondary)]">{label}</span>
+                            <span className="mt-1 block text-sm font-black text-[var(--color-text-primary)]">{Math.round((Number(count) * 100) / communityDistribution.total)}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : communityDistributionError ? (
+                    <ErrorBlock message="Community picks are unavailable." onRetry={() => void refetchCommunityDistribution()} />
+                  ) : null}
 
                   {/* User's Prediction Record (If Predicted) */}
                   {prediction && (

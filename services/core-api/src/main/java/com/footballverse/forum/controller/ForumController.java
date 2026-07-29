@@ -16,6 +16,7 @@ import com.footballverse.forum.service.ForumReportService;
 import com.footballverse.forum.service.ForumThreadService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,14 +42,17 @@ public class ForumController {
         return ApiResponse.ok(threadService.categories());
     }
 
+    @PreAuthorize("!#following or isAuthenticated()")
     @GetMapping("/categories/{slug}/threads")
     public ApiResponse<PageResponse<ThreadResponse>> threads(
             @PathVariable String slug,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "latest") String sort
+            @RequestParam(defaultValue = "latest") String sort,
+            @RequestParam(defaultValue = "false") boolean unanswered,
+            @RequestParam(defaultValue = "false") boolean following
     ) {
-        return ApiResponse.ok(threadService.threads(slug, page, size, sort));
+        return ApiResponse.ok(threadService.threads(slug, page, size, sort, unanswered, following));
     }
 
     @PostMapping("/categories/{slug}/threads")

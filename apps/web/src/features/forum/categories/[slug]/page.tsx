@@ -8,21 +8,22 @@ import { qk } from "@/shared/lib/query-keys";
 import { http, data } from "@/shared/lib/api-client";
 import type { ThreadResponse, ForumCategoryResponse } from "../../types";
 import type { PageResponse } from "@/shared/lib/api-types";
-import { LoadingBlock } from "@/shared/components/state-blocks";
+import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import Link from "next/link";
+import { formatDate } from "@/shared/lib/format";
 
 export default function ForumCategoryPage() {
   const params = useParams();
   const slug = params.slug as string;
 
   // Fetch threads in the category
-  const { data: threadsPage, isLoading: isThreadsLoading } = useQuery({
+  const { data: threadsPage, isLoading: isThreadsLoading, isError: isThreadsError, refetch: refetchThreads } = useQuery({
     queryKey: qk.forum.threads(slug),
     queryFn: () => data<PageResponse<ThreadResponse>>(http.get(`/forum/categories/${slug}/threads`)),
   });
 
   // Fetch categories to show a header title
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [], isError: isCategoriesError, refetch: refetchCategories } = useQuery({
     queryKey: qk.forum.categories(),
     queryFn: () => data<ForumCategoryResponse[]>(http.get("/forum/categories")),
   });
@@ -35,6 +36,14 @@ export default function ForumCategoryPage() {
     return (
       <PublicShell>
         <LoadingBlock label={`Loading threads for ${categoryName}`} />
+      </PublicShell>
+    );
+  }
+
+  if (isThreadsError) {
+    return (
+      <PublicShell>
+        <ErrorBlock message="Could not load threads for this category." onRetry={() => void refetchThreads()} />
       </PublicShell>
     );
   }
@@ -66,6 +75,9 @@ export default function ForumCategoryPage() {
               {category.description}
             </p>
           )}
+          {isCategoriesError ? (
+            <ErrorBlock message="Category details are unavailable." onRetry={() => void refetchCategories()} />
+          ) : null}
         </header>
 
         {/* Thread List */}
@@ -91,10 +103,7 @@ export default function ForumCategoryPage() {
                       <span className="text-[var(--color-text-primary)]">@{thread.authorUsername}</span>
                       <span>·</span>
                       <span>
-                        {new Date(thread.createdAt).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
+                        {formatDate(thread.createdAt, { month: "short", day: "numeric" })}
                       </span>
                       {thread.pinned && (
                         <span className="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase">

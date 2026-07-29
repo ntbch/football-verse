@@ -148,7 +148,7 @@ export const PickForm = ({ match, auth, onSuccess, onClosed, loginHref = "/login
                 key={v}
                 type="button"
                 onClick={() => setPickOu25(pickOu25 === v ? null : v)}
-                className={`px-3 py-1 rounded text-[9px] font-bold uppercase transition-all duration-200 active:scale-95 cursor-pointer ${
+                className={`min-h-11 px-3 py-1 rounded text-[9px] font-bold uppercase transition-all duration-200 active:scale-95 cursor-pointer ${
                   pickOu25 === v
                     ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
                     : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
@@ -169,7 +169,7 @@ export const PickForm = ({ match, auth, onSuccess, onClosed, loginHref = "/login
                 key={v}
                 type="button"
                 onClick={() => setPickBtts(pickBtts === v ? null : v)}
-                className={`px-3 py-1 rounded text-[9px] font-bold uppercase transition-all duration-200 active:scale-95 cursor-pointer ${
+                className={`min-h-11 px-3 py-1 rounded text-[9px] font-bold uppercase transition-all duration-200 active:scale-95 cursor-pointer ${
                   pickBtts === v
                     ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
                     : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
@@ -201,7 +201,7 @@ export const PickForm = ({ match, auth, onSuccess, onClosed, loginHref = "/login
         </div>
 
         <button
-          className="btn btn-primary !px-4 !py-1.5 !text-[10px] active:scale-[0.98] transition-all cursor-pointer"
+          className="btn btn-primary !min-h-11 !px-4 !py-1.5 !text-[10px] active:scale-[0.98] transition-all cursor-pointer"
           disabled={isPending}
           aria-busy={isPending}
           type="button"

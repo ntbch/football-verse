@@ -53,7 +53,7 @@ export function ThreadHeader({
             <span className="self-center px-2 text-[var(--color-text-secondary)]">Mod Ops:</span>
             <button
               onClick={onTogglePinned}
-              className={`rounded-full px-3 py-1 transition-colors ${
+              className={`min-h-11 rounded-full px-3 py-1 transition-colors ${
                 thread.pinned
                   ? "bg-amber-100 text-amber-700"
                   : "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]"
@@ -63,7 +63,7 @@ export function ThreadHeader({
             </button>
             <button
               onClick={onToggleLocked}
-              className={`rounded-full px-3 py-1 transition-colors ${
+              className={`min-h-11 rounded-full px-3 py-1 transition-colors ${
                 thread.locked
                   ? "bg-[var(--color-danger)]/10 text-[var(--color-danger)]"
                   : "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]"

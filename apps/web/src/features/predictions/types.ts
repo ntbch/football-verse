@@ -29,6 +29,23 @@ export type UserPrediction = {
   scoringState: "NOT_READY" | "PENDING" | "SCORED";
 };
 
+export type PredictionScoreLog = {
+  id: number;
+  predictionId: number;
+  fixtureId: number;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  points: number;
+  outcomePoints: number;
+  exactScorePoints: number;
+  ou25Points: number;
+  bttsPoints: number;
+  reason: string;
+  scoredAt: string | null;
+};
+
 export type StatsResponse = {
   totalPoints: number;
   correctPicks: number;
@@ -50,6 +67,26 @@ export type LeaderboardEntry = {
 };
 
 export type LeaderboardEntryResponse = LeaderboardEntry;
+
+export type CurrentLeaderboard = {
+  period: "weekly" | "monthly" | "all";
+  rank: number | null;
+  points: number;
+  correctPicks: number;
+  totalPicks: number;
+  accuracy: number;
+};
+
+export type CommunityPredictionDistribution = {
+  fixtureId: number;
+  home: number;
+  draw: number;
+  away: number;
+  total: number;
+};
+
+export type PrivateLeagueMember = { userId: number; displayName: string; points: number; rank: number };
+export type PrivateLeague = { id: number; name: string; owner: boolean; inviteCode: string | null; memberCount: number; members: PrivateLeagueMember[] };
 
 export type AiPredictionSummary = {
   homePct: number;

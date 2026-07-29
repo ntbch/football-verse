@@ -6,9 +6,11 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { PublicShell } from "@/shared/components/page-shell";
 import { ErrorBlock } from "@/shared/components/state-blocks";
+import { useAccessibleDialog } from "@/shared/hooks/use-accessible-dialog";
 import { useAuthStore } from "@/shared/lib/auth-store";
-import { useLeaderboard, useMatchCentre } from "./api";
-import { LeaderboardPanel } from "./components";
+import { formatDate } from "@/shared/lib/format";
+import { useCurrentLeaderboard, useLeaderboardPage, useMatchCentre } from "./api";
+import { LeaderboardPanel, PrivateLeaguesPanel } from "./components";
 import type { MatchCentreFixture, SourceAvailability, StandingRow } from "./types";
 
 type FixtureTab = "upcoming" | "live" | "results";
@@ -26,11 +28,11 @@ function localZone() {
 }
 
 function formatTime(kickoff: string, timeZone: string) {
-  return new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", timeZone }).format(new Date(kickoff));
+  return formatDate(kickoff, { hour: "2-digit", minute: "2-digit", timeZone });
 }
 
 function fullDayLabel(kickoff: string, timeZone: string) {
-  return new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone }).format(new Date(kickoff));
+  return formatDate(kickoff, { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone });
 }
 
 function scoreOrTime(fixture: MatchCentreFixture, timeZone: string) {
@@ -118,6 +120,8 @@ function FullStandingsDialog({
   closeButtonRef: React.RefObject<HTMLButtonElement | null>;
   onClose: () => void;
 }) {
+  const dialogRef = useRef<HTMLElement>(null);
+  useAccessibleDialog(open, dialogRef, closeButtonRef, onClose);
   if (!open) return null;
   const seasonYear = Number(availability?.season);
   const seasonLabel = availability?.season && Number.isFinite(seasonYear) ? ` ${seasonYear}/${seasonYear + 1}` : "";
@@ -133,11 +137,13 @@ function FullStandingsDialog({
       />
 
       {/* Centered card */}
-      <section
+        <section
+          ref={dialogRef}
         aria-labelledby={titleId}
         aria-modal="true"
         className="relative z-10 flex w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-background-surface)] shadow-2xl"
-        role="dialog"
+          role="dialog"
+          tabIndex={-1}
         style={{ maxHeight: "calc(100vh - 5rem)" }}
       >
         {/* Header */}
@@ -152,7 +158,8 @@ function FullStandingsDialog({
           </div>
           <button
             ref={closeButtonRef}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-all hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] cursor-pointer"
+            aria-label="Close standings"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-all hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] cursor-pointer"
             onClick={onClose}
             type="button"
           >
@@ -225,14 +232,15 @@ export default function PredictionsPage() {
     const requested = searchParams.get("tab");
     return requested === "live" || requested === "results" ? requested : "upcoming";
   });
-  const [leaderboardPeriod, setLeaderboardPeriod] = useState<"weekly" | "all">("weekly");
+  const [leaderboardPeriod, setLeaderboardPeriod] = useState<"weekly" | "monthly" | "all">("weekly");
+  const [leaderboardPage, setLeaderboardPage] = useState(0);
   const [showAllStandings, setShowAllStandings] = useState(false);
   const allStandingsButtonRef = useRef<HTMLButtonElement>(null);
   const dialogCloseButtonRef = useRef<HTMLButtonElement>(null);
-  const dialogWasOpen = useRef(false);
 
   const { data: centre, isLoading, error, refetch } = useMatchCentre(league, round ?? undefined);
-  const { data: leaderboard, isLoading: leaderboardLoading, error: leaderboardError } = useLeaderboard(leaderboardPeriod);
+  const { data: leaderboardData, isLoading: leaderboardLoading, error: leaderboardError, refetch: refetchLeaderboard } = useLeaderboardPage(leaderboardPeriod, leaderboardPage);
+  const { data: currentLeaderboard, isLoading: currentLeaderboardLoading, isError: currentLeaderboardError, refetch: refetchCurrentLeaderboard } = useCurrentLeaderboard(leaderboardPeriod, Boolean(auth));
   const timezone = useMemo(localZone, []);
   const rounds = centre?.rounds ?? [];
   const fixturesAvailability = centre?.fixturesAvailability;
@@ -248,22 +256,6 @@ export default function PredictionsPage() {
     const frame = window.requestAnimationFrame(() => document.getElementById(`fixture-${focusFixture}`)?.focus());
     return () => window.cancelAnimationFrame(frame);
   }, [isLoading, searchParams]);
-
-  useEffect(() => {
-    if (showAllStandings) {
-      dialogWasOpen.current = true;
-      const frame = window.requestAnimationFrame(() => dialogCloseButtonRef.current?.focus());
-      return () => window.cancelAnimationFrame(frame);
-    }
-    if (dialogWasOpen.current) allStandingsButtonRef.current?.focus();
-  }, [showAllStandings]);
-
-  useEffect(() => {
-    if (!showAllStandings) return;
-    const escape = (event: KeyboardEvent) => event.key === "Escape" && setShowAllStandings(false);
-    window.addEventListener("keydown", escape);
-    return () => window.removeEventListener("keydown", escape);
-  }, [showAllStandings]);
 
   const allFixtures = centre?.fixtures ?? [];
   const fixtures = useMemo(() => allFixtures.filter((fixture) => fixtureTab(fixture.status) === tab), [allFixtures, tab]);
@@ -288,7 +280,7 @@ export default function PredictionsPage() {
   const fixtureHref = (fixture: MatchCentreFixture) => {
     const params = new URLSearchParams({ league, tab, from: fixture.fixtureId });
     if (round) params.set("round", round);
-    return `/predictions/${encodeURIComponent(fixture.fixtureId)}?${params.toString()}`;
+    return `/matchday/${encodeURIComponent(fixture.fixtureId)}?${params.toString()}`;
   };
 
   const fixtureStatusMessage = fixturesAvailability?.state === "PROVIDER_UNAVAILABLE"
@@ -360,7 +352,7 @@ export default function PredictionsPage() {
                 return (
                   <button
                     aria-selected={isActive}
-                    className={`cursor-pointer rounded-lg px-5 py-2 text-sm font-bold transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] ${
+                    className={`min-h-11 cursor-pointer rounded-lg px-5 py-2 text-sm font-bold transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] ${
                       isActive
                         ? "bg-[#c25e38] text-white shadow-xs"
                         : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
@@ -394,12 +386,7 @@ export default function PredictionsPage() {
               <FixturesSkeleton />
             ) : error || (fixtureStatusMessage && groupedFixtures.length === 0) ? (
               <div className="p-6 text-center card border border-[var(--color-border)] rounded-2xl">
-                <ErrorBlock message={fixtureStatusMessage ?? "Fixtures could not be loaded. Please try again."} />
-                {fixtureStatusMessage && (
-                  <button className="btn btn-secondary mt-4 min-h-10 px-5 text-xs font-bold uppercase tracking-wider" onClick={() => refetch()} type="button">
-                    Retry
-                  </button>
-                )}
+                <ErrorBlock message={fixtureStatusMessage ?? "Fixtures could not be loaded. Please try again."} onRetry={() => refetch()} />
               </div>
             ) : (
               <>
@@ -515,7 +502,7 @@ export default function PredictionsPage() {
                 </div>
                 <button
                   aria-haspopup="dialog"
-                  className="px-3 py-1.5 rounded-xl border border-[var(--color-border)] text-xs font-bold text-[var(--color-accent)] transition-all hover:bg-[var(--color-accent-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                  className="min-h-11 px-3 py-1.5 rounded-xl border border-[var(--color-border)] text-xs font-bold text-[var(--color-accent)] transition-all hover:bg-[var(--color-accent-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                   disabled={!standings.length || standingsAvailability?.state === "PROVIDER_UNAVAILABLE"}
                   onClick={() => setShowAllStandings(true)}
                   ref={allStandingsButtonRef}
@@ -558,17 +545,78 @@ export default function PredictionsPage() {
                     Leaderboard
                   </h2>
                 </div>
-                <button
-                  className="px-2.5 py-1 rounded-lg text-xs font-bold text-[var(--color-accent)] hover:bg-[var(--color-accent-muted)] transition-colors cursor-pointer"
-                  onClick={() => setLeaderboardPeriod(leaderboardPeriod === "weekly" ? "all" : "weekly")}
-                  type="button"
-                >
-                  {leaderboardPeriod === "weekly" ? "Weekly" : "All-Time"}
-                </button>
+                <div className="flex rounded-lg border border-[var(--color-border)] p-0.5" aria-label="Leaderboard period">
+                  {(["weekly", "monthly", "all"] as const).map((period) => (
+                    <button
+                      aria-pressed={leaderboardPeriod === period}
+                      className={`min-h-9 rounded-md px-2 text-[10px] font-bold transition-colors ${leaderboardPeriod === period ? "bg-[var(--color-accent-muted)] text-[var(--color-accent)]" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
+                      key={period}
+                      onClick={() => { setLeaderboardPeriod(period); setLeaderboardPage(0); }}
+                      type="button"
+                    >
+                      {period === "all" ? "All-time" : period === "monthly" ? "Month" : "Week"}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <LeaderboardPanel entries={leaderboard} error={leaderboardError} isLoading={leaderboardLoading} />
+              <LeaderboardPanel entries={leaderboardData?.content} error={leaderboardError} isLoading={leaderboardLoading} onRetry={() => refetchLeaderboard()} />
+              {auth ? (
+                <div className="mt-3 border-t border-[var(--color-border)]/60 pt-3 text-xs">
+                  {currentLeaderboardLoading ? (
+                    <span className="text-[var(--color-text-secondary)] font-medium">Loading your rank…</span>
+                  ) : currentLeaderboardError ? (
+                    <div className="flex items-center justify-between text-[var(--color-text-secondary)] font-medium">
+                      <span>Could not load your rank.</span>
+                      <button
+                        className="font-bold text-[var(--color-accent)] hover:underline cursor-pointer"
+                        onClick={() => void refetchCurrentLeaderboard()}
+                        type="button"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  ) : currentLeaderboard?.rank ? (
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-bold text-[var(--color-text-primary)]">
+                        Your rank <strong className="text-[var(--color-accent)]">#{currentLeaderboard.rank}</strong>
+                      </span>
+                      <span className="font-semibold text-[var(--color-text-secondary)]">
+                        {currentLeaderboard.accuracy}% accuracy · {currentLeaderboard.points} pts
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-[var(--color-text-secondary)] block text-center">
+                      Your {leaderboardPeriod === "all" ? "all-time" : leaderboardPeriod} rank will appear after your first scored pick.
+                    </span>
+                  )}
+                </div>
+              ) : null}
+              {(leaderboardData?.totalPages ?? 0) > 1 ? (
+                <nav aria-label="Leaderboard pages" className="mt-3 flex items-center justify-between gap-3 pt-2 border-t border-[var(--color-border)]/40">
+                  <button
+                    className="min-h-9 rounded-lg border border-[var(--color-border)] px-3 text-xs font-bold transition-colors hover:bg-[var(--color-surface-hover)] disabled:opacity-40 cursor-pointer"
+                    disabled={leaderboardPage === 0}
+                    onClick={() => setLeaderboardPage((value) => Math.max(0, value - 1))}
+                    type="button"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                    {leaderboardPage + 1} / {leaderboardData?.totalPages}
+                  </span>
+                  <button
+                    className="min-h-9 rounded-lg border border-[var(--color-border)] px-3 text-xs font-bold transition-colors hover:bg-[var(--color-surface-hover)] disabled:opacity-40 cursor-pointer"
+                    disabled={leaderboardPage >= (leaderboardData?.totalPages ?? 1) - 1}
+                    onClick={() => setLeaderboardPage((value) => Math.min((leaderboardData?.totalPages ?? 1) - 1, value + 1))}
+                    type="button"
+                  >
+                    Next
+                  </button>
+                </nav>
+              ) : null}
             </div>
+            <PrivateLeaguesPanel authenticated={Boolean(auth)} />
           </aside>
         </div>
 

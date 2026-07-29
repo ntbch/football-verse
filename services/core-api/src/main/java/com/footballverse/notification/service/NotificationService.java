@@ -8,6 +8,7 @@ import com.footballverse.common.exception.ResourceNotFoundException;
 import com.footballverse.security.CurrentUser;
 import com.footballverse.notification.dto.NotificationResponse;
 import com.footballverse.user.model.UserAccount;
+import com.footballverse.user.service.NotificationPreferenceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,9 +23,11 @@ public class NotificationService {
     private final NotificationRepository notifications;
     private final CurrentUser currentUser;
     private final ApplicationEventPublisher eventPublisher;
+    private final NotificationPreferenceService preferences;
 
     @Transactional
     public void create(UserAccount user, NotificationType type, String message, String linkUrl) {
+        if (!preferences.allows(user, type)) return;
         Notification notification = notifications.save(new Notification(user, type, message, linkUrl));
         eventPublisher.publishEvent(new NotificationCreatedEvent(this, notification));
     }

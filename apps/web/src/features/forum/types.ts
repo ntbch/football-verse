@@ -18,6 +18,9 @@ export type ThreadResponse = {
   viewCount: number;
   pinned: boolean;
   locked: boolean;
+  solved: boolean;
+  bestAnswerPostId: number | null;
+  followed: boolean;
   hidden: boolean;
   liked: boolean;
   likes: number;

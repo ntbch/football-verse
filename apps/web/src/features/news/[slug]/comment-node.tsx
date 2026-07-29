@@ -1,6 +1,7 @@
 "use client";
 
 import type { CommentResponse } from "../types";
+import { formatDate } from "@/shared/lib/format";
 
 export const CommentNode = ({
   comment,
@@ -31,7 +32,7 @@ export const CommentNode = ({
         <div className="flex items-center justify-between text-xs">
           <span className="font-bold text-[var(--color-text-primary)]">{comment.username}</span>
           <span className="text-[var(--color-text-secondary)] font-semibold">
-            {new Date(comment.publishedAt).toLocaleDateString()}
+            {formatDate(comment.publishedAt)}
           </span>
         </div>
 

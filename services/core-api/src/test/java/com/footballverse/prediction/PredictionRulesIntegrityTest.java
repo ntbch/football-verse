@@ -9,6 +9,7 @@ import com.footballverse.prediction.service.UserPredictionService;
 
 import com.footballverse.common.exception.BadRequestException;
 import com.footballverse.prediction.dto.PredictionRequest;
+import com.footballverse.prediction.dto.PredictionScoreLogResponse;
 import com.footballverse.user.model.UserAccount;
 import com.footballverse.user.repository.UserAccountRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -129,5 +130,10 @@ class PredictionRulesIntegrityTest {
         assertEquals(5, log.getExactScorePoints());
         assertEquals(2, log.getOu25Points());
         assertEquals(2, log.getBttsPoints());
+
+        PredictionScoreLogResponse response = scoringService.getScoreLog(user.getId(), fixture.getId());
+        assertEquals(log.getId(), response.id());
+        assertEquals(12, response.points());
+        assertEquals(5, response.exactScorePoints());
     }
 }

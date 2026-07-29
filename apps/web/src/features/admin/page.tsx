@@ -10,6 +10,8 @@ import {
   BarChart, Bar, Cell,
 } from "recharts";
 import type { AdminUser } from "./types";
+import { ErrorBlock } from "@/shared/components/state-blocks";
+import { formatDate } from "@/shared/lib/format";
 
 type DashboardStats = {
   totalUsers: number;
@@ -44,17 +46,17 @@ export default function AdminDashboardPage() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
-  const { data: stats } = useQuery({
+  const { data: stats, error: statsError, refetch: refetchStats } = useQuery({
     queryKey: qk.admin.dashboardStats(),
     queryFn: () => data<DashboardStats>(http.get("/admin/dashboard/stats")),
   });
 
-  const { data: growth = [] } = useQuery({
+  const { data: growth = [], error: growthError, refetch: refetchGrowth } = useQuery({
     queryKey: qk.admin.userGrowth(),
     queryFn: () => data<UserGrowthEntry[]>(http.get("/admin/dashboard/user-growth")),
   });
 
-  const { data: userList } = useQuery({
+  const { data: userList, error: usersError, refetch: refetchUsers } = useQuery({
     queryKey: qk.admin.users(),
     queryFn: () => data<AdminUser[]>(http.get("/admin/users")),
   });
@@ -89,7 +91,7 @@ export default function AdminDashboardPage() {
             System Overview
           </h1>
           <p className="text-[11px] font-medium mt-0.5" style={{ color: "var(--color-text-secondary)" }}>
-            {new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+            {formatDate(new Date().toISOString(), { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
           </p>
         </div>
         <div className="flex items-center gap-1.5 text-[10px] font-bold" style={{ color: "var(--color-success)" }}>
@@ -97,6 +99,8 @@ export default function AdminDashboardPage() {
           LIVE
         </div>
       </div>
+
+      {statsError ? <ErrorBlock message="Dashboard statistics could not be loaded." onRetry={() => refetchStats()} /> : null}
 
       {/* ── KPI tiles ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -135,7 +139,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="h-44">
-            {mounted && growth.length > 0 ? (
+            {growthError ? <ErrorBlock message="User-growth data could not be loaded." onRetry={() => refetchGrowth()} /> : mounted && growth.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={growth} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
                   <defs>
@@ -198,7 +202,7 @@ export default function AdminDashboardPage() {
             View All →
           </Link>
         </div>
-        {recentUsers.length === 0 ? (
+        {usersError ? <ErrorBlock message="Recent users could not be loaded." onRetry={() => refetchUsers()} /> : recentUsers.length === 0 ? (
           <div className="p-6 text-center text-xs italic" style={{ color: "var(--color-text-secondary)" }}>No users found</div>
         ) : (
           <table className="w-full text-xs">
@@ -234,7 +238,7 @@ export default function AdminDashboardPage() {
                     </span>
                   </td>
                   <td className="px-5 py-3 font-medium tabular-nums" style={{ color: "var(--color-text-secondary)" }}>
-                    {u.createdAt ? new Date(u.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
+                    {formatDate(u.createdAt)}
                   </td>
                 </tr>
               ))}

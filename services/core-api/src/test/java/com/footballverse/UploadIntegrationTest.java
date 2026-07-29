@@ -2,13 +2,16 @@ package com.footballverse;
 
 import com.footballverse.security.JwtService;
 import com.footballverse.user.model.UserAccount;
+import com.footballverse.user.model.UserRole;
 import com.footballverse.user.repository.UserAccountRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -18,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
+import java.util.Set;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -28,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {
     "app.crawl.startup-enabled=false",
+    "app.mail.from=test@footballverse.local",
     "app.upload.dir=target/test-uploads"
 })
 @Transactional
@@ -42,13 +47,20 @@ public class UploadIntegrationTest {
     @Autowired
     private JwtService jwtService;
 
+    @MockBean
+    private JavaMailSender mailSender;
+
     private UserAccount testUser;
     private String token;
+    private String adminToken;
 
     @BeforeEach
     void setUp() {
         testUser = users.save(new UserAccount(UUID.randomUUID() + "@user.local", "uploaderUser", "pass"));
         token = jwtService.createAccessToken(testUser);
+        UserAccount admin = new UserAccount(UUID.randomUUID() + "@admin.local", "uploaderAdmin", "pass");
+        admin.setRoles(Set.of(UserRole.ADMIN));
+        adminToken = jwtService.createAccessToken(users.save(admin));
     }
 
     @Test
@@ -60,10 +72,10 @@ public class UploadIntegrationTest {
                 "fake image content".getBytes()
         );
 
-        // 1. POST - Upload image with JWT token
+        // 1. POST - Only an admin can upload public article media.
         String responseContent = mockMvc.perform(multipart("/uploads")
                         .file(imageFile)
-                        .header("Authorization", "Bearer " + token))
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.url").exists())
                 .andReturn()
@@ -95,8 +107,20 @@ public class UploadIntegrationTest {
         // POST - Should reject with 400 Bad Request
         mockMvc.perform(multipart("/uploads")
                         .file(exeFile)
-                        .header("Authorization", "Bearer " + token))
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testUploadRequiresAdmin() throws Exception {
+        MockMultipartFile imageFile = new MockMultipartFile(
+                "file", "test-image.png", MediaType.IMAGE_PNG_VALUE, "fake image content".getBytes()
+        );
+
+        mockMvc.perform(multipart("/uploads")
+                        .file(imageFile)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden());
     }
 
     @Test

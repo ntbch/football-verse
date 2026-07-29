@@ -1,12 +1,3 @@
-export const FOOTBALL_IMAGES = [
-  "https://images.unsplash.com/photo-1579952365116-61317f0501cd?q=90&w=1600&auto=format&fit=crop", // Champions League ball on pitch
-  "https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=90&w=1600&auto=format&fit=crop", // Football stadium floodlights
-  "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=90&w=1600&auto=format&fit=crop", // Stadium night match
-  "https://images.unsplash.com/photo-1522778119026-d647f0596c20?q=90&w=1600&auto=format&fit=crop", // Empty stadium pitch
-  "https://images.unsplash.com/photo-1551958219-acbc608c6377?q=90&w=1600&auto=format&fit=crop", // Football net & grass
-  "https://images.unsplash.com/photo-1431324155629-1a6edd1dec1d?q=90&w=1600&auto=format&fit=crop", // Stadium crowd fans
-];
-
 export const DEFAULT_FALLBACK_SVG = "data:image/svg+xml;utf8," + encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
   <defs>
@@ -34,6 +25,16 @@ export function upgradeImageUrl(url: string): string {
     cleanUrl = `https:${cleanUrl}`;
   }
 
+  // BBC iChef (Upgrade low-res /240/, /320/, /480/ to /1024/)
+  if (cleanUrl.includes("ichef.bbci.co.uk")) {
+    cleanUrl = cleanUrl.replace(/(\/ace\/(?:standard|ws)\/|\/news\/)\d+\//i, "$11024/");
+  }
+
+  // Sky Sports / 365dm (Upgrade 240x135, 300x300, 640x360 to 1920x1080)
+  if (cleanUrl.includes("365dm.com") || cleanUrl.includes("skysports.com")) {
+    cleanUrl = cleanUrl.replace(/\/\d{2,4}x\d{2,4}\//i, "/1920x1080/");
+  }
+
   // Upgrade YouTube low-res thumbnails (hqdefault.jpg / mqdefault.jpg / sddefault.jpg -> maxresdefault.jpg)
   if (cleanUrl.includes("i.ytimg.com") || cleanUrl.includes("img.youtube.com")) {
     cleanUrl = cleanUrl.replace(/\/(hqdefault|mqdefault|sddefault|default)\.jpg/i, "/maxresdefault.jpg");
@@ -44,9 +45,9 @@ export function upgradeImageUrl(url: string): string {
     cleanUrl = cleanUrl.replace(/w=\d+/, "w=1600").replace(/q=\d+/, "q=90");
   }
 
-  // Google News often serves a small Googleusercontent rendition such as =w120-h120.
-  if (cleanUrl.includes("googleusercontent.com")) {
-    cleanUrl = cleanUrl.replace(/=w\d+(?:-h\d+)?(?:-[a-z0-9]+)*/i, "=w1600-h900");
+  // Google News / googleusercontent often serves small renditions like =w120-h120, =s0-w300-h200
+  if (cleanUrl.includes("googleusercontent.com") || cleanUrl.includes("ggpht.com")) {
+    cleanUrl = cleanUrl.replace(/=(?:s|w)\d+(?:-h\d+)?(?:-[a-z0-9]+)*/i, "=w1600-h900");
   }
 
   // WordPress feeds commonly expose a generated 300x169 thumbnail while the original is available beside it.
@@ -54,10 +55,22 @@ export function upgradeImageUrl(url: string): string {
     cleanUrl = cleanUrl.replace(/-\d{2,4}x\d{2,4}(?=\.(?:avif|jpe?g|png|webp)(?:[?#]|$))/i, "");
   }
 
+  // TalkSport / Mirror / Sun / Reach PLC alternates
+  if (cleanUrl.includes("/alternates/")) {
+    cleanUrl = cleanUrl.replace(/\/alternates\/s\d+b?\//i, "/alternates/s1200/");
+  }
+
+  // Generic width / resize query parameters (e.g. ?w=300, ?width=300, ?resize=300)
+  if (/[?&](?:w|width|resize)=\d+/i.test(cleanUrl) && !cleanUrl.includes("images.unsplash.com")) {
+    cleanUrl = cleanUrl
+      .replace(/([?&])(?:w|width|resize)=\d+/gi, "$1w=1600")
+      .replace(/([?&])q=\d+/gi, "$1q=90");
+  }
+
   return cleanUrl;
 }
 
-export function getArticleImage(id: number, content?: string, preferredImageUrl?: string): string {
+export function getArticleImage(_id: number, content?: string, preferredImageUrl?: string): string {
   if (preferredImageUrl && preferredImageUrl.trim()) {
     const upgraded = upgradeImageUrl(preferredImageUrl);
     if (upgraded.startsWith("http://") || upgraded.startsWith("https://")) {
@@ -73,12 +86,7 @@ export function getArticleImage(id: number, content?: string, preferredImageUrl?
       }
     }
   }
-  const index = Math.abs(id) % FOOTBALL_IMAGES.length;
-  return FOOTBALL_IMAGES[index];
-}
-
-export function getPlaceholderImage(): string {
-  return FOOTBALL_IMAGES[0];
+  return DEFAULT_FALLBACK_SVG;
 }
 
 export function handleImageError(e: React.SyntheticEvent<HTMLImageElement, Event>, fallbackUrl?: string) {
@@ -92,7 +100,7 @@ export function handleImageError(e: React.SyntheticEvent<HTMLImageElement, Event
 
   if (!target.dataset.fallbackTried) {
     target.dataset.fallbackTried = "true";
-    target.src = fallbackUrl || FOOTBALL_IMAGES[0];
+    target.src = fallbackUrl || DEFAULT_FALLBACK_SVG;
   } else if (target.dataset.fallbackTried === "true") {
     target.dataset.fallbackTried = "done";
     target.src = DEFAULT_FALLBACK_SVG;

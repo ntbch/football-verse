@@ -11,7 +11,7 @@ export const qk = {
   },
   forum: {
     categories: () => ["forum-categories"] as const,
-    threads: (categorySlug: string) => ["threads", categorySlug] as const,
+    threads: (categorySlug: string, unanswered = false, following = false, page = 0) => ["threads", categorySlug, unanswered, following, page] as const,
     thread: (slug: string) => ["thread", slug] as const,
   },
   admin: {
@@ -27,6 +27,7 @@ export const qk = {
   user: {
     profile: () => ["profile"] as const,
     notifications: () => ["notifications"] as const,
+    notificationPreferences: () => ["notification-preferences"] as const,
     followingThreads: () => ["following-threads"] as const,
   },
   moderator: {

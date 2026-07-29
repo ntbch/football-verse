@@ -4,6 +4,7 @@ import com.footballverse.notification.model.NotificationType;
 import com.footballverse.notification.service.NotificationService;
 import com.footballverse.prediction.dto.LeaderboardEntryResponse;
 import com.footballverse.prediction.dto.PredictionScoreLogResponse;
+import com.footballverse.common.exception.ResourceNotFoundException;
 import com.footballverse.prediction.dto.StatsResponse;
 import com.footballverse.prediction.model.Fixture;
 import com.footballverse.prediction.model.PredictionScoreLog;
@@ -192,6 +193,20 @@ public class ScoringService {
                         log.getScoredAt() != null ? log.getScoredAt().toString() : null
                 ))
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public PredictionScoreLogResponse getScoreLog(Long userId, Long fixtureId) {
+        PredictionScoreLog log = scoreLogRepo.findFirstByUserIdAndFixtureIdOrderByScoredAtDesc(userId, fixtureId)
+                .orElseThrow(() -> new ResourceNotFoundException("Prediction score is not available"));
+        return new PredictionScoreLogResponse(
+                log.getId(), log.getPrediction().getId(), log.getFixture().getId(),
+                log.getFixture().getHomeTeam(), log.getFixture().getAwayTeam(),
+                log.getFixture().getHomeScore(), log.getFixture().getAwayScore(),
+                log.getPoints(), log.getOutcomePoints(), log.getExactScorePoints(),
+                log.getOu25Points(), log.getBttsPoints(), log.getReason(),
+                log.getScoredAt() != null ? log.getScoredAt().toString() : null
+        );
     }
 
     @Transactional

@@ -10,11 +10,15 @@ import { http, data, apiErrorMessage } from "@/shared/lib/api-client";
 import { useAuthStore } from "@/shared/lib/auth-store";
 import { useToast } from "@/shared/components/toast";
 import type { NewsArticleResponse, CommentResponse } from "../types";
+import type { SearchResponse } from "@/features/search/types";
 import { LoadingBlock, ErrorBlock } from "@/shared/components/state-blocks";
 import { getArticleImage, handleImageError } from "@/shared/lib/images";
 
 import { buildCommentTree, preprocessArticleContent } from "./article-content";
+import { StoryTrustPanel } from "./story-trust-panel";
+import { formatDate } from "@/shared/lib/format";
 import { CommentNode } from "./comment-node";
+import { RelatedContent } from "./related-content";
 import { YouTubeEmbed } from "../components/YouTubeEmbed";
 
 function cleanSummaryText(text?: string): string {
@@ -59,6 +63,19 @@ export default function NewsDetailPage() {
   const { data: flatComments = [] } = useQuery({
     queryKey: qk.news.comments(slug),
     queryFn: () => data<any[]>(http.get(`/news/${slug}/comments`)),
+  });
+
+  // One bounded search supplies both related sections; do not fan out to separate News and Forum requests.
+  const {
+    data: relatedContent,
+    isLoading: isRelatedContentLoading,
+    isError: isRelatedContentError,
+    refetch: refetchRelatedContent,
+  } = useQuery({
+    queryKey: ["news-related", article?.id, article?.title] as const,
+    queryFn: () => data<SearchResponse>(http.get("/search", { params: { q: article?.title, page: 0, size: 4 } })),
+    enabled: Boolean(article?.title),
+    staleTime: 2 * 60_000,
   });
 
   const comments = React.useMemo(() => buildCommentTree(flatComments), [flatComments]);
@@ -237,11 +254,7 @@ export default function NewsDetailPage() {
               </span>
               <span>·</span>
               <span>
-                {new Date(article.publishedAt).toLocaleDateString("vi-VN", {
-                  year: "numeric",
-                  month: "numeric",
-                  day: "numeric",
-                })}
+                {formatDate(article.publishedAt)}
               </span>
               <span>·</span>
               <span className="flex items-center gap-1.5">
@@ -261,7 +274,7 @@ export default function NewsDetailPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={handleLike}
-                className="px-4 py-1.5 border rounded-full text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-1.5 cursor-pointer shadow-sm"
+                className="min-h-11 px-4 py-1.5 border rounded-full text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-1.5 cursor-pointer shadow-sm"
                 style={
                   article.liked
                     ? {
@@ -281,7 +294,7 @@ export default function NewsDetailPage() {
 
               <button
                 onClick={handleBookmark}
-                className="px-4 py-1.5 border rounded-full text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-1.5 cursor-pointer shadow-sm"
+                className="min-h-11 px-4 py-1.5 border rounded-full text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-1.5 cursor-pointer shadow-sm"
                 style={
                   article.bookmarked
                     ? {
@@ -360,13 +373,26 @@ export default function NewsDetailPage() {
                         <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[var(--color-text-primary)] text-[var(--color-text-inverse)] font-extrabold text-[10px] flex items-center justify-center mt-0.5 shadow-2xs">
                           {index + 1}
                         </span>
-                        <span>{point.text}</span>
+                        <span className="flex min-w-0 flex-col gap-2">
+                          <span>{point.text}</span>
+                          {point.evidence?.length ? (
+                            <span className="flex flex-wrap gap-2">
+                              {point.evidence.map((item, evidenceIndex) => (
+                                <a key={`${item.originalUrl}-${evidenceIndex}`} href={item.originalUrl} target="_blank" rel="noopener noreferrer" className="rounded-md border border-[var(--color-border)] bg-[var(--color-background-surface)] px-2 py-1 text-[10px] font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] hover:underline">
+                                  {item.relation === "CONTRADICTION" ? "Contradicts" : item.relation === "SUPPORT" ? "Supports" : "Context"}: {item.sourceName}{item.publishedAt ? ` · ${formatDate(item.publishedAt, { dateStyle: "medium", timeStyle: "short" })}` : " · Publication time unavailable"}
+                                </a>
+                              ))}
+                            </span>
+                          ) : null}
+                        </span>
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
             </div>
+
+            <StoryTrustPanel article={article} />
 
             {article.sourceUrl && (
               <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-surface-subtle)] border border-[var(--color-border)] text-xs">
@@ -407,6 +433,14 @@ export default function NewsDetailPage() {
             />
           </div>
         )}
+
+        <RelatedContent
+          articleId={article.id}
+          error={isRelatedContentError}
+          isLoading={isRelatedContentLoading}
+          onRetry={() => void refetchRelatedContent()}
+          results={relatedContent}
+        />
 
         {/* Comment Section */}
         <section className="editorial-panel p-6 md:p-8 flex flex-col gap-6 mt-4">

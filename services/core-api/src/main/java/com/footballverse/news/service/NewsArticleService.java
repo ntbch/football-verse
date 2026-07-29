@@ -1,6 +1,7 @@
 package com.footballverse.news.service;
 import com.footballverse.news.model.ArticleStatus;
 import com.footballverse.news.model.NewsArticle;
+import com.footballverse.news.model.NewsBookmark;
 import com.footballverse.news.model.NewsCategory;
 import com.footballverse.news.model.NewsTag;
 import com.footballverse.news.repository.NewsArticleRepository;
@@ -34,6 +35,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -75,6 +78,41 @@ public class NewsArticleService {
     @Transactional(readOnly = true)
     public PageResponse<NewsArticleResponse> trending(int page, int size) {
         return toPage(articles.findTrendingArticles(PageRequest.of(page, size)));
+    }
+
+    @Transactional(readOnly = true)
+    public List<NewsArticleResponse> bookmarked() {
+        return bookmarks.findAllWithArticleByUserId(currentUser.get().getId(), ArticleStatus.PUBLISHED).stream()
+                .map(NewsBookmark::getArticle)
+                .map(this::toArticle)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<FollowingArticle> followingArticles(List<FollowingTerm> terms, int limit) {
+        if (terms == null || terms.isEmpty() || limit < 1) return List.of();
+
+        Map<Long, FollowingCandidate> candidates = new LinkedHashMap<>();
+        for (FollowingTerm term : terms) {
+            if (term.query() == null || term.query().isBlank()) continue;
+            articles.searchPublishedArticles(term.query(), PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "publishedAt")))
+                    .forEach(article -> candidates
+                            .computeIfAbsent(article.getId(), ignored -> new FollowingCandidate(article, new LinkedHashSet<>()))
+                            .reasons()
+                            .add(term.label()));
+        }
+
+        List<FollowingCandidate> selected = candidates.values().stream()
+                .sorted(Comparator.comparing((FollowingCandidate candidate) -> candidate.article().getPublishedAt(), Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(limit)
+                .toList();
+        ArticleInteractions interactions = interactions(selected.stream().map(FollowingCandidate::article).toList());
+        return selected.stream()
+                .map(candidate -> new FollowingArticle(
+                        toArticle(candidate.article(), false, interactions),
+                        List.copyOf(candidate.reasons())
+                ))
+                .toList();
     }
 
     public double calculateHotScore(NewsArticle article) {
@@ -273,19 +311,24 @@ public class NewsArticleService {
 
     private PageResponse<NewsArticleResponse> toPage(org.springframework.data.domain.Page<NewsArticle> page) {
         List<NewsArticle> pageArticles = page.getContent();
-        List<Long> articleIds = pageArticles.stream().map(NewsArticle::getId).toList();
-        if (articleIds.isEmpty()) {
+        if (pageArticles.isEmpty()) {
             return new PageResponse<>(List.of(), page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages());
         }
+        ArticleInteractions interactions = interactions(pageArticles);
+        return new PageResponse<>(
+                pageArticles.stream().map(article -> toArticle(article, false, interactions)).toList(),
+                page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages());
+    }
+
+    private ArticleInteractions interactions(List<NewsArticle> articlesForInteractions) {
+        List<Long> articleIds = articlesForInteractions.stream().map(NewsArticle::getId).toList();
+        if (articleIds.isEmpty()) return new ArticleInteractions(Map.of(), Map.of(), Set.of(), Set.of());
         Map<Long, Long> likeCounts = countByArticleId(likes.countByArticleIds(articleIds));
         Map<Long, Long> bookmarkCounts = countByArticleId(bookmarks.countByArticleIds(articleIds));
         UserAccount user = currentUser.getOrNull();
         java.util.Set<Long> likedArticleIds = user == null ? Set.of() : Set.copyOf(likes.findArticleIdsByArticleIdInAndUserId(articleIds, user.getId()));
         java.util.Set<Long> bookmarkedArticleIds = user == null ? Set.of() : Set.copyOf(bookmarks.findArticleIdsByArticleIdInAndUserId(articleIds, user.getId()));
-        ArticleInteractions interactions = new ArticleInteractions(likeCounts, bookmarkCounts, likedArticleIds, bookmarkedArticleIds);
-        return new PageResponse<>(
-                pageArticles.stream().map(article -> toArticle(article, false, interactions)).toList(),
-                page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages());
+        return new ArticleInteractions(likeCounts, bookmarkCounts, likedArticleIds, bookmarkedArticleIds);
     }
 
     private Map<Long, Long> countByArticleId(List<Object[]> counts) {
@@ -357,4 +400,10 @@ public class NewsArticleService {
             Set<Long> likedArticleIds,
             Set<Long> bookmarkedArticleIds
     ) {}
+
+    private record FollowingCandidate(NewsArticle article, LinkedHashSet<String> reasons) {}
+
+    public record FollowingTerm(String query, String label) {}
+
+    public record FollowingArticle(NewsArticleResponse article, List<String> reasons) {}
 }

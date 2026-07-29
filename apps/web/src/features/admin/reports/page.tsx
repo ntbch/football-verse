@@ -4,7 +4,8 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { qk } from "@/shared/lib/query-keys";
 import { http, data, apiErrorMessage } from "@/shared/lib/api-client";
-import { LoadingBlock } from "@/shared/components/state-blocks";
+import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
+import { formatDate, formatDateTime } from "@/shared/lib/format";
 import { useToast } from "@/shared/components/toast";
 
 type ForumReport = {
@@ -27,7 +28,7 @@ export default function AdminReportsPage() {
   const [selectedDate, setSelectedDate] = useState<string>("");
 
   // 1. Fetch Reports
-  const { data: reports = [], isLoading } = useQuery({
+  const { data: reports = [], isLoading, error, refetch } = useQuery({
     queryKey: qk.admin.reports(),
     queryFn: () => data<ForumReport[]>(http.get("/admin/forum/reports")),
   });
@@ -130,9 +131,11 @@ export default function AdminReportsPage() {
   }, [filter, selectedDate]);
 
   if (isLoading) return <LoadingBlock label="Fetching moderation reports" />;
+  if (error && reports.length === 0) return <ErrorBlock message="Moderation reports could not be loaded." onRetry={() => refetch()} />;
 
   return (
     <div className="flex flex-col gap-4 w-full h-[calc(100vh-48px)] overflow-hidden">
+      {error ? <ErrorBlock message="Moderation reports could not be refreshed. Showing the last available results." onRetry={() => refetch()} /> : null}
       {/* Header */}
       <div className="flex items-center justify-between pb-3 shrink-0" style={{ borderBottom: "1px solid var(--color-border)" }}>
         <div className="flex items-center gap-3 min-w-0">
@@ -221,7 +224,7 @@ export default function AdminReportsPage() {
                 </p>
                 <div className="flex items-center justify-between text-[9px] mt-1" style={{ color: "var(--color-text-secondary)" }}>
                   <span>by @{r.reporter}</span>
-                  <span className="font-mono">{r.createdAt ? new Date(r.createdAt).toLocaleDateString() : ""}</span>
+                  <span className="font-mono">{r.createdAt ? formatDate(r.createdAt) : ""}</span>
                 </div>
               </button>
             ))}
@@ -260,7 +263,7 @@ export default function AdminReportsPage() {
                 <div className="flex flex-col gap-1">
                   <span className="text-[9px] font-black uppercase tracking-wider" style={{ color: "var(--color-text-secondary)" }}>Report Date</span>
                   <span className="font-bold text-sm" style={{ color: "var(--color-text-primary)" }}>
-                    {selectedReport.createdAt ? new Date(selectedReport.createdAt).toLocaleString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+                    {formatDateTime(selectedReport.createdAt)}
                   </span>
                 </div>
                 <div className="flex flex-col gap-1">

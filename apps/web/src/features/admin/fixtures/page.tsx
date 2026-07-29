@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { http, data, apiErrorMessage } from "@/shared/lib/api-client";
-import { LoadingBlock } from "@/shared/components/state-blocks";
+import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
+import { formatDate, formatDateTime } from "@/shared/lib/format";
 import { useToast } from "@/shared/components/toast";
 
 type Fixture = {
@@ -53,7 +54,7 @@ export default function AdminFixturesPage() {
   const rounds = matchCentre?.rounds ?? [];
 
   // Query fixtures
-  const { data: pageData, isLoading, isPlaceholderData } = useQuery({
+  const { data: pageData, isLoading, isPlaceholderData, error, refetch } = useQuery({
     queryKey: ["admin-fixtures", page, league, round, status, scored],
     queryFn: () => {
       const params = new URLSearchParams({
@@ -106,6 +107,10 @@ export default function AdminFixturesPage() {
   const fixtures = pageData?.content ?? [];
   const totalPages = pageData?.totalPages ?? 0;
   const totalElements = pageData?.totalElements ?? 0;
+
+  useEffect(() => {
+    if (totalPages > 0 && page >= totalPages) setPage(totalPages - 1);
+  }, [page, totalPages]);
 
   return (
     <div className="flex flex-col gap-5 w-full">
@@ -195,8 +200,11 @@ export default function AdminFixturesPage() {
       {/* Main Content Area */}
       {isLoading && fixtures.length === 0 ? (
         <LoadingBlock label="Fetching fixtures database..." />
+      ) : error && fixtures.length === 0 ? (
+        <ErrorBlock message="Fixtures could not be loaded." onRetry={() => refetch()} />
       ) : (
         <div className="flex flex-col gap-4">
+          {error ? <ErrorBlock message="Fixtures could not be refreshed. Showing the last available results." onRetry={() => refetch()} /> : null}
           <div className="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-background-surface)]">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
@@ -228,7 +236,7 @@ export default function AdminFixturesPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3" style={{ color: "var(--color-text-secondary)" }}>
-                        {new Date(f.kickoff).toLocaleString([], { dateStyle: "short", timeStyle: "short" })}
+                        {formatDateTime(f.kickoff)}
                       </td>
                       <td className="px-4 py-3 text-center">
                         {f.status === "result" || f.homeScore !== null ? (
@@ -266,7 +274,7 @@ export default function AdminFixturesPage() {
                             <span className="px-2 py-0.5 rounded-full font-bold text-[10px] bg-emerald-100 text-emerald-800">Scored</span>
                             {f.scoredAt && (
                               <span className="text-[9px] mt-0.5" style={{ color: "var(--color-text-secondary)" }}>
-                                {new Date(f.scoredAt).toLocaleDateString([], { month: "short", day: "numeric" })}
+                                {formatDate(f.scoredAt, { month: "short", day: "numeric" })}
                               </span>
                             )}
                           </div>

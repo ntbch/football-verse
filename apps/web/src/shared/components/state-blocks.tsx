@@ -13,10 +13,11 @@ export const LoadingBlock = ({ label = "Loading" }: { label?: string }) => (
   </div>
 );
 
-export const ErrorBlock = ({ message }: { message: string }) => (
+export const ErrorBlock = ({ message, onRetry }: { message: string; onRetry?: () => void }) => (
   <div className="w-full my-4 p-4 rounded-xl border border-[var(--color-danger)]/25 bg-[var(--color-danger)]/5 text-[var(--color-danger)] text-xs font-bold flex items-center gap-3" role="alert">
     <span aria-hidden="true" className="w-2 h-2 rounded-full bg-[var(--color-danger)] shrink-0" />
     <span>{message}</span>
+    {onRetry ? <button type="button" onClick={onRetry} className="ml-auto min-h-11 px-3 rounded-lg border border-current/30 hover:bg-[var(--color-danger)]/10">Retry</button> : null}
   </div>
 );
 

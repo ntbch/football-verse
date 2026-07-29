@@ -1,5 +1,6 @@
 import type { FormEventHandler } from "react";
 import Link from "next/link";
+import { useForumDraft } from "../use-forum-draft";
 
 type ReplyComposerProps = {
   locked: boolean;
@@ -8,6 +9,7 @@ type ReplyComposerProps = {
   pending: boolean;
   onChange: (value: string) => void;
   onSubmit: FormEventHandler<HTMLFormElement>;
+  draftKey: string;
 };
 
 export function ReplyComposer({
@@ -17,7 +19,16 @@ export function ReplyComposer({
   pending,
   onChange,
   onSubmit,
+  draftKey,
 }: ReplyComposerProps) {
+  const draft = useForumDraft({
+    key: draftKey,
+    value: { content: value },
+    enabled: authenticated && !locked,
+    isMeaningful: (draft) => Boolean(draft.content.trim()),
+    onRestore: (draft) => onChange(draft.content || ""),
+  });
+
   return (
     <section className="mt-4 flex flex-col gap-4 border-t border-[var(--color-border)] pt-6">
       <h2 className="m-0 font-serif-title text-xl font-black text-[var(--color-text-primary)]">
@@ -39,7 +50,11 @@ export function ReplyComposer({
               rows={4}
               className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-3 text-xs font-medium text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30"
             />
-            <div className="text-right">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span aria-live="polite" className="text-[10px] font-bold text-[var(--color-text-secondary)]">{draft.status}</span>
+                <button className="text-[10px] font-bold text-[var(--color-accent)] hover:underline disabled:opacity-50" disabled={!draft.hasDraft} onClick={draft.clear} type="button">Clear draft</button>
+              </div>
               <button disabled={pending} className="btn btn-primary !px-5 !py-2.5 !text-xs">
                 {pending ? "Posting..." : "Submit Reply"}
               </button>

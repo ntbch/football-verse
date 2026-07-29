@@ -4,7 +4,8 @@ import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { qk } from "@/shared/lib/query-keys";
 import { http, data, apiErrorMessage } from "@/shared/lib/api-client";
-import { LoadingBlock } from "@/shared/components/state-blocks";
+import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
+import { formatDate } from "@/shared/lib/format";
 import { useToast } from "@/shared/components/toast";
 import type { AdminUser } from "../types";
 
@@ -22,7 +23,7 @@ export default function AdminUsersPage() {
   const [tab, setTab] = useState<RoleTab>("USER");
   const [search, setSearch] = useState("");
 
-  const { data: users = [], isLoading } = useQuery({
+  const { data: users = [], isLoading, error, refetch } = useQuery({
     queryKey: qk.admin.users(),
     queryFn: () => data<AdminUser[]>(http.get("/admin/users")),
   });
@@ -67,6 +68,7 @@ export default function AdminUsersPage() {
   }, [users, tab, search]);
 
   if (isLoading) return <LoadingBlock label="Fetching user database" />;
+  if (error && users.length === 0) return <ErrorBlock message="User accounts could not be loaded." onRetry={() => refetch()} />;
 
   const TABS: { key: RoleTab; label: string }[] = [
     { key: "USER", label: `Users (${counts.USER})` },
@@ -76,6 +78,7 @@ export default function AdminUsersPage() {
 
   return (
     <div className="flex flex-col gap-4 w-full">
+      {error ? <ErrorBlock message="User accounts could not be refreshed. Showing the last available results." onRetry={() => refetch()} /> : null}
       {/* Header */}
       <div className="flex items-center justify-between gap-4 pb-4" style={{ borderBottom: "1px solid var(--color-border)" }}>
         <div className="flex items-center gap-3 min-w-0">
@@ -150,7 +153,7 @@ export default function AdminUsersPage() {
                     </span>
                   </td>
                   <td className="py-3 px-4 tabular-nums" style={{ color: "var(--color-text-secondary)" }}>
-                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
+                    {formatDate(user.createdAt)}
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-1.5 justify-end">

@@ -32,23 +32,11 @@ async function main() {
       clientErrors.push(`refresh request failed: ${request.failure()?.errorText || "unknown"}`);
     }
   });
-  const suffix = `${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
-  const email = `browser-${suffix}@example.test`;
-  const username = `browser_${suffix.replace(/-/g, "_")}`.slice(0, 40);
-  const password = "BrowserOnlyPassword123!";
+  const email = "admin@footballverse.local";
+  const username = "admin";
+  const password = "ChangeMe123!";
 
   try {
-    // Seed the generated account outside the browser context so the test starts
-    // unauthenticated and must exercise the real login UI.
-    const registration = await fetch(`${apiBaseUrl}/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, username, password }),
-      signal: AbortSignal.timeout(15_000),
-    });
-    if (!registration.ok) throw new Error(`Browser account setup failed (${registration.status})`);
-    console.log("browser-smoke: account ready");
-
     const hydrationResponsePromise = page.waitForResponse(
       (response) => new URL(response.url()).pathname.endsWith("/auth/refresh"),
       { timeout: 20_000 },
@@ -77,6 +65,7 @@ async function main() {
     }
     console.log("browser-smoke: login accepted");
     await page.waitForURL((url) => !url.pathname.endsWith("/login"), { timeout: 30_000 });
+    await page.goto(webBaseUrl, { waitUntil: "domcontentloaded" });
     console.log("browser-smoke: login navigation complete");
     await page.getByRole("button", { name: "Open account menu" }).click();
     await page.getByText(username, { exact: true }).waitFor();

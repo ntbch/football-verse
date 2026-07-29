@@ -68,6 +68,8 @@ List and search responses use `sourceCount` without expanding this list.
 
 Public like, bookmark, and comment endpoints only accept published news articles. Draft, archived, or deleted articles return `404 Article not found`; nested comments whose parent belongs to another article return `400 Parent comment must belong to the same article`.
 
+Rich article HTML permits iframe embeds only from YouTube and Brightcove (`youtube.com`, `youtube-nocookie.com`, and `players.brightcove.net`).
+
 - `GET /news` lists published articles.
 - `GET /news/{slug}` returns one published article.
 - `GET /news/{slug}/comments` lists comments for a published article.
@@ -75,10 +77,43 @@ Public like, bookmark, and comment endpoints only accept published news articles
 - `POST /news/{id}/bookmark` toggles the current user's bookmark.
 - `POST /news/{id}/comments` creates a comment.
 
+## Predictions
+
+- `GET /predictions/leaderboard/me?period=weekly|monthly|all` returns the authenticated user's rank, points, and outcome accuracy for the selected period. Accuracy counts only Core fixtures that have been scored.
+- `GET /predictions/{fixtureId}/community-distribution` returns server-counted home/draw/away pick totals for the fixture; it is not an AI estimate.
+
+- `GET /predictions/{fixtureId}/score-log` returns the authenticated user’s latest scored breakdown for one Core fixture. It includes the points earned per market and a server-generated reason.
+
+- `GET /predictions/leagues?page=0&size=10` returns the authenticated user's private leagues as
+  `PageResponse` (`content`, `page`, `size`, `totalElements`, `totalPages`). `page` is clamped
+  to `0..10000`; `size` is clamped to `1..20`. Each league includes its top five members; only
+  the owner receives its invite code.
+- `GET /predictions/leaderboard/page?period=weekly|monthly|all&page=0&size=20` returns a public
+  `PageResponse` leaderboard. Weekly and monthly entries include only scored fixtures; `page` is
+  clamped to `0..10000` and `size` to `1..50`.
+- `GET /predictions/stats` returns the authenticated user's personal prediction totals, streaks,
+  and badges; it is not a public leaderboard endpoint.
+- `POST /predictions/leagues` creates a private league and returns its owner-only invite code.
+  It requires an `X-Request-ID` header containing a UUID. Reuse that same UUID for a retry: the
+  original league is returned and no second league is created. A request ID belongs to one account
+  and must not be reused by another.
+- `POST /predictions/leagues/join` joins a league by code. Joining is retry-safe; rankings only include members.
+
+## User collections
+
+- `GET /users/me/bookmarked-articles` returns the current user's bookmarked published articles.
+- `GET /users/me/follows` lists durable club, league, player, and topic follows.
+- `PUT /users/me/follows` sets one follow to its requested desired state; it is retry-safe and returns the resulting state.
+- `GET /users/me/following-feed?limit=10` returns bounded published stories with the follow target(s) that matched each story.
+- `GET /users/me/notification-preferences` returns current notification choices. `PATCH` updates supplied
+  `forumReplies` and/or `predictionScored` fields; Core applies them before creating those notifications.
+
 ## Forum and moderation
 
 - `GET /forum/categories` lists forum categories.
 - `GET /forum/categories/{slug}/threads` lists visible threads.
+- `GET /forum/categories/{slug}/threads?unanswered=true` lists visible threads without a server-marked best answer.
+- `GET /forum/categories/{slug}/threads?following=true` lists the current user's followed visible threads in that category. `following` and `unanswered` are mutually exclusive. Pages are bounded to 50 items.
 - `POST /forum/categories/{slug}/threads` creates a thread and opening post.
 - `GET /forum/threads/{slug}` returns a visible thread with visible posts.
 - `POST /forum/threads/{id}/replies` creates a reply unless the thread is locked.
@@ -93,6 +128,22 @@ Public like, bookmark, and comment endpoints only accept published news articles
 - `GET /notifications` lists notifications for the current user.
 - `PATCH /notifications/{id}/read` marks one current-user notification read.
 - `PATCH /notifications/read-all` marks all current-user notifications read.
+- `DELETE /notifications/{id}` deletes one current-user notification. A missing
+  or another user's notification returns `404`.
+
+## Uploads
+
+Uploads are public article-media assets, not a private-file store. `POST /uploads`
+accepts JPEG, PNG, GIF, and WebP only from an administrator; `GET /uploads/{filename}`
+is public so published articles and Telegram previews can use the returned URL. Do
+not upload user documents, private avatars, credentials, or personal data.
+
+Uploaded bytes are retained with Core backups until a supported deletion and
+reference-counting workflow exists. Soft-deleting an article does not currently
+delete its uploaded asset.
+
+News engagement counts are informational; only the labeled Like and Bookmark
+controls issue mutations.
 
 ## Career game
 

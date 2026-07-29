@@ -142,7 +142,7 @@ export function DesktopNavLinks() {
             key={href}
             href={href}
             aria-label={label}
-            className={`group relative grid h-10 w-10 place-items-center rounded-xl transition-colors duration-200 active:scale-95 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${active ? "bg-[var(--color-accent-muted)]" : "hover:bg-[var(--color-surface-hover)]"}`}
+            className={`group relative grid min-h-11 min-w-11 place-items-center rounded-xl transition-colors duration-200 active:scale-95 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${active ? "bg-[var(--color-accent-muted)]" : "hover:bg-[var(--color-surface-hover)]"}`}
           >
             {icon(active)}
             <span className="pointer-events-none absolute top-full mt-2 rounded-lg bg-[var(--color-text-primary)] px-2.5 py-1 text-[10px] font-bold whitespace-nowrap text-[var(--color-text-inverse)] shadow-lg opacity-0 translate-y-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-y-0 group-focus-visible:opacity-100 group-focus-visible:translate-y-0">
@@ -190,7 +190,7 @@ export function DrawerNavLinks({ auth, onNavigate }: { auth: BrowserAuth | null;
             <Link
               href="/admin"
               onClick={onNavigate}
-              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+              className={`min-h-11 flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                 pathname.startsWith("/admin")
                   ? "bg-[var(--color-accent)] text-[var(--color-background-body)] font-bold"
                   : "hover:bg-black/5 dark:hover:bg-white/5 text-[var(--color-text-primary)]"
@@ -207,7 +207,7 @@ export function DrawerNavLinks({ auth, onNavigate }: { auth: BrowserAuth | null;
             <Link
               href="/moderator"
               onClick={onNavigate}
-              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+              className={`min-h-11 flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                 pathname.startsWith("/moderator")
                   ? "bg-[var(--color-accent)] text-[var(--color-background-body)] font-bold"
                   : "hover:bg-black/5 dark:hover:bg-white/5 text-[var(--color-text-primary)]"

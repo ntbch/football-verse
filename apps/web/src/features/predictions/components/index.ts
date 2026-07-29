@@ -4,4 +4,5 @@ export * from "./score-picker";
 export * from "./pick-form";
 export * from "./user-pick-display";
 export * from "./leaderboard-panel";
+export * from "./private-leagues-panel";
 export * from "./stats-badges";

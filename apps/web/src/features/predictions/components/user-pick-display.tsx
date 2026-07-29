@@ -2,6 +2,7 @@
 
 import type { Fixture, UserPrediction, MatchCentreFixture } from "../types";
 import { AwayIcon, CheckIcon, CrossIcon, DrawIcon, HomeIcon } from "./icons";
+import { usePredictionScoreLog } from "../api";
 
 type UserPickDisplayProps = {
   match: Fixture | MatchCentreFixture;
@@ -27,6 +28,7 @@ export const UserPickDisplay = ({ match, prediction }: UserPickDisplayProps) => 
   const correct = isResult && prediction.correct;
   const ou25Hit = isResult && prediction.correctOu25 === true;
   const bttsHit = isResult && prediction.correctBtts === true;
+  const { data: scoreLog, error: scoreLogError, refetch: refetchScoreLog } = usePredictionScoreLog(prediction.matchId, isResult && prediction.scoringState === "SCORED");
 
   return (
     <div className="mt-3 border-t border-[var(--color-border)] pt-3 w-full">
@@ -87,6 +89,29 @@ export const UserPickDisplay = ({ match, prediction }: UserPickDisplayProps) => 
           </div>
         )}
       </div>
+
+      {scoreLog ? (
+        <section aria-label="Score explanation" className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-3">
+          <p className="m-0 text-[9px] font-black uppercase tracking-wider text-[var(--color-text-secondary)]">Score explanation</p>
+          <div className="mt-2 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+            {[
+              ["Outcome", scoreLog.outcomePoints],
+              ["Exact score", scoreLog.exactScorePoints],
+              ["O/U 2.5", scoreLog.ou25Points],
+              ["BTTS", scoreLog.bttsPoints],
+            ].map(([label, points]) => (
+              <span key={label as string} className="rounded-lg bg-[var(--color-background-surface)] px-2 py-1.5 font-semibold text-[var(--color-text-primary)]">
+                {label}: <strong className="font-black">+{points}</strong>
+              </span>
+            ))}
+          </div>
+          <p className="mb-0 mt-2 text-xs text-[var(--color-text-secondary)]">{scoreLog.reason}</p>
+        </section>
+      ) : scoreLogError ? (
+        <button className="mt-3 min-h-11 text-xs font-bold text-[var(--color-accent)] hover:underline" onClick={() => refetchScoreLog()} type="button">
+          Score explanation is unavailable. Retry
+        </button>
+      ) : null}
     </div>
   );
 };

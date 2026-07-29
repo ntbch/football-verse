@@ -7,7 +7,7 @@ import { qk } from "@/shared/lib/query-keys";
 import { http, data, apiErrorMessage } from "@/shared/lib/api-client";
 import type { ForumCategoryResponse, ThreadResponse } from "@/features/forum/types";
 import type { PageResponse } from "@/shared/lib/api-types";
-import { LoadingBlock } from "@/shared/components/state-blocks";
+import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import { useToast } from "@/shared/components/toast";
 
 export default function AdminForumPage() {
@@ -25,7 +25,7 @@ export default function AdminForumPage() {
   const [activeCategorySlug, setActiveCategorySlug] = useState<string | null>(null);
   const [threadPage, setThreadPage] = useState(0);
 
-  const { data: categories = [], isLoading: isCategoriesLoading } = useQuery({
+  const { data: categories = [], isLoading: isCategoriesLoading, error: categoriesError, refetch: refetchCategories } = useQuery({
     queryKey: qk.forum.categories(),
     queryFn: () => data<ForumCategoryResponse[]>(http.get("/forum/categories")),
   });
@@ -36,7 +36,7 @@ export default function AdminForumPage() {
     }
   }, [categories, activeCategorySlug]);
 
-  const { data: threadPageData, isLoading: isThreadsLoading } = useQuery({
+  const { data: threadPageData, isLoading: isThreadsLoading, error: threadsError, refetch: refetchThreads } = useQuery({
     queryKey: ["admin", "threads", activeCategorySlug, threadPage],
     queryFn: () =>
       data<PageResponse<ThreadResponse>>(
@@ -118,12 +118,14 @@ export default function AdminForumPage() {
   };
 
   if (isCategoriesLoading) return <LoadingBlock label="Fetching forum structure" />;
+  if (categoriesError && categories.length === 0) return <ErrorBlock message="Forum categories could not be loaded." onRetry={() => refetchCategories()} />;
 
   const totalThreads = categories.reduce((acc, c) => acc + (c.threadCount ?? 0), 0);
   const totalPosts = categories.reduce((acc, c) => acc + (c.postCount ?? 0), 0);
 
   return (
     <div className="flex flex-col gap-4 w-full h-[calc(100vh-48px)] overflow-hidden">
+      {categoriesError ? <ErrorBlock message="Forum categories could not be refreshed. Showing the last available results." onRetry={() => refetchCategories()} /> : null}
       {/* Header */}
       <div className="flex items-center justify-between gap-4 pb-3 shrink-0" style={{ borderBottom: "1px solid var(--color-border)" }}>
         <div className="flex items-center gap-3 min-w-0">
@@ -261,6 +263,8 @@ export default function AdminForumPage() {
               <div className="flex-1 overflow-y-auto w-full py-2 min-h-0">
                 {isThreadsLoading ? (
                   <div className="py-12 text-center text-xs italic" style={{ color: "var(--color-text-secondary)" }}>Loading threads...</div>
+                ) : threadsError ? (
+                  <ErrorBlock message="Threads could not be loaded." onRetry={() => refetchThreads()} />
                 ) : filteredThreads.length === 0 ? (
                   <div className="py-12 text-center text-xs italic" style={{ color: "var(--color-text-secondary)" }}>
                     {threadSearch.trim() ? "No threads match your search." : "No threads in this category yet."}

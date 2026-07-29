@@ -8,8 +8,9 @@ import { http, data, apiErrorMessage } from "@/shared/lib/api-client";
 import { useAuthStore } from "@/shared/lib/auth-store";
 import type { ForumCategoryResponse, ThreadResponse } from "./types";
 import type { PageResponse } from "@/shared/lib/api-types";
-import { LoadingBlock } from "@/shared/components/state-blocks";
+import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import { useToast } from "@/shared/components/toast";
+import { clearForumDraft } from "./use-forum-draft";
 import {
   CategoryList,
   ForumSidebarWidget,
@@ -18,11 +19,17 @@ import {
   CreateThreadModal,
 } from "./components";
 
+type ThreadView = "latest" | "following" | "unanswered";
+
 export default function ForumPage() {
   const auth = useAuthStore((state) => state.auth);
   const queryClient = useQueryClient();
   const toast = useToast();
   const [activeCategorySlug, setActiveCategorySlug] = useState<string | null>(null);
+  const [threadView, setThreadView] = useState<ThreadView>("latest");
+  const [page, setPage] = useState(0);
+  const unansweredOnly = threadView === "unanswered";
+  const followingOnly = threadView === "following";
 
   // Create thread form states
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -32,7 +39,7 @@ export default function ForumPage() {
   const [targetCategorySlug, setTargetCategorySlug] = useState("");
 
   // 1. Fetch categories
-  const { data: categories = [], isLoading: isCategoriesLoading } = useQuery({
+  const { data: categories = [], isLoading: isCategoriesLoading, isError: isCategoriesError, refetch: refetchCategories } = useQuery({
     queryKey: qk.forum.categories(),
     queryFn: () => data<ForumCategoryResponse[]>(http.get("/forum/categories")),
   });
@@ -46,12 +53,14 @@ export default function ForumPage() {
   }, [categories, activeCategorySlug]);
 
   // 2. Fetch threads in the active category
-  const { data: threadsPage, isLoading: isThreadsLoading } = useQuery({
-    queryKey: qk.forum.threads(activeCategorySlug || ""),
+  const { data: threadsPage, isLoading: isThreadsLoading, isError: isThreadsError, refetch: refetchThreads } = useQuery({
+    queryKey: qk.forum.threads(activeCategorySlug || "", unansweredOnly, followingOnly, page),
     queryFn: () => {
       if (!activeCategorySlug) return null;
       return data<PageResponse<ThreadResponse>>(
-        http.get(`/forum/categories/${activeCategorySlug}/threads`)
+        http.get(`/forum/categories/${activeCategorySlug}/threads`, {
+          params: { page, size: 20, unanswered: unansweredOnly, following: followingOnly },
+        })
       );
     },
     enabled: !!activeCategorySlug,
@@ -66,8 +75,7 @@ export default function ForumPage() {
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
-  // "Trending" = highest replies + likes
-  const trendingThreads = [...threads]
+  const mostDiscussedThreads = [...threads]
     .sort((a, b) => (b.replyCount + b.likes) - (a.replyCount + a.likes))
     .slice(0, 4);
 
@@ -88,13 +96,14 @@ export default function ForumPage() {
         http.post(`/forum/categories/${catSlug}/threads`, { title, content, tags })
       ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: qk.forum.threads(activeCategorySlug || "") });
+      queryClient.invalidateQueries({ queryKey: ["threads", activeCategorySlug || ""] });
       queryClient.invalidateQueries({ queryKey: qk.user.followingThreads() });
       toast({ body: "Thread created successfully!", type: "info", autoHideDuration: 4000 });
       setShowCreateModal(false);
       setNewTitle("");
       setNewContent("");
       setNewTags("");
+      clearForumDraft(`football-verse:forum:create:${auth?.userId ?? "anonymous"}`);
     },
     onError: (err) => {
       toast({ body: apiErrorMessage(err, "Failed to create thread."), type: "error" });
@@ -126,6 +135,21 @@ export default function ForumPage() {
 
   const activeCategory = categories.find((c) => c.slug === activeCategorySlug);
   const totalThreads = categories.reduce((sum, c) => sum + (c.threadCount ?? 0), 0);
+  const totalPages = threadsPage?.totalPages ?? 0;
+
+  const selectCategory = (slug: string) => {
+    setActiveCategorySlug(slug);
+    setPage(0);
+  };
+
+  const selectThreadView = (nextView: ThreadView) => {
+    if (nextView === "following" && !auth) {
+      toast({ body: "Please login to view followed threads.", type: "info" });
+      return;
+    }
+    setThreadView(nextView);
+    setPage(0);
+  };
 
   return (
     <PublicShell>
@@ -135,6 +159,8 @@ export default function ForumPage() {
 
         {isCategoriesLoading ? (
           <LoadingBlock label="Loading Forum" />
+        ) : isCategoriesError ? (
+          <ErrorBlock message="Could not load forum categories." onRetry={() => void refetchCategories()} />
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-[15rem_minmax(0,1fr)] gap-8 items-start">
             {/* ── Left Sidebar ── */}
@@ -142,7 +168,7 @@ export default function ForumPage() {
               <CategoryList
                 categories={categories}
                 activeCategorySlug={activeCategorySlug}
-                onSelect={setActiveCategorySlug}
+                onSelect={selectCategory}
               />
 
               {/* Create Thread CTA */}
@@ -165,7 +191,7 @@ export default function ForumPage() {
               <ForumSidebarWidget
                 categories={categories}
                 activeCategory={activeCategory}
-                trendingThreads={trendingThreads}
+                trendingThreads={mostDiscussedThreads}
               />
             </aside>
 
@@ -175,8 +201,28 @@ export default function ForumPage() {
               {activeCategory && <CategoryBanner category={activeCategory} />}
 
               {/* Thread list */}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="m-0 text-sm font-semibold text-[var(--color-text-secondary)]">
+                  {threadView === "following" ? "Threads you follow" : unansweredOnly ? "Threads waiting for an answer" : "Latest discussions"}
+                </p>
+                <div className="flex flex-wrap gap-2" aria-label="Thread feed filter">
+                  {(["latest", "following", "unanswered"] as const).map((view) => (
+                    <button
+                      aria-pressed={threadView === view}
+                      className={`min-h-11 rounded-xl border px-3 text-xs font-bold transition-colors ${threadView === view ? "border-[var(--color-accent)] bg-[var(--color-accent-muted)] text-[var(--color-accent)]" : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent)]"}`}
+                      key={view}
+                      onClick={() => selectThreadView(view)}
+                      type="button"
+                    >
+                      {view === "latest" ? "Latest" : view === "following" ? "Following" : "Unanswered"}
+                    </button>
+                  ))}
+                </div>
+              </div>
               {isThreadsLoading ? (
                 <LoadingBlock label="Fetching threads" />
+              ) : isThreadsError ? (
+                <ErrorBlock message="Could not load threads." onRetry={() => void refetchThreads()} />
               ) : sortedThreads.length === 0 ? (
                 <div className="text-center py-20 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl flex flex-col items-center gap-4 shadow-sm">
                   <div className="w-16 h-16 rounded-full bg-[var(--color-surface-subtle)] flex items-center justify-center border border-[var(--color-border)]">
@@ -208,6 +254,27 @@ export default function ForumPage() {
                   ))}
                 </div>
               )}
+              {totalPages > 1 && !isThreadsLoading && !isThreadsError ? (
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <button
+                    className="min-h-11 rounded-xl border border-[var(--color-border)] px-4 text-xs font-bold text-[var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={page === 0}
+                    onClick={() => setPage((current) => Math.max(0, current - 1))}
+                    type="button"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Page {page + 1} of {totalPages}</span>
+                  <button
+                    className="min-h-11 rounded-xl border border-[var(--color-border)] px-4 text-xs font-bold text-[var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={page >= totalPages - 1}
+                    onClick={() => setPage((current) => Math.min(totalPages - 1, current + 1))}
+                    type="button"
+                  >
+                    Next
+                  </button>
+                </div>
+              ) : null}
             </div>
           </div>
         )}
@@ -220,6 +287,7 @@ export default function ForumPage() {
             newTitle={newTitle}
             newContent={newContent}
             newTags={newTags}
+            draftKey={`football-verse:forum:create:${auth?.userId ?? "anonymous"}`}
             isPending={createThreadMutation.isPending}
             onCategoryChange={setTargetCategorySlug}
             onTitleChange={setNewTitle}

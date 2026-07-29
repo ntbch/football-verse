@@ -1,4 +1,5 @@
 import { MentionRenderer } from "@/shared/components/MentionRenderer";
+import { formatDate } from "@/shared/lib/format";
 import type { PostResponse, ThreadResponse } from "../types";
 
 type ThreadPostListProps = {
@@ -42,7 +43,7 @@ export function ThreadPostList({
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-bold text-[var(--color-text-primary)]">@{post.author}</span>
                   <span aria-hidden="true">·</span>
-                  <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                  <span>{formatDate(post.createdAt)}</span>
                   {index === 0 && (
                     <span className="flex items-center gap-1 rounded-full bg-[var(--color-text-primary)] px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-[var(--color-text-inverse)] shadow-sm">
                       <span className="h-1 w-1 animate-pulse rounded-full bg-[var(--color-chart-axis)]" /> OP
@@ -58,14 +59,14 @@ export function ThreadPostList({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => onReport(post.id)}
-                    className="flex items-center gap-1 font-bold text-[var(--color-text-secondary)] transition-all hover:text-[var(--color-danger)] active:scale-[0.98]"
+                    className="min-h-11 flex items-center gap-1 font-bold text-[var(--color-text-secondary)] transition-all hover:text-[var(--color-danger)] active:scale-[0.98]"
                   >
                     <span aria-hidden="true">⚠</span> Report
                   </button>
                   {canModerate && (
                     <button
                       onClick={() => onToggleHidden(post)}
-                      className="ml-2 font-bold text-[var(--color-text-secondary)] transition-all hover:text-[var(--color-warning)] active:scale-[0.98]"
+                      className="min-h-11 ml-2 font-bold text-[var(--color-text-secondary)] transition-all hover:text-[var(--color-warning)] active:scale-[0.98]"
                     >
                       {post.hidden ? "Unhide" : "Hide"}
                     </button>
@@ -86,7 +87,7 @@ export function ThreadPostList({
               <div className="mt-1 flex items-center justify-between border-t border-[var(--color-border)] pt-2">
                 <button
                   onClick={() => onToggleLiked(post.id)}
-                  className={`flex items-center gap-1.5 text-xs font-semibold transition-all hover:opacity-85 active:scale-[0.98] ${
+                  className={`min-h-11 flex items-center gap-1.5 text-xs font-semibold transition-all hover:opacity-85 active:scale-[0.98] ${
                     post.liked ? "text-[var(--color-accent)]" : "text-[var(--color-text-secondary)]"
                   }`}
                 >
@@ -96,7 +97,7 @@ export function ThreadPostList({
                 {index > 0 && isThreadOwner && !thread.locked && (
                   <button
                     onClick={isBestAnswer ? onClearBestAnswer : () => onMarkBestAnswer(post.id)}
-                    className={`text-xs font-bold transition-all hover:underline active:scale-[0.98] ${
+                    className={`min-h-11 text-xs font-bold transition-all hover:underline active:scale-[0.98] ${
                       isBestAnswer ? "text-[var(--color-danger)]" : "text-[var(--color-success)]"
                     }`}
                   >

@@ -9,6 +9,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -34,12 +35,12 @@ public class AuthMailService {
     private static final int MAX_ATTEMPTS = 5;
 
     private final AuthMailOutboxRepository outbox;
-    private final JavaMailSender mailSender;
+    private final ObjectProvider<JavaMailSender> mailSender;
 
     @Value("${app.mail.enabled:false}")
     private boolean enabled;
 
-    @Value("${app.mail.from}")
+    @Value("${app.mail.from:}")
     private String from;
 
     @Value("${spring.mail.username:}")
@@ -48,7 +49,7 @@ public class AuthMailService {
     @Value("${app.mail.encryption-key:}")
     private String encryptionKey;
 
-    @Value("${app.auth.public-url}")
+    @Value("${app.auth.public-url:http://localhost:3000}")
     private String publicUrl;
 
     @Value("${app.environment:development}")
@@ -60,6 +61,9 @@ public class AuthMailService {
     void validateConfiguration() {
         if (!enabled) {
             return;
+        }
+        if (mailSender.getIfAvailable() == null) {
+            throw new IllegalArgumentException("Email delivery requires a configured SMTP sender");
         }
         if (from.isBlank() || smtpUsername.isBlank() || encryptionKey.isBlank()) {
             throw new IllegalArgumentException("Email delivery requires SMTP_USERNAME, MAIL_FROM, and APP_MAIL_ENCRYPTION_KEY");
@@ -102,7 +106,7 @@ public class AuthMailService {
         Instant now = Instant.now();
         for (AuthMailOutbox message : outbox.findPendingForUpdate(now, PageRequest.of(0, 20))) {
             try {
-                mailSender.send(toMessage(message, decrypt(message.getEncryptedPayload())));
+                mailSender.getObject().send(toMessage(message, decrypt(message.getEncryptedPayload())));
                 message.setSentAt(now);
                 message.setLastError(null);
             } catch (Exception exception) {

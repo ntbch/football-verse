@@ -61,7 +61,7 @@ export default function ThreadDetailPage() {
     };
   }, [slug, auth?.accessToken, auth?.username, queryClient, toast]);
 
-  const { data: detail, isLoading, error } = useQuery({
+  const { data: detail, isLoading, error, refetch } = useQuery({
     queryKey: qk.forum.thread(slug),
     queryFn: () => data<ThreadDetailResponse>(http.get(`/forum/threads/${slug}`)),
   });
@@ -189,7 +189,7 @@ export default function ThreadDetailPage() {
   if (error || !thread) {
     return (
       <PublicShell>
-        <ErrorBlock message="Thread not found or failed to load discussion detail." />
+        <ErrorBlock message="Thread not found or failed to load discussion detail." onRetry={() => void refetch()} />
       </PublicShell>
     );
   }
@@ -230,6 +230,7 @@ export default function ThreadDetailPage() {
           pending={replyMutation.isPending}
           onChange={setReplyText}
           onSubmit={handleReplySubmit}
+          draftKey={`football-verse:forum:reply:${auth?.userId ?? "anonymous"}:${thread.id}`}
         />
         {showReportModal && (
           <ReportModal

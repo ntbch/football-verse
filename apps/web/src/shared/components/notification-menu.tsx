@@ -26,7 +26,7 @@ export function DesktopNotificationMenu({ notifications, onClose, onMarkAllRead,
     <div className="absolute right-0 mt-2 w-80 max-w-[90vw] bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-lg overflow-hidden z-50 animate-fade-in">
       <div className="px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-background-body)]/30 flex items-center justify-between">
         <h4 className="m-0 font-serif font-black text-sm text-[var(--color-text-primary)]">Notifications</h4>
-        {notifications.length > 0 && <button onClick={onMarkAllRead} className="text-[9px] font-bold uppercase text-[var(--color-accent)] hover:underline active:scale-[0.98] transition-all">Mark all read</button>}
+        {notifications.length > 0 && <button onClick={onMarkAllRead} className="min-h-11 px-2 text-[9px] font-bold uppercase text-[var(--color-accent)] hover:underline active:scale-[0.98] transition-all">Mark all read</button>}
       </div>
       <div className="max-h-72 overflow-y-auto divide-y divide-[var(--color-border)]/30">
         {notifications.length === 0 ? <EmptyNotifications /> : notifications.slice(0, 50).map((notification) => (
@@ -48,7 +48,8 @@ export function DesktopNotificationMenu({ notifications, onClose, onMarkAllRead,
                 event.preventDefault();
                 onDelete(notification.id);
               }}
-              className="opacity-0 group-hover:opacity-100 text-[9px] text-[var(--color-danger)] hover:opacity-70 transition-all font-bold uppercase cursor-pointer"
+              aria-label="Delete notification"
+              className="min-h-11 min-w-11 text-[9px] text-[var(--color-danger)] hover:opacity-70 transition-all font-bold uppercase cursor-pointer"
               title="Delete notification"
             >
               Delete
@@ -65,7 +66,7 @@ export function MobileNotificationMenu({ notifications, onClose }: Pick<Notifica
     <div className="md:hidden absolute right-4 top-16 w-[calc(100%-2rem)] max-w-sm bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl shadow-lg overflow-hidden z-50 animate-fade-in">
       <div className="px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-background-body)]/30 flex items-center justify-between">
         <h4 className="m-0 font-serif font-black text-sm text-[var(--color-text-primary)]">Notifications</h4>
-        <button onClick={onClose} className="p-1 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] transition-colors active:scale-95 duration-150" title="Close notifications">
+        <button aria-label="Close notifications" onClick={onClose} className="min-h-11 min-w-11 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] transition-colors active:scale-95 duration-150" title="Close notifications">
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
       </div>

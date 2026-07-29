@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { PublicShell } from "@/shared/components/page-shell";
 import { http, data } from "@/shared/lib/api-client";
-import { LoadingBlock } from "@/shared/components/state-blocks";
+import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import { getArticleImage } from "@/shared/lib/images";
+import { formatDate } from "@/shared/lib/format";
 import type { SearchResponse } from "./types";
 
 function SearchContent() {
@@ -16,11 +17,18 @@ function SearchContent() {
   const [activeTab, setActiveTab] = useState<"news" | "forum">("news");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState<string>("all");
+  const [page, setPage] = useState(0);
+
+  useEffect(() => {
+    setPage(0);
+    setSelectedCategory(null);
+    setTimeFilter("all");
+  }, [q]);
 
   // Fetch search results
-  const { data: results, isLoading } = useQuery({
-    queryKey: ["search", q],
-    queryFn: () => data<SearchResponse>(http.get("/search", { params: { q, size: 100 } })),
+  const { data: results, isLoading, isError, refetch } = useQuery({
+    queryKey: ["search", q, page],
+    queryFn: () => data<SearchResponse>(http.get("/search", { params: { q, page, size: 20 } })),
     enabled: !!q.trim(),
   });
 
@@ -33,6 +41,7 @@ function SearchContent() {
 
   const handleTabChange = (tab: "news" | "forum") => {
     setActiveTab(tab);
+    setPage(0);
     setSelectedCategory(null);
     setTimeFilter("all");
   };
@@ -58,6 +67,8 @@ function SearchContent() {
     const matchTime = filterByTime(thread.createdAt);
     return matchCat && matchTime;
   });
+  const activePage = activeTab === "news" ? results?.news : results?.forum;
+  const totalPages = activePage?.totalPages ?? 0;
 
   return (
     <PublicShell>
@@ -94,11 +105,11 @@ function SearchContent() {
                 </div>
                 <div className="p-3 flex flex-col gap-1">
                   <span className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)] px-2 mb-1 block">
-                    Category
+                    Filter this page: category
                   </span>
                   <button
                     onClick={() => setSelectedCategory(null)}
-                    className={`w-full px-3 py-2 rounded-xl text-left text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
+                    className={`min-h-11 w-full px-3 py-2 rounded-xl text-left text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
                       selectedCategory === null
                         ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
                         : "text-[var(--color-text-secondary)] hover:bg-[var(--color-background-body)]/40 hover:text-[var(--color-text-primary)]"
@@ -116,7 +127,7 @@ function SearchContent() {
                       <button
                         key={cat}
                         onClick={() => setSelectedCategory(cat)}
-                        className={`w-full px-3 py-2 rounded-xl text-left text-xs font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-between ${
+                        className={`min-h-11 w-full px-3 py-2 rounded-xl text-left text-xs font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-between ${
                           selectedCategory === cat
                             ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
                             : "text-[var(--color-text-secondary)] hover:bg-[var(--color-background-body)]/40 hover:text-[var(--color-text-primary)]"
@@ -141,7 +152,7 @@ function SearchContent() {
                     <svg className="w-4 h-4 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span>Time Range</span>
+                    <span>Filter this page: time</span>
                   </h3>
                 </div>
                 <div className="p-3 flex flex-col gap-1">
@@ -177,7 +188,7 @@ function SearchContent() {
                       <button
                         key={val}
                         onClick={() => setTimeFilter(val)}
-                        className={`w-full px-3 py-2 rounded-xl text-left text-xs font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-between ${
+                        className={`min-h-11 w-full px-3 py-2 rounded-xl text-left text-xs font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-between ${
                           timeFilter === val
                             ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
                             : "text-[var(--color-text-secondary)] hover:bg-[var(--color-background-body)]/40 hover:text-[var(--color-text-primary)]"
@@ -202,7 +213,7 @@ function SearchContent() {
               <div className="flex justify-center border-b border-[var(--color-border)] mb-6 gap-6">
                 <button
                   onClick={() => handleTabChange("news")}
-                  className={`pb-2.5 px-4 text-xs font-black uppercase tracking-wider transition-all duration-200 border-b-2 active:scale-95 ${
+                  className={`min-h-11 pb-2.5 px-4 text-xs font-black uppercase tracking-wider transition-all duration-200 border-b-2 active:scale-95 ${
                     activeTab === "news"
                       ? "border-[var(--color-accent)] text-[var(--color-accent)] font-extrabold"
                       : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
@@ -212,7 +223,7 @@ function SearchContent() {
                 </button>
                 <button
                   onClick={() => handleTabChange("forum")}
-                  className={`pb-2.5 px-4 text-xs font-black uppercase tracking-wider transition-all duration-200 border-b-2 active:scale-95 ${
+                  className={`min-h-11 pb-2.5 px-4 text-xs font-black uppercase tracking-wider transition-all duration-200 border-b-2 active:scale-95 ${
                     activeTab === "forum"
                       ? "border-[var(--color-accent)] text-[var(--color-accent)] font-extrabold"
                       : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
@@ -225,6 +236,8 @@ function SearchContent() {
               {/* Results Grid / List */}
               {isLoading ? (
                 <LoadingBlock label="Searching website..." />
+              ) : isError ? (
+                <ErrorBlock message="Could not search right now." onRetry={() => void refetch()} />
               ) : activeTab === "news" ? (
                 filteredNewsList.length === 0 ? (
                   <div className="text-center py-16 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl p-8 flex flex-col items-center gap-3">
@@ -259,11 +272,7 @@ function SearchContent() {
                         <div className="p-5 flex-1 flex flex-col justify-between gap-4">
                           <div className="flex flex-col gap-2">
                             <span className="text-[9px] font-semibold text-[var(--color-text-secondary)]">
-                              {new Date(art.publishedAt).toLocaleDateString("en-US", {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                              })}
+                              {formatDate(art.publishedAt)}
                             </span>
                             <Link href={`/news/${art.slug}`}>
                               <h4 className="m-0 font-serif-title font-black text-base leading-snug hover:text-[var(--color-accent)] cursor-pointer line-clamp-2 transition-colors">
@@ -327,10 +336,7 @@ function SearchContent() {
                             <span className="text-[var(--color-text-primary)]">@{thread.authorUsername}</span>
                             <span>·</span>
                             <span>
-                              {new Date(thread.createdAt).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                              })}
+                              {formatDate(thread.createdAt, { month: "short", day: "numeric" })}
                             </span>
                           </div>
                           <Link href={`/forum/threads/${thread.slug}`}>
@@ -359,6 +365,14 @@ function SearchContent() {
                   ))}
                 </div>
               )}
+
+              {totalPages > 1 ? (
+                <nav aria-label="Search result pages" className="mt-6 flex items-center justify-center gap-3">
+                  <button className="min-h-11 rounded-lg border border-[var(--color-border)] px-4 text-xs font-bold disabled:opacity-40" disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))} type="button">Previous</button>
+                  <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Page {page + 1} of {totalPages}</span>
+                  <button className="min-h-11 rounded-lg border border-[var(--color-border)] px-4 text-xs font-bold disabled:opacity-40" disabled={page >= totalPages - 1} onClick={() => setPage((value) => Math.min(totalPages - 1, value + 1))} type="button">Next</button>
+                </nav>
+              ) : null}
             </div>
           </div>
         )}

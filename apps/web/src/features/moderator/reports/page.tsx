@@ -4,7 +4,7 @@ import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { qk } from "@/shared/lib/query-keys";
 import { http, data, apiErrorMessage } from "@/shared/lib/api-client";
-import { LoadingBlock } from "@/shared/components/state-blocks";
+import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import { useToast } from "@/shared/components/toast";
 
 type ModReport = {
@@ -21,7 +21,7 @@ export default function ModeratorReportsPage() {
   const toast = useToast();
 
   // 1. Fetch moderator reports
-  const { data: reports = [], isLoading } = useQuery({
+  const { data: reports = [], isLoading, error, refetch } = useQuery({
     queryKey: qk.moderator.reports(),
     queryFn: () => data<ModReport[]>(http.get("/moderator/forum/reports")),
   });
@@ -53,9 +53,11 @@ export default function ModeratorReportsPage() {
   if (isLoading) {
     return <LoadingBlock label="Fetching reported content" />;
   }
+  if (error && reports.length === 0) return <ErrorBlock message="Reported content could not be loaded." onRetry={() => refetch()} />;
 
   return (
     <div className="flex flex-col gap-4 w-full">
+      {error ? <ErrorBlock message="Reported content could not be refreshed. Showing the last available results." onRetry={() => refetch()} /> : null}
       {/* Header */}
       <div className="flex items-center justify-between gap-4 pb-4" style={{ borderBottom: "1px solid var(--color-border)" }}>
         <div className="flex items-center gap-3 min-w-0">

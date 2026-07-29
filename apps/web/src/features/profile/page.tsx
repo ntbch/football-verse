@@ -9,7 +9,7 @@ import { http, data, apiErrorMessage } from "@/shared/lib/api-client";
 import { useAuthStore } from "@/shared/lib/auth-store";
 import type { ThreadResponse } from "@/features/forum/types";
 import type { NewsArticleResponse } from "@/features/news/types";
-import { LoadingBlock } from "@/shared/components/state-blocks";
+import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import { useToast } from "@/shared/components/toast";
 import {
   ProfileDetailsCard,
@@ -40,7 +40,7 @@ export default function ProfilePage() {
   }, [auth, ready, router]);
 
   // 1. Fetch profile details
-  const { data: profile, isLoading: isProfileLoading } = useQuery({
+  const { data: profile, isLoading: isProfileLoading, isError: isProfileError, refetch: refetchProfile } = useQuery({
     queryKey: qk.user.profile(),
     queryFn: () => data<ProfileData>(http.get("/users/me/profile")),
     enabled: !!auth,
@@ -56,16 +56,22 @@ export default function ProfilePage() {
   }, [profile]);
 
   // 2. Fetch followed threads
-  const { data: followedThreads = [], isLoading: isThreadsLoading } = useQuery({
+  const { data: followedThreads = [], isLoading: isThreadsLoading, isError: isThreadsError, refetch: refetchThreads } = useQuery({
     queryKey: qk.user.followingThreads(),
     queryFn: () => data<ThreadResponse[]>(http.get("/users/me/following-threads")),
     enabled: !!auth,
   });
 
   // 3. Fetch bookmarked articles
-  const { data: bookmarkedArticles = [], isLoading: isBookmarksLoading } = useQuery({
+  const { data: bookmarkedArticles = [], isLoading: isBookmarksLoading, isError: isBookmarksError, refetch: refetchBookmarks } = useQuery({
     queryKey: ["user-bookmarks"],
     queryFn: () => data<NewsArticleResponse[]>(http.get("/users/me/bookmarked-articles")),
+    enabled: !!auth,
+  });
+
+  const { data: notificationPreferences, isLoading: isPreferencesLoading, isError: isPreferencesError, refetch: refetchPreferences } = useQuery({
+    queryKey: qk.user.notificationPreferences(),
+    queryFn: () => data<{ forumReplies: boolean; predictionScored: boolean }>(http.get("/users/me/notification-preferences")),
     enabled: !!auth,
   });
 
@@ -81,6 +87,13 @@ export default function ProfilePage() {
     onError: (err) => {
       toast({ body: apiErrorMessage(err, "Failed to update profile."), type: "error" });
     },
+  });
+
+  const updateNotificationPreferences = useMutation({
+    mutationFn: (payload: Partial<{ forumReplies: boolean; predictionScored: boolean }>) =>
+      data<{ forumReplies: boolean; predictionScored: boolean }>(http.patch("/users/me/notification-preferences", payload)),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: qk.user.notificationPreferences() }),
+    onError: (err) => toast({ body: apiErrorMessage(err, "Failed to update notification preferences."), type: "error" }),
   });
 
   const handleUpdateSubmit = (e: React.FormEvent) => {
@@ -121,6 +134,10 @@ export default function ProfilePage() {
     );
   }
 
+  if (isProfileError) {
+    return <PublicShell><ErrorBlock message="Could not load profile." onRetry={() => void refetchProfile()} /></PublicShell>;
+  }
+
   return (
     <PublicShell>
       <div className="flex flex-col gap-6 w-full max-w-5xl mx-auto animate-fade-in mt-6">
@@ -146,6 +163,21 @@ export default function ProfilePage() {
               bookmarkCount={bookmarkedArticles.length}
               roles={auth.roles as string[]}
             />
+            <section className="editorial-panel p-4" aria-labelledby="notification-preferences-title">
+              <h2 className="m-0 text-sm font-black text-[var(--color-text-primary)]" id="notification-preferences-title">Notification preferences</h2>
+              {isPreferencesLoading ? <p className="m-0 mt-2 text-xs text-[var(--color-text-secondary)]">Loading preferences…</p> : isPreferencesError ? <button className="mt-2 min-h-11 text-xs font-bold text-[var(--color-accent)]" onClick={() => void refetchPreferences()} type="button">Retry preferences</button> : (
+                <fieldset className="mt-3 grid gap-3" disabled={updateNotificationPreferences.isPending}>
+                  <label className="flex cursor-pointer items-center justify-between gap-3 text-sm text-[var(--color-text-secondary)]">
+                    Forum replies
+                    <input aria-label="Forum replies" checked={notificationPreferences?.forumReplies ?? true} className="h-5 w-5 accent-[var(--color-accent)]" onChange={(event) => updateNotificationPreferences.mutate({ forumReplies: event.target.checked })} type="checkbox" />
+                  </label>
+                  <label className="flex cursor-pointer items-center justify-between gap-3 text-sm text-[var(--color-text-secondary)]">
+                    Prediction scores
+                    <input aria-label="Prediction scores" checked={notificationPreferences?.predictionScored ?? true} className="h-5 w-5 accent-[var(--color-accent)]" onChange={(event) => updateNotificationPreferences.mutate({ predictionScored: event.target.checked })} type="checkbox" />
+                  </label>
+                </fieldset>
+              )}
+            </section>
           </aside>
 
           {/* Right: Tabbed Content */}
@@ -156,7 +188,7 @@ export default function ProfilePage() {
                 aria-pressed={activeTab === "threads"}
                 onClick={() => setActiveTab("threads")}
                 type="button"
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5 ${
+                className={`min-h-11 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5 ${
                   activeTab === "threads"
                     ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
                     : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]"
@@ -172,7 +204,7 @@ export default function ProfilePage() {
                 aria-pressed={activeTab === "bookmarks"}
                 onClick={() => setActiveTab("bookmarks")}
                 type="button"
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5 ${
+                className={`min-h-11 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5 ${
                   activeTab === "bookmarks"
                     ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
                     : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]"
@@ -187,10 +219,10 @@ export default function ProfilePage() {
             </div>
 
             {activeTab === "threads" && (
-              <FollowedThreadsList threads={followedThreads} isLoading={isThreadsLoading} />
+              <FollowedThreadsList threads={followedThreads} isLoading={isThreadsLoading} error={isThreadsError} onRetry={() => void refetchThreads()} />
             )}
             {activeTab === "bookmarks" && (
-              <BookmarkedArticlesList articles={bookmarkedArticles} isLoading={isBookmarksLoading} />
+              <BookmarkedArticlesList articles={bookmarkedArticles} isLoading={isBookmarksLoading} error={isBookmarksError} onRetry={() => void refetchBookmarks()} />
             )}
           </div>
         </div>

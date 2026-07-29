@@ -1,7 +1,8 @@
 package com.footballverse;
 
 import com.footballverse.auth.dto.LoginRequest;
-import com.footballverse.auth.dto.RegisterRequest;
+import com.footballverse.user.model.UserAccount;
+import com.footballverse.user.repository.UserAccountRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,6 +14,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.UUID;
 
@@ -24,21 +26,24 @@ public class LoginApiTest {
     @Autowired
     private TestRestTemplate restTemplate;
 
+    @Autowired
+    private UserAccountRepository users;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Test
     public void testLoginApi() {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         String email = "login-api-" + suffix + "@example.test";
         String password = "TestPassword123!";
-        ResponseEntity<String> registration = restTemplate.postForEntity(
-                "/auth/register",
-                new RegisterRequest(email, "login_api_" + suffix, password),
-                String.class
-        );
-        assertEquals(HttpStatus.OK, registration.getStatusCode());
+        UserAccount user = new UserAccount(email, "login_api_" + suffix, passwordEncoder.encode(password));
+        user.setEmailVerified(true);
+        users.save(user);
 
         LoginRequest request = new LoginRequest(email, password);
         ResponseEntity<String> response = restTemplate.postForEntity("/auth/login", request, String.class);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode(), response.getBody());
 
         String refreshCookie = response.getHeaders().getOrEmpty(HttpHeaders.SET_COOKIE).stream()
                 .filter(value -> value.startsWith("football_verse_refresh="))

@@ -50,5 +50,7 @@ app:
       same-site: Lax
   prediction-service:
     url: http://127.0.0.1:8090
+  prediction:
+    sync-fixtures-enabled: false
   upload:
     dir: uploads

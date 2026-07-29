@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { qk } from "@/shared/lib/query-keys";
 import { http, data, apiErrorMessage } from "@/shared/lib/api-client";
-import { LoadingBlock } from "@/shared/components/state-blocks";
+import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import { useToast } from "@/shared/components/toast";
 
 type RssSource = {
@@ -28,7 +28,7 @@ export default function RssCrawlerPage() {
   const [search, setSearch] = useState("");
   const [crawlResult, setCrawlResult] = useState<CrawlResult | null>(null);
 
-  const { data: sources = [], isLoading } = useQuery({
+  const { data: sources = [], isLoading, error, refetch } = useQuery({
     queryKey: qk.admin.newsSources(),
     queryFn: () => data<RssSource[]>(http.get("/admin/news/sources")),
   });
@@ -105,11 +105,13 @@ export default function RssCrawlerPage() {
   }, [sources, search]);
 
   if (isLoading) return <LoadingBlock label="Fetching RSS directories" />;
+  if (error && sources.length === 0) return <ErrorBlock message="News sources could not be loaded." onRetry={() => refetch()} />;
 
   const activeSources = sources.filter((s) => s.active).length;
 
   return (
     <div className="flex flex-col gap-5 w-full">
+      {error ? <ErrorBlock message="News sources could not be refreshed. Showing the last available results." onRetry={() => refetch()} /> : null}
       {/* Header */}
       <div className="flex items-center justify-between gap-4 pb-4" style={{ borderBottom: "1px solid var(--color-border)" }}>
         <div className="flex items-center gap-3 min-w-0">

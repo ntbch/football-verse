@@ -4,17 +4,20 @@ import React from "react";
 import Link from "next/link";
 import type { ThreadResponse } from "@/features/forum/types";
 import type { NewsArticleResponse } from "@/features/news/types";
-import { LoadingBlock } from "@/shared/components/state-blocks";
+import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import { useAuthStore } from "@/shared/lib/auth-store";
 
 // ─────────────────────────────────────────────
 interface FollowedThreadsListProps {
   threads: ThreadResponse[];
   isLoading: boolean;
+  error?: boolean;
+  onRetry?: () => void;
 }
 
-export function FollowedThreadsList({ threads, isLoading }: FollowedThreadsListProps) {
+export function FollowedThreadsList({ threads, isLoading, error, onRetry }: FollowedThreadsListProps) {
   if (isLoading) return <LoadingBlock label="Loading followed discussions" />;
+  if (error) return <ErrorBlock message="Could not load followed discussions." onRetry={onRetry} />;
 
   if (threads.length === 0) {
     return (

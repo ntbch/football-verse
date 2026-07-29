@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
@@ -12,6 +13,20 @@ public interface ForumThreadRepository extends JpaRepository<ForumThread, Long> 
     Page<ForumThread> findByCategorySlugAndHiddenFalseOrderByPinnedDescCreatedAtDesc(String slug, Pageable pageable);
 
     Page<ForumThread> findByCategorySlugAndHiddenFalseOrderByPinnedDescLastActivityAtDesc(String slug, Pageable pageable);
+
+    Page<ForumThread> findByCategorySlugAndHiddenFalseAndSolvedFalseOrderByPinnedDescLastActivityAtDesc(String slug, Pageable pageable);
+
+    @Query("""
+            SELECT t FROM ForumThread t
+            JOIN ForumThreadFollow f ON f.thread = t
+            WHERE f.user.id = :userId AND t.category.slug = :slug AND t.hidden = false
+            ORDER BY t.pinned DESC, t.lastActivityAt DESC
+            """)
+    Page<ForumThread> findFollowedByUserAndCategorySlug(
+            @Param("userId") Long userId,
+            @Param("slug") String slug,
+            Pageable pageable
+    );
 
     @Query(value = """
             SELECT t.* FROM forum_threads t

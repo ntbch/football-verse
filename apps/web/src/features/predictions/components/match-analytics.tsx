@@ -1,6 +1,7 @@
 "use client";
 
 import type { MatchCentreFixture } from "../types";
+import { formatDate } from "@/shared/lib/format";
 
 type MatchAnalyticsProps = {
   match: MatchCentreFixture;
@@ -14,7 +15,7 @@ const formTone: Record<string, string> = {
 
 function sourceDate(value: string | null) {
   if (!value) return null;
-  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+  return formatDate(value, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 export const MatchAnalytics = ({ match }: MatchAnalyticsProps) => {

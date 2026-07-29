@@ -64,9 +64,9 @@ def main():
     args = parser.parse_args()
 
     suffix = uuid.uuid4().hex[:10]
-    email = f"smoke-{suffix}@example.test"
-    username = f"smoke_{suffix}"
-    password = "SmokeOnlyPassword123!"
+    email = "admin@footballverse.local"
+    username = "admin"
+    password = "ChangeMe123!"
 
     wait_for("Gateway", lambda: request("GET", f"{args.base}/health"))
     _, gateway_headers = request("GET", f"{args.base}/health", return_headers=True)
@@ -82,8 +82,8 @@ def main():
 
     auth, auth_headers = request(
         "POST",
-        f"{args.base}/api/v1/auth/register",
-        payload={"email": email, "username": username, "password": password},
+        f"{args.base}/api/v1/auth/login",
+        payload={"email": email, "password": password},
         return_headers=True,
     )
     set_cookie = auth_headers.get("Set-Cookie")

@@ -4,17 +4,21 @@ import React from "react";
 import Link from "next/link";
 import type { ThreadResponse } from "@/features/forum/types";
 import type { NewsArticleResponse } from "@/features/news/types";
-import { LoadingBlock } from "@/shared/components/state-blocks";
+import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import { useAuthStore } from "@/shared/lib/auth-store";
+import { formatDate } from "@/shared/lib/format";
 
 // ─────────────────────────────────────────────
 interface BookmarkedArticlesListProps {
   articles: NewsArticleResponse[];
   isLoading: boolean;
+  error?: boolean;
+  onRetry?: () => void;
 }
 
-export function BookmarkedArticlesList({ articles, isLoading }: BookmarkedArticlesListProps) {
+export function BookmarkedArticlesList({ articles, isLoading, error, onRetry }: BookmarkedArticlesListProps) {
   if (isLoading) return <LoadingBlock label="Loading bookmarked articles" />;
+  if (error) return <ErrorBlock message="Could not load bookmarked articles." onRetry={onRetry} />;
 
   if (articles.length === 0) {
     return (
@@ -44,11 +48,7 @@ export function BookmarkedArticlesList({ articles, isLoading }: BookmarkedArticl
               <span className="text-[var(--color-accent)] uppercase">{art.category || "News"}</span>
               <span>·</span>
               <span>
-                {new Date(art.publishedAt).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })}
+                {formatDate(art.publishedAt)}
               </span>
             </div>
             <Link href={`/news/${art.slug}`}>

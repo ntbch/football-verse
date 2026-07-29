@@ -44,6 +44,28 @@ function safeRemoteUrl(value?: string): string | undefined {
   }
 }
 
+function upgradeRssImageUrl(url: string): string {
+  if (!url) return url;
+  let cleanUrl = url.trim();
+  if (cleanUrl.startsWith('//')) cleanUrl = `https:${cleanUrl}`;
+  if (cleanUrl.includes('ichef.bbci.co.uk')) {
+    cleanUrl = cleanUrl.replace(/(\/ace\/(?:standard|ws)\/|\/news\/)\d+\//i, '$11024/');
+  }
+  if (cleanUrl.includes('365dm.com') || cleanUrl.includes('skysports.com')) {
+    cleanUrl = cleanUrl.replace(/\/\d{2,4}x\d{2,4}\//i, '/1920x1080/');
+  }
+  if (cleanUrl.includes('googleusercontent.com') || cleanUrl.includes('ggpht.com')) {
+    cleanUrl = cleanUrl.replace(/=(?:s|w)\d+(?:-h\d+)?(?:-[a-z0-9]+)*/i, '=w1600-h900');
+  }
+  if (cleanUrl.includes('/wp-content/uploads/')) {
+    cleanUrl = cleanUrl.replace(/-\d{2,4}x\d{2,4}(?=\.(?:avif|jpe?g|png|webp)(?:[?#]|$))/i, '');
+  }
+  if (cleanUrl.includes('/alternates/')) {
+    cleanUrl = cleanUrl.replace(/\/alternates\/s\d+b?\//i, '/alternates/s1200/');
+  }
+  return cleanUrl;
+}
+
 function firstMedia($item: cheerio.Cheerio<any>): { media: NormalizedMedia[]; invalidMediaCount: number } {
   const candidates = $item.find('media\\:content, media\\:thumbnail, enclosure').toArray().flatMap(element => {
     const node = $item.find(element);
@@ -52,8 +74,9 @@ function firstMedia($item: cheerio.Cheerio<any>): { media: NormalizedMedia[]; in
     if (type && !type.startsWith('image/') && !type.startsWith('video/') && medium !== 'image' && medium !== 'video') {
       return [];
     }
-    const url = safeRemoteUrl(node.attr('url'));
-    if (!url) return [null];
+    const rawUrl = safeRemoteUrl(node.attr('url'));
+    if (!rawUrl) return [null];
+    const url = upgradeRssImageUrl(rawUrl);
     const image = !type.startsWith('video/') && medium !== 'video';
     const content = element.tagName.toLowerCase() === 'media:content';
     const width = Number.parseInt(node.attr('width') || '0', 10) || 0;
@@ -75,7 +98,7 @@ function firstMedia($item: cheerio.Cheerio<any>): { media: NormalizedMedia[]; in
   const rawHtml = $item.children('description').text() + ' ' + $item.children('content\\:encoded').text();
   const imgMatch = rawHtml.match(/<img[^>]+src=["'](https?:\/\/[^"']+)["']/i);
   if (imgMatch && imgMatch[1]) {
-    const url = safeRemoteUrl(imgMatch[1]);
+    const url = safeRemoteUrl(upgradeRssImageUrl(imgMatch[1]));
     if (url) {
       return {
         media: [{ type: 'IMAGE', url, thumbnailUrl: url }],

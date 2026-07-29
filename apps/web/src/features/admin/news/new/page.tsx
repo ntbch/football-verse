@@ -6,7 +6,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { qk } from "@/shared/lib/query-keys";
 import { apiBaseUrl, http, data, apiErrorMessage } from "@/shared/lib/api-client";
 import type { NewsCategoryResponse } from "@/features/news/types";
-import { LoadingBlock } from "@/shared/components/state-blocks";
+import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import { useToast } from "@/shared/components/toast";
 
 export default function WriteNewsArticlePage() {
@@ -26,7 +26,7 @@ export default function WriteNewsArticlePage() {
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
 
   // 1. Fetch categories for selector
-  const { data: categories = [], isLoading } = useQuery({
+  const { data: categories = [], isLoading, error, refetch } = useQuery({
     queryKey: qk.admin.newsCategories(),
     queryFn: () => data<NewsCategoryResponse[]>(http.get("/admin/news/categories")),
   });
@@ -143,6 +143,7 @@ export default function WriteNewsArticlePage() {
   if (isLoading) {
     return <LoadingBlock label="Preparing editor workspace" />;
   }
+  if (error && categories.length === 0) return <ErrorBlock message="Article categories could not be loaded." onRetry={() => refetch()} />;
 
   return (
     <div className="flex flex-col gap-4 w-full" style={{ color: "var(--color-text-primary)" }}>

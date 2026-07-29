@@ -137,6 +137,14 @@ public class NewsInteractionIntegrityTest {
         assertThat(secondResponse.liked()).isFalse();
     }
 
+    @Test
+    void returnsOnlyCurrentUsersBookmarkedArticles() {
+        NewsArticle article = articles.saveAndFlush(article("Bookmarked Article", "bookmark-" + UUID.randomUUID(), ArticleStatus.PUBLISHED));
+        service.bookmark(article.getId());
+
+        assertThat(articleService.bookmarked()).extracting(response -> response.id()).containsExactly(article.getId());
+    }
+
     private NewsArticle article(String title, String slug, ArticleStatus status) {
         NewsArticle article = new NewsArticle();
         article.setTitle(title);

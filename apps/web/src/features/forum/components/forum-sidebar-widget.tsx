@@ -43,7 +43,7 @@ export function ForumSidebarWidget({ categories, activeCategory, trendingThreads
         </div>
       </div>
 
-      {/* Trending threads */}
+      {/* Most discussed threads in the active category */}
       {trendingThreads.length > 0 && (
         <div className="card overflow-hidden">
           <div className="px-5 py-3.5 border-b border-[var(--color-border)] flex items-center gap-2">
@@ -51,7 +51,7 @@ export function ForumSidebarWidget({ categories, activeCategory, trendingThreads
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
             </svg>
             <h3 className="font-serif-title font-black text-xs m-0 uppercase tracking-widest text-[var(--color-text-secondary)]">
-              Hot Threads
+              Most discussed here
             </h3>
           </div>
           <div className="divide-y divide-[var(--color-border)]">

@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import type { LeaderboardEntryResponse } from "@/features/predictions/types";
+import type { LeaderboardEntryResponse, MatchCentreFixture } from "@/features/predictions/types";
 import type { ThreadResponse } from "@/features/forum/types";
 import type { NewsArticleResponse } from "@/features/news/types";
+import { ErrorBlock } from "@/shared/components/state-blocks";
+import { handleImageError } from "@/shared/lib/images";
+import { formatDateTime } from "@/shared/lib/format";
 
 function timeAgo(dateStr: string) {
   const now = Date.now();
@@ -22,9 +25,11 @@ function timeAgo(dateStr: string) {
 // ─────────────────────────────────────────────
 interface LeaderboardWidgetProps {
   leaderboard: LeaderboardEntryResponse[];
+  error?: boolean;
+  onRetry?: () => void;
 }
 
-export function LeaderboardWidget({ leaderboard }: LeaderboardWidgetProps) {
+export function LeaderboardWidget({ leaderboard, error, onRetry }: LeaderboardWidgetProps) {
   return (
     <div className="editorial-panel overflow-hidden flex flex-col">
       <div className="px-5 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
@@ -41,7 +46,7 @@ export function LeaderboardWidget({ leaderboard }: LeaderboardWidgetProps) {
           Play →
         </Link>
       </div>
-      {leaderboard.length > 0 ? (
+      {error ? <ErrorBlock message="Could not load predictors." onRetry={onRetry} /> : leaderboard.length > 0 ? (
         <div className="divide-y divide-[var(--color-border)] flex-1">
           {leaderboard.slice(0, 5).map((u, i) => (
             <div
@@ -90,9 +95,28 @@ export function LeaderboardWidget({ leaderboard }: LeaderboardWidgetProps) {
 // ─────────────────────────────────────────────
 interface CommunityWidgetProps {
   threads: ThreadResponse[];
+  error?: boolean;
+  onRetry?: () => void;
 }
 
-export function CommunityWidget({ threads }: CommunityWidgetProps) {
+export function MatchdayPulseWidget({ fixtures, error, onRetry }: { fixtures: MatchCentreFixture[]; error?: boolean; onRetry?: () => void }) {
+  return <section className="editorial-panel overflow-hidden">
+    <div className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-4">
+      <h3 className="m-0 font-serif-title text-sm font-black">Matchday pulse</h3>
+      <Link className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-accent)] hover:underline" href="/predictions">Matchday →</Link>
+    </div>
+    {error ? <ErrorBlock message="Could not load fixtures." onRetry={onRetry} /> : fixtures.length ? <ol className="m-0 list-none divide-y divide-[var(--color-border)] p-0">
+      {fixtures.slice(0, 3).map((fixture) => <li key={fixture.fixtureId}>
+        <Link className="block px-5 py-3 text-xs transition-colors hover:bg-[var(--color-surface-hover)]" href={`/matchday/${encodeURIComponent(fixture.fixtureId)}?league=${encodeURIComponent(fixture.league)}`}>
+          <span className="block truncate font-bold text-[var(--color-text-primary)]">{fixture.homeTeam} vs {fixture.awayTeam}</span>
+          <span className="mt-1 block text-[10px] text-[var(--color-text-secondary)]">{fixture.status === "live" ? "Live now" : fixture.userPrediction ? "Prediction saved" : formatDateTime(fixture.kickoff)}</span>
+        </Link>
+      </li>)}
+    </ol> : <p className="m-0 p-5 text-xs text-[var(--color-text-secondary)]">No upcoming fixtures are available.</p>}
+  </section>;
+}
+
+export function CommunityWidget({ threads, error, onRetry }: CommunityWidgetProps) {
   return (
     <div className="editorial-panel overflow-hidden flex flex-col">
       <div className="px-5 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
@@ -109,7 +133,7 @@ export function CommunityWidget({ threads }: CommunityWidgetProps) {
           Forum →
         </Link>
       </div>
-      {threads.length > 0 ? (
+      {error ? <ErrorBlock message="Could not load discussions." onRetry={onRetry} /> : threads.length > 0 ? (
         <div className="divide-y divide-[var(--color-border)] flex-1">
           {threads.map((t) => (
             <Link
@@ -161,7 +185,7 @@ export function EditorsPickWidget({ articles, getImage }: EditorsPickWidgetProps
           <svg className="w-4 h-4 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
           </svg>
-          <span>Editor&apos;s Pick</span>
+          <span>More stories</span>
         </h3>
         <Link
           href="/news"
@@ -183,10 +207,7 @@ export function EditorsPickWidget({ articles, getImage }: EditorsPickWidgetProps
                   src={getImage(art.id, art.content)}
                   alt={art.title}
                   loading="lazy"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src =
-                      "https://images.unsplash.com/photo-1579952365116-61317f0501cd?q=80&w=800&auto=format&fit=crop";
-                  }}
+                  onError={handleImageError}
                   className="w-full h-full object-cover"
                 />
               </div>
