@@ -90,6 +90,13 @@ app:
     gemini-api-key: ${GEMINI_API_KEY:}
     gemini-model: ${GEMINI_MODEL:gemini-3.5-flash}
     daily-limit: ${AI_DAILY_LIMIT:100}
+    embedding-enabled: ${AI_EMBEDDING_ENABLED:true}
+    embedding-model: ${AI_EMBEDDING_MODEL:gemini-embedding-001}
+    embedding-dimensions: ${AI_EMBEDDING_DIMENSIONS:768}
+    clustering-window-hours: ${AI_CLUSTERING_WINDOW_HOURS:24}
+    clustering-candidate-limit: ${AI_CLUSTERING_CANDIDATE_LIMIT:500}
+    clustering-vector-threshold: ${AI_CLUSTERING_VECTOR_THRESHOLD:0.82}
+    clustering-lexical-threshold: ${AI_CLUSTERING_LEXICAL_THRESHOLD:0.46}
 
 server:
   servlet:
