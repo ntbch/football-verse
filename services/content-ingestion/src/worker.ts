@@ -24,6 +24,11 @@ import {
   isValidIngestionUrl
 } from './spool';
 
+import { LocalTransformersEmbeddingProvider } from './embedding/local-transformers-provider';
+import { buildClusteringText } from './embedding/embedding-text';
+
+const embeddingProvider = new LocalTransformersEmbeddingProvider();
+
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
 const INTERNAL_TOKEN = process.env.INTERNAL_TOKEN;
 const CRAWL_CRON = process.env.CRAWL_CRON || '*/15 * * * *';
@@ -71,6 +76,25 @@ export async function processSpoolQueue(): Promise<void> {
       if (!isValidIngestionUrl(item.sourceUrl)) {
         await updateSpoolItemSuccess(item.id, 'SKIPPED', { status: 'REJECTED', message: 'Unsafe source URL' });
         continue;
+      }
+
+      if (item.payload) {
+        if (item.payload.schemaVersion === 1) {
+          item.payload.schemaVersion = 2;
+        }
+        if (item.payload.schemaVersion === 2 && !item.payload.embedding) {
+          const textToEmbed = buildClusteringText(item.payload);
+          let [vector] = await embeddingProvider.embed([textToEmbed]);
+          if (!vector || vector.length !== 384) {
+            vector = new Array(384).fill(0);
+          }
+          item.payload.embedding = {
+            model: embeddingProvider.modelId,
+            revision: embeddingProvider.modelVersion,
+            dimensions: 384,
+            vector
+          };
+        }
       }
 
       const normalizedItem = item.payload?.schemaVersion === 1 || item.payload?.schemaVersion === 2;

@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -37,18 +38,40 @@ public class StoryClusteringService {
     public void acquireAdvisoryLock() {
         try {
             entityManager.createNativeQuery("SELECT pg_advisory_xact_lock(hashtext('football-verse-news-clustering'))").getSingleResult();
-        } catch (Exception ignored) {
-            // Non-PostgreSQL or H2 test environment fallback
+        } catch (Exception e) {
+            log.debug("Advisory lock acquisition skipped or non-PostgreSQL environment: {}", e.getMessage());
         }
     }
 
-    public void updateStoryClusterProfile(Long storyId, String model, String modelRevision, int memberCount) {
+    public void updateStoryClusterProfile(Long storyId, String model, String modelRevision, int memberCount, float[] rawItemEmbedding) {
         if (storyId == null) return;
         StoryClusterProfile profile = profileRepository.findById(storyId)
-                .orElseGet(() -> new StoryClusterProfile(storyId, model != null ? model : "intfloat/multilingual-e5-small", modelRevision != null ? modelRevision : "v1.0", memberCount));
+                .orElseGet(() -> new StoryClusterProfile(
+                        storyId,
+                        rawItemEmbedding,
+                        model != null ? model : "intfloat/multilingual-e5-small",
+                        modelRevision != null ? modelRevision : "v1.0",
+                        memberCount
+                ));
         profile.setMemberCount(memberCount);
+        if (rawItemEmbedding != null && rawItemEmbedding.length > 0) {
+            if (profile.getCentroid() == null || profile.getCentroid().length == 0 || memberCount <= 1) {
+                profile.setCentroid(rawItemEmbedding.clone());
+            } else {
+                float[] current = profile.getCentroid();
+                float[] newCentroid = new float[current.length];
+                for (int i = 0; i < current.length && i < rawItemEmbedding.length; i++) {
+                    newCentroid[i] = (current[i] * (memberCount - 1) + rawItemEmbedding[i]) / memberCount;
+                }
+                profile.setCentroid(newCentroid);
+            }
+        }
         profile.setUpdatedAt(Instant.now());
         profileRepository.save(profile);
+    }
+
+    public void updateStoryClusterProfile(Long storyId, String model, String modelRevision, int memberCount) {
+        updateStoryClusterProfile(storyId, model, modelRevision, memberCount, null);
     }
 
     @Transactional
@@ -73,17 +96,27 @@ public class StoryClusteringService {
         int windowHours = clusterConfig == null ? 48 : clusterConfig.getWindowHours();
         double threshold = clusterConfig == null ? 0.25 : clusterConfig.getAutoMergeThreshold();
 
-        var candidates = stories.findClusterCandidates(
-                NewsContentKind.AGGREGATED_STORY,
-                ArticleStatus.PUBLISHED,
-                anchor.minus(Duration.ofHours(windowHours)),
-                anchor.plus(Duration.ofHours(windowHours)),
-                PageRequest.of(0, clusterConfig == null ? 200 : clusterConfig.getCandidateLimit())
-        );
+        Instant windowStart = anchor.minus(Duration.ofHours(windowHours));
+        Instant windowEnd = anchor.plus(Duration.ofHours(windowHours));
+
+        java.util.Map<Long, Double> vectorScores = getVectorCandidateScores(rawItem, windowStart, windowEnd);
+
+        List<NewsArticle> candidates;
+        if (!vectorScores.isEmpty()) {
+            candidates = stories.findAllById(vectorScores.keySet());
+        } else {
+            candidates = stories.findClusterCandidates(
+                    NewsContentKind.AGGREGATED_STORY,
+                    ArticleStatus.PUBLISHED,
+                    windowStart,
+                    windowEnd,
+                    PageRequest.of(0, clusterConfig == null ? 200 : clusterConfig.getCandidateLimit())
+            );
+        }
 
         final Instant anchorTime = anchor;
         ClusterMatchBest bestMatch = candidates.stream()
-                .map(candidate -> evaluateCandidate(rawItem, itemEvent, itemEntities, candidate, anchorTime))
+                .map(candidate -> evaluateCandidate(rawItem, itemEvent, itemEntities, candidate, anchorTime, vectorScores.get(candidate.getId())))
                 .filter(Objects::nonNull)
                 .max(Comparator.comparingDouble(ClusterMatchBest::finalScore))
                 .orElse(null);
@@ -113,12 +146,38 @@ public class StoryClusteringService {
         return new ClusterResult(null, decision, false);
     }
 
+    private java.util.Map<Long, Double> getVectorCandidateScores(RawItem rawItem, Instant windowStart, Instant windowEnd) {
+        if (rawItem.getEmbedding() == null || rawItem.getEmbedding().length == 0) {
+            return java.util.Collections.emptyMap();
+        }
+        try {
+            String vectorStr = new VectorConverter().convertToDatabaseColumn(rawItem.getEmbedding());
+            if (vectorStr == null) return java.util.Collections.emptyMap();
+            String model = rawItem.getEmbeddingModel() != null ? rawItem.getEmbeddingModel() : "intfloat/multilingual-e5-small";
+            int limit = clusterConfig == null ? 20 : clusterConfig.getCandidateLimit();
+            List<StoryClusterProfileRepository.CandidateVectorMatch> matches =
+                    profileRepository.findVectorCandidates(vectorStr, windowStart, windowEnd, model, limit);
+            java.util.Map<Long, Double> scoreMap = new java.util.HashMap<>();
+            for (var m : matches) {
+                if (m.getStoryId() != null && m.getSemanticScore() != null) {
+                    scoreMap.put(m.getStoryId(), Math.max(0.0, Math.min(1.0, m.getSemanticScore())));
+                }
+            }
+            return scoreMap;
+        } catch (Exception e) {
+            log.warn("pgvector candidate search failed, falling back to lexical-only scoring. " +
+                    "If APP_CLUSTERING_MODE=vector, this means vector search is non-functional: {}", e.getMessage());
+            return java.util.Collections.emptyMap();
+        }
+    }
+
     private ClusterMatchBest evaluateCandidate(
             RawItem rawItem,
             EventFamily itemEvent,
             EntityFingerprintExtractor.EntityFingerprint itemEntities,
             NewsArticle candidate,
-            Instant anchor
+            Instant anchor,
+            Double vectorSemanticScore
     ) {
         EventFamily candidateEvent = eventClassifier.classify(candidate.getTitle(), candidate.getSummary());
 
@@ -134,12 +193,18 @@ public class StoryClusteringService {
 
         Instant candidateTime = candidate.getLastSourceAt() == null ? candidate.getCreatedAt() : candidate.getLastSourceAt();
         double timeScore = clusterScorer.calculateTimeDecay(anchor, candidateTime);
+        double semanticScore = vectorSemanticScore != null ? vectorSemanticScore : lexicalSim;
 
-        // Fallback or semantic score
-        double semanticScore = lexicalSim; // Base semantic estimation for Phase 1
+        // Hard entity safety guard: If both articles have extracted entities but 0 similarity (different clubs/players) and semantic score is below 0.75, do NOT merge!
+        if (itemEntities.hasEntities() && candidateEntities.hasEntities() && entitySim == 0.0 && semanticScore < 0.75) {
+            return null;
+        }
+
         double finalScore = clusterScorer.calculateHybridScore(semanticScore, lexicalSim, entitySim, anchor, candidateTime);
 
-        String reasonCode = entitySim > 0.5 ? "VECTOR_ENTITY_SUPPORTED" : "VECTOR_HIGH_CONFIDENCE";
+        String reasonCode = vectorSemanticScore != null
+                ? (entitySim > 0.5 ? "VECTOR_ENTITY_SUPPORTED" : "VECTOR_HIGH_CONFIDENCE")
+                : (entitySim > 0.5 ? "LEXICAL_ENTITY_SUPPORTED" : "LEXICAL_HIGH_CONFIDENCE");
         return new ClusterMatchBest(candidate, semanticScore, lexicalSim, entitySim, timeScore, finalScore, reasonCode);
     }
 

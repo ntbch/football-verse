@@ -7,7 +7,7 @@ import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ClusterScorerTest {
-    private final ClusterScorer scorer = new ClusterScorer();
+    private final ClusterScorer scorer = new ClusterScorer(new ClusterConfiguration());
     private final RuleBasedEventClassifier eventClassifier = new RuleBasedEventClassifier();
     private final EntityFingerprintExtractor entityExtractor = new EntityFingerprintExtractor();
 

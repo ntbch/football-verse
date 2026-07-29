@@ -2,7 +2,7 @@ spring:
   cache:
     type: simple
   datasource:
-    url: jdbc:h2:mem:football_verse_test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    url: jdbc:h2:mem:football_verse_test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;INIT=CREATE DOMAIN IF NOT EXISTS vector AS VARCHAR
     driver-class-name: org.h2.Driver
     username: sa
     password:

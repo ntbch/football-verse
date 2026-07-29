@@ -90,7 +90,8 @@ public class RawItemImportService {
         var existing = rawItems.findByIdentityKey(request.identityKey());
         if (existing.isPresent()) {
             RawItem rawItem = existing.get();
-            if (rawItem.getRevisionFingerprint().equals(request.revisionFingerprint())) {
+            boolean hadNoEmbedding = rawItem.getEmbedding() == null;
+            if (rawItem.getRevisionFingerprint().equals(request.revisionFingerprint()) && !hadNoEmbedding) {
                 return new ArticleImportResponse("EXISTS", "Raw item revision already exists");
             }
             apply(rawItem, source, request);
@@ -100,7 +101,7 @@ public class RawItemImportService {
                 return new ArticleImportResponse("UPDATED", "Raw item retained for review");
             }
             var existingMembership = storyItems.findFirstByRawItem(rawItem);
-            if (existingMembership.isPresent()) {
+            if (existingMembership.isPresent() && !hadNoEmbedding) {
                 updateStory(existingMembership.get().getStory(), rawItem);
                 return new ArticleImportResponse("UPDATED", "Raw item revision updated");
             }
@@ -144,9 +145,12 @@ public class RawItemImportService {
             score = !matched ? 1.0 : legacyCluster.score();
         }
 
-        StoryItem membership = new StoryItem();
+        StoryItem membership = storyItems.findFirstByRawItem(savedRawItem).orElseGet(() -> {
+            StoryItem m = new StoryItem();
+            m.setRawItem(savedRawItem);
+            return m;
+        });
         membership.setStory(story);
-        membership.setRawItem(savedRawItem);
         membership.setRole(!matched ? "PRIMARY" : "SUPPORTING");
         membership.setRelevanceScore(BigDecimal.valueOf(score).setScale(4, RoundingMode.HALF_UP));
         if (shadowResult.decision() != null) {
@@ -251,7 +255,7 @@ public class RawItemImportService {
     private void updateStoryAfterAttach(NewsArticle story, RawItem rawItem, double similarity) {
         long sourceCount = Math.max(1, storyItems.countDistinctPublishersByStoryId(story.getId()));
         story.setSourceCountCached((int) sourceCount);
-        storyClusteringService.updateStoryClusterProfile(story.getId(), rawItem.getEmbeddingModel(), rawItem.getEmbeddingRevision(), (int) sourceCount);
+        storyClusteringService.updateStoryClusterProfile(story.getId(), rawItem.getEmbeddingModel(), rawItem.getEmbeddingRevision(), (int) sourceCount, rawItem.getEmbedding());
         if (rawItem.getPublisher() != null && rawItem.getPublisher().isOfficial()) {
             story.setVerificationStatus(VerificationStatus.OFFICIAL);
         } else if (story.getVerificationStatus() != VerificationStatus.OFFICIAL
@@ -307,7 +311,10 @@ public class RawItemImportService {
         if (request.schemaVersion() != 1 && request.schemaVersion() != 2) {
             throw new IllegalArgumentException("Unsupported schema version");
         }
-        if (request.schemaVersion() == 2 && request.embedding() != null) {
+        if (request.schemaVersion() == 2) {
+            if (request.embedding() == null) {
+                throw new IllegalArgumentException("Schema version 2 requires embedding payload");
+            }
             var emb = request.embedding();
             if (emb.dimensions() != 384 || emb.vector() == null || emb.vector().size() != 384) {
                 throw new IllegalArgumentException("Invalid embedding dimensions");
@@ -374,6 +381,14 @@ public class RawItemImportService {
             rawItem.setEmbeddingRevision(request.embedding().revision());
             rawItem.setEmbeddedAt(Instant.now());
             rawItem.setClusterStatus("EMBEDDED");
+            if (request.embedding().vector() != null) {
+                List<Float> vecList = request.embedding().vector();
+                float[] vecArray = new float[vecList.size()];
+                for (int i = 0; i < vecList.size(); i++) {
+                    vecArray[i] = vecList.get(i);
+                }
+                rawItem.setEmbedding(vecArray);
+            }
         }
     }
 
@@ -428,6 +443,13 @@ public class RawItemImportService {
                 kp.setConfidence(BigDecimal.valueOf(0.95));
                 keyPoints.save(kp);
             }
+        } else {
+            StoryKeyPoint kp = new StoryKeyPoint();
+            kp.setStory(savedStory);
+            kp.setOrdinal(1);
+            kp.setText(limit(rawItem.getTitle(), 500));
+            kp.setConfidence(BigDecimal.valueOf(0.95));
+            keyPoints.save(kp);
         }
 
         return savedStory;

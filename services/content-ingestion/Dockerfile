@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ RUN --mount=type=cache,id=football-verse-npm,target=/root/.npm \
 COPY src ./src
 RUN npm run build
 
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
 

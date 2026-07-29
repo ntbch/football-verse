@@ -9,7 +9,7 @@ ALTER TABLE raw_items
 
 CREATE TABLE IF NOT EXISTS story_cluster_profiles (
     story_id BIGINT PRIMARY KEY REFERENCES news_articles(id) ON DELETE CASCADE,
-    centroid vector(384) NOT NULL,
+    centroid vector(384),
     model VARCHAR(160) NOT NULL,
     model_revision VARCHAR(120) NOT NULL,
     member_count INTEGER NOT NULL,

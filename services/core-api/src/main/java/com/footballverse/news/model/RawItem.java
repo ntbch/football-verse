@@ -97,6 +97,11 @@ public class RawItem extends AuditableEntity {
     @Column(nullable = false, length = 20)
     private String status = "ACTIVE";
 
+    @jakarta.persistence.Convert(converter = com.footballverse.news.clustering.VectorConverter.class)
+    @Column(name = "embedding", columnDefinition = "vector")
+    @org.hibernate.annotations.ColumnTransformer(write = "?::vector")
+    private float[] embedding;
+
     @Column(name = "embedding_model", length = 160)
     private String embeddingModel;
 

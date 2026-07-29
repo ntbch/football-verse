@@ -43,6 +43,10 @@ public class EntityFingerprintExtractor {
     }
 
     public record EntityFingerprint(Set<String> clubs, Set<String> properNouns) {
+        public boolean hasEntities() {
+            return !clubs.isEmpty() || !properNouns.isEmpty();
+        }
+
         public double calculateSimilarity(EntityFingerprint other) {
             if (other == null) return 0.0;
             double clubSim = jaccard(this.clubs, other.clubs);

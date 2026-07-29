@@ -8,7 +8,10 @@ import java.time.Duration;
 import java.time.Instant;
 
 @Component
+@lombok.RequiredArgsConstructor
 public class ClusterScorer {
+
+    private final ClusterConfiguration config;
 
     public double calculateHybridScore(
             double semanticScore,
@@ -18,7 +21,12 @@ public class ClusterScorer {
             Instant candidateTime
     ) {
         double timeScore = calculateTimeDecay(itemTime, candidateTime);
-        double finalScore = (semanticScore * 0.75) + (lexicalScore * 0.10) + (entityScore * 0.10) + (timeScore * 0.05);
+        double wSem = config == null ? 0.60 : config.getSemanticWeight();
+        double wLex = config == null ? 0.10 : config.getLexicalWeight();
+        double wEnt = config == null ? 0.25 : config.getEntityWeight();
+        double wTime = config == null ? 0.05 : config.getTimeWeight();
+
+        double finalScore = (semanticScore * wSem) + (lexicalScore * wLex) + (entityScore * wEnt) + (timeScore * wTime);
         return Math.min(1.0, Math.max(0.0, finalScore));
     }
 

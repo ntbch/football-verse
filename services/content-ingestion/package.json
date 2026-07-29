@@ -11,6 +11,7 @@
     "start": "node dist/worker.js"
   },
   "dependencies": {
+    "@huggingface/transformers": "^3.5.1",
     "cheerio": "^1.0.0-rc.12",
     "got-scraping": "^4.0.5",
     "node-cron": "^3.0.3",

@@ -419,9 +419,16 @@ export default function NewsListingPage() {
                         <div className="flex-1 min-w-0 flex flex-col justify-between gap-2">
                           <div className="flex flex-col gap-1.5">
                             <div className="flex items-center justify-between text-[11px] font-bold text-[var(--color-text-secondary)]">
-                              <span className="text-[var(--color-accent)] font-extrabold">
-                                {art.sourceName || "Football News"}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[var(--color-accent)] font-extrabold">
+                                  {art.sourceName || "Football News"}
+                                </span>
+                                {art.sourceCount && art.sourceCount > 1 ? (
+                                  <span className="news-badge-accent text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm">
+                                    {art.sourceCount} Sources
+                                  </span>
+                                ) : null}
+                              </div>
                               <span>
                                 {formatDate(art.publishedAt)}
                               </span>

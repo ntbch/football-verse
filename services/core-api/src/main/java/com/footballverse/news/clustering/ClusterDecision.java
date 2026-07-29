@@ -57,6 +57,7 @@ public class ClusterDecision {
     private String reasonCode;
 
     @Column(name = "candidate_snapshot", columnDefinition = "jsonb", nullable = false)
+    @org.hibernate.annotations.ColumnTransformer(write = "?::jsonb")
     private String candidateSnapshot = "[]";
 
     @Column(name = "created_at", nullable = false)
