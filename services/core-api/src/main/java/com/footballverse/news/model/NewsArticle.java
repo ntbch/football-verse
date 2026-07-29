@@ -116,6 +116,12 @@ public class NewsArticle extends AuditableEntity {
     @Column(name = "summary_basis_hash", length = 64)
     private String summaryBasisHash;
 
+    @Column(name = "cluster_embedding", columnDefinition = "text")
+    private String clusterEmbedding;
+
+    @Column(name = "cluster_embedding_model", length = 80)
+    private String clusterEmbeddingModel;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "merged_into_id")
     private NewsArticle mergedInto;
