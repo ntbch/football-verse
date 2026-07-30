@@ -66,12 +66,12 @@ public class EntityFingerprintExtractor {
         Map<String, String> aliases = new HashMap<>();
         addAliases(aliases, "manchester united", "manchester united", "man utd", "man united", "red devils");
         addAliases(aliases, "manchester city", "manchester city", "man city", "cityzens");
-        addAliases(aliases, "liverpool", "liverpool", "liverpool fc", "reds");
-        addAliases(aliases, "chelsea", "chelsea", "chelsea fc", "blues");
+        addAliases(aliases, "liverpool", "liverpool", "liverpool fc");
+        addAliases(aliases, "chelsea", "chelsea", "chelsea fc");
         addAliases(aliases, "arsenal", "arsenal", "arsenal fc", "gunners");
         addAliases(aliases, "tottenham hotspur", "tottenham", "tottenham hotspur", "spurs");
         addAliases(aliases, "newcastle united", "newcastle", "newcastle united", "magpies");
-        addAliases(aliases, "aston villa", "aston villa", "villa");
+        addAliases(aliases, "aston villa", "aston villa");
         addAliases(aliases, "real madrid", "real madrid", "real madrid cf", "los blancos");
         addAliases(aliases, "barcelona", "barcelona", "fc barcelona", "barca", "barça");
         addAliases(aliases, "atletico madrid", "atletico madrid", "atlético madrid", "atleti");
@@ -80,11 +80,11 @@ public class EntityFingerprintExtractor {
         addAliases(aliases, "bayer leverkusen", "bayer leverkusen", "leverkusen");
         addAliases(aliases, "paris saint-germain", "paris saint-germain", "paris saint germain", "psg");
         addAliases(aliases, "juventus", "juventus", "juve");
-        addAliases(aliases, "inter milan", "inter milan", "internazionale", "inter");
-        addAliases(aliases, "ac milan", "ac milan", "milan");
+        addAliases(aliases, "inter milan", "inter milan", "internazionale");
+        addAliases(aliases, "ac milan", "ac milan");
         addAliases(aliases, "napoli", "napoli", "ssc napoli");
         addAliases(aliases, "benfica", "benfica", "sl benfica");
-        addAliases(aliases, "sporting cp", "sporting", "sporting cp", "sporting lisbon");
+        addAliases(aliases, "sporting cp", "sporting cp", "sporting lisbon");
         addAliases(aliases, "porto", "porto", "fc porto");
         return Map.copyOf(aliases);
     }
