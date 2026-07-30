@@ -157,6 +157,7 @@ services:
       - INGESTION_DB_URL=postgresql://${INGESTION_DB_USER:-ingestion_user}:${INGESTION_DB_PASSWORD:-ingestion_pass}@postgres:5432/${INGESTION_DB_NAME:-ingestion_db}
       - CRAWL_CRON=${CRAWL_CRON:-*/15 * * * *}
       - REDDIT_ACCESS_TOKEN=${REDDIT_ACCESS_TOKEN:-}
+      - TWITTER_BEARER_TOKEN=${TWITTER_BEARER_TOKEN:-}
       - INGESTION_MODE=${INGESTION_MODE:-rss_metadata_publish}
       - RUN_CRAWL_ON_STARTUP=${RUN_CRAWL_ON_STARTUP:-false}
       - PORT=8085

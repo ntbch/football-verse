@@ -274,7 +274,7 @@ public class NewsArticleService {
         }
         ArticleInteractions interactions = interactions(pageArticles);
         return new PageResponse<>(
-                pageArticles.stream().map(article -> toArticle(article, false, interactions)).toList(),
+                pageArticles.stream().map(article -> toArticle(article, true, interactions)).toList(),
                 page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages());
     }
 

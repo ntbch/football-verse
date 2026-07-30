@@ -23,7 +23,8 @@ import { YouTubeEmbed } from "../components/YouTubeEmbed";
 
 function cleanSummaryText(text?: string): string {
   if (!text) return "";
-  const lines = text
+  const cleaned = text.replace(/(?:\s+|-|\|)*(?:BBC|Sky Sports|Reuters|GNews|ESPN|Goal|The Guardian)$/i, "").trim();
+  const lines = cleaned
     .split(/(?:►|\n)+/)
     .map((line) => line.trim())
     .filter(
@@ -32,7 +33,7 @@ function cleanSummaryText(text?: string): string {
         !line.match(/^(?:Subscribe|Watch|Follow|Click|http:\/\/|https:\/\/|MNF|FNF|SNF|Super Sunday|Saturday Social|Gary Neville)/i),
     );
   const result = lines.join("\n\n");
-  return result || text;
+  return result || cleaned;
 }
 
 export default function NewsDetailPage() {

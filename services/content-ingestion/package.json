@@ -5,6 +5,7 @@
   "main": "dist/worker.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/worker.ts",
+    "recluster": "ts-node src/backfill.ts",
     "build": "tsc",
     "test": "npm run build && node --test test/*.test.js",
     "replay-failed": "node dist/replay.js",
@@ -13,6 +14,7 @@
   "dependencies": {
     "@huggingface/transformers": "^3.5.1",
     "cheerio": "^1.0.0-rc.12",
+    "dotenv": "^17.4.2",
     "got-scraping": "^4.0.5",
     "node-cron": "^3.0.3",
     "pg": "^8.12.0"

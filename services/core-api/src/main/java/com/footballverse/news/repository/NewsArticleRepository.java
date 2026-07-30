@@ -17,22 +17,26 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
     @Query("SELECT DISTINCT a FROM NewsArticle a " +
            "LEFT JOIN a.tags t " +
            "LEFT JOIN a.source s " +
-           "WHERE a.status = 'PUBLISHED' AND (" +
+           "LEFT JOIN StoryItem si ON si.story = a " +
+           "LEFT JOIN si.rawItem ri " +
+           "WHERE a.status = com.footballverse.news.model.ArticleStatus.PUBLISHED AND (" +
            "  (:hasCategories = false AND :hasTags = false) OR " +
            "  (:hasCategories = true AND a.category.id IN :categoryIds) OR " +
            "  (:hasTags = true AND t.id IN :tagIds)" +
            ") AND (" +
            "  :hasProvider = false OR " +
-           "  (:provider = 'youtube' AND s.provider = 'youtube') OR " +
-           "  (:provider = 'news' AND (s.provider IS NULL OR s.provider <> 'youtube'))" +
+           "  (:provider = 'youtube' AND (LOWER(s.provider) = 'youtube' OR LOWER(ri.provider) = 'youtube')) OR " +
+           "  (:provider = 'reddit' AND (LOWER(s.provider) = 'reddit' OR LOWER(ri.provider) = 'reddit')) OR " +
+           "  (:provider = 'x' AND (LOWER(s.provider) = 'x' OR LOWER(ri.provider) = 'x')) OR " +
+           "  (:provider = 'news' AND ((s.provider IS NULL OR LOWER(s.provider) NOT IN ('youtube', 'reddit', 'x')) AND (ri.provider IS NULL OR LOWER(ri.provider) NOT IN ('youtube', 'reddit', 'x'))))" +
            ")")
     Page<NewsArticle> filterPublishedArticles(
-            boolean hasCategories,
-            List<Long> categoryIds,
-            boolean hasTags,
-            List<Long> tagIds,
-            boolean hasProvider,
-            String provider,
+            @org.springframework.data.repository.query.Param("hasCategories") boolean hasCategories,
+            @org.springframework.data.repository.query.Param("categoryIds") List<Long> categoryIds,
+            @org.springframework.data.repository.query.Param("hasTags") boolean hasTags,
+            @org.springframework.data.repository.query.Param("tagIds") List<Long> tagIds,
+            @org.springframework.data.repository.query.Param("hasProvider") boolean hasProvider,
+            @org.springframework.data.repository.query.Param("provider") String provider,
             Pageable pageable
     );
 

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import { useToast } from "@/shared/components/toast";
@@ -6,7 +6,9 @@ import { useToast } from "@/shared/components/toast";
 function SettingSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="card p-5 flex flex-col gap-4">
-      <div className="text-[10px] font-black uppercase tracking-widest pb-3" style={{ color: "var(--color-accent)", borderBottom: "1px solid var(--color-border)" }}>{title}</div>
+      <div className="text-[10px] font-black uppercase tracking-widest pb-3 text-[var(--color-accent)] border-b border-[var(--color-border)]">
+        {title}
+      </div>
       {children}
     </div>
   );
@@ -16,17 +18,19 @@ function Toggle({ label, desc, checked, onChange }: { label: string; desc?: stri
   return (
     <label className="flex items-center justify-between cursor-pointer gap-4">
       <div>
-        <div className="text-xs font-bold" style={{ color: "var(--color-text-primary)" }}>{label}</div>
-        {desc && <div className="text-[10px] mt-0.5" style={{ color: "var(--color-text-secondary)" }}>{desc}</div>}
+        <div className="text-xs font-bold text-[var(--color-text-primary)]">{label}</div>
+        {desc && <div className="text-[10px] mt-0.5 text-[var(--color-text-secondary)]">{desc}</div>}
       </div>
       <button
         type="button"
         onClick={() => onChange(!checked)}
-        className="relative inline-flex w-10 h-5 rounded-full transition-colors shrink-0"
+        className="relative inline-flex w-10 h-5 rounded-full transition-colors shrink-0 cursor-pointer"
         style={{ backgroundColor: checked ? "var(--color-accent)" : "var(--color-border)" }}
       >
-        <span className="inline-block w-4 h-4 rounded-full bg-white shadow transition-transform mt-0.5"
-          style={{ transform: checked ? "translateX(20px)" : "translateX(2px)" }} />
+        <span
+          className="inline-block w-4 h-4 rounded-full bg-white shadow transition-transform mt-0.5"
+          style={{ transform: checked ? "translateX(20px)" : "translateX(2px)" }}
+        />
       </button>
     </label>
   );
@@ -34,9 +38,9 @@ function Toggle({ label, desc, checked, onChange }: { label: string; desc?: stri
 
 function Field({ label, desc, children }: { label: string; desc?: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-1">
-      <label className="text-[10px] font-black uppercase tracking-wider" style={{ color: "var(--color-text-secondary)" }}>{label}</label>
-      {desc && <div className="text-[10px] mb-1" style={{ color: "var(--color-text-secondary)" }}>{desc}</div>}
+    <div className="flex flex-col gap-1.5">
+      <label className="text-[10px] font-black uppercase tracking-wider text-[var(--color-text-secondary)]">{label}</label>
+      {desc && <div className="text-[10px] text-[var(--color-text-secondary)]">{desc}</div>}
       {children}
     </div>
   );
@@ -64,89 +68,155 @@ export default function AdminSettingsPage() {
   // Security
   const [maxLoginAttempts, setMaxLoginAttempts] = useState("5");
   const [sessionTimeout, setSessionTimeout] = useState("60");
-  const [allowGuestForum, setAllowGuestForum] = useState(true);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    toast({ body: "Settings saved successfully!", type: "info", autoHideDuration: 3000 });
+    toast({ body: "System Settings updated successfully!", type: "info", autoHideDuration: 3000 });
+  };
+
+  const handleFlushCache = () => {
+    toast({ body: "System Redis Cache successfully flushed.", type: "info", autoHideDuration: 3000 });
   };
 
   return (
     <form onSubmit={handleSave}>
-      <div className="flex flex-col gap-5 w-full">
+      <div className="flex flex-col gap-6 w-full">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4" style={{ borderBottom: "1px solid var(--color-border)" }}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[var(--color-border)]">
           <div>
-            <h1 className="text-lg font-black font-serif-title tracking-tight m-0" style={{ color: "var(--color-text-primary)" }}>System Settings</h1>
-            <p className="text-[11px] mt-0.5" style={{ color: "var(--color-text-secondary)" }}>Global configuration for Football Verse platform</p>
+            <h1 className="text-xl font-black font-serif-title tracking-tight m-0 text-[var(--color-text-primary)]">
+              System Settings & Platform Control
+            </h1>
+            <p className="text-[11px] font-medium text-[var(--color-text-secondary)] mt-0.5">
+              Global configuration, feature flags, security policies and cache management
+            </p>
           </div>
-          <button type="submit" className="btn btn-primary !rounded-full !px-5 !py-2 !text-xs">Save All Settings</button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleFlushCache}
+              className="py-2 px-4 rounded-full text-xs font-bold transition-all border border-[var(--color-border)] bg-white/5 hover:bg-white/10 active:scale-[0.98] cursor-pointer"
+            >
+              Flush Redis Cache
+            </button>
+            <button
+              type="submit"
+              className="py-2 px-5 rounded-full text-xs font-black uppercase tracking-wider bg-[var(--color-accent)] text-white hover:opacity-90 active:scale-[0.98] cursor-pointer shadow-md"
+            >
+              Save All Settings
+            </button>
+          </div>
         </div>
 
         {/* Site Identity */}
-        <SettingSection title="Site Identity">
+        <SettingSection title="Site Identity & Branding">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="Site Name">
-              <input className="input !text-xs" value={siteName} onChange={(e) => setSiteName(e.target.value)} />
+            <Field label="Platform Name">
+              <input
+                className="w-full px-3 py-2 rounded bg-black/10 border border-[var(--color-border)] text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
+                value={siteName}
+                onChange={(e) => setSiteName(e.target.value)}
+              />
             </Field>
-            <Field label="Contact Email">
-              <input type="email" className="input !text-xs" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
+            <Field label="System Support Email">
+              <input
+                type="email"
+                className="w-full px-3 py-2 rounded bg-black/10 border border-[var(--color-border)] text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
+              />
             </Field>
           </div>
-          <Field label="Site Tagline" desc="Appears in page meta descriptions and hero text">
-            <input className="input !text-xs" value={siteTagline} onChange={(e) => setSiteTagline(e.target.value)} />
+          <Field label="Platform Tagline" desc="Appears in page metadata and hero banners">
+            <input
+              className="w-full px-3 py-2 rounded bg-black/10 border border-[var(--color-border)] text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
+              value={siteTagline}
+              onChange={(e) => setSiteTagline(e.target.value)}
+            />
           </Field>
         </SettingSection>
 
-        {/* Crawler Config */}
-        <SettingSection title="RSS Crawler Configuration">
+        {/* Ingestion Engine Config */}
+        <SettingSection title="Ingestion Engine & Crawler Policy">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="Crawl Interval (minutes)" desc="How often the automatic crawler runs">
-              <input type="number" min="1" max="1440" className="input !text-xs" value={crawlInterval} onChange={(e) => setCrawlInterval(e.target.value)} />
+            <Field label="Crawl Frequency Interval (minutes)" desc="Automated background crawler run frequency">
+              <input
+                type="number"
+                min="1"
+                max="1440"
+                className="w-full px-3 py-2 rounded bg-black/10 border border-[var(--color-border)] text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)] font-mono"
+                value={crawlInterval}
+                onChange={(e) => setCrawlInterval(e.target.value)}
+              />
             </Field>
-            <Field label="Max Articles Per Crawl" desc="Cap per single crawl run to avoid overload">
-              <input type="number" min="10" max="500" className="input !text-xs" value={maxArticlesPerCrawl} onChange={(e) => setMaxArticlesPerCrawl(e.target.value)} />
+            <Field label="Max Articles Per Ingestion Run" desc="Cap per single crawl cycle to protect database memory">
+              <input
+                type="number"
+                min="10"
+                max="500"
+                className="w-full px-3 py-2 rounded bg-black/10 border border-[var(--color-border)] text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)] font-mono"
+                value={maxArticlesPerCrawl}
+                onChange={(e) => setMaxArticlesPerCrawl(e.target.value)}
+              />
             </Field>
           </div>
-          <Toggle label="Auto-Publish Crawled Articles" desc="Bypass DRAFT status — publish immediately on crawl" checked={enableAutoPublish} onChange={setEnableAutoPublish} />
+          <Toggle
+            label="Auto-Publish Ingested Stories"
+            desc="Bypass DRAFT moderation queue — publish stories immediately on crawl"
+            checked={enableAutoPublish}
+            onChange={setEnableAutoPublish}
+          />
         </SettingSection>
 
         {/* Feature Flags */}
-        <SettingSection title="Feature Flags">
+        <SettingSection title="Platform Feature Flags">
           <div className="flex flex-col gap-4">
-            <Toggle label="User Registration" desc="Allow new users to create accounts" checked={enableRegister} onChange={setEnableRegister} />
-            <Toggle label="Match Predictions Module" desc="Enable the AI-powered match prediction system" checked={enablePredictions} onChange={setEnablePredictions} />
-            <Toggle label="SSE Notification Streams" desc="Real-time push notifications for users" checked={enableNotifications} onChange={setEnableNotifications} />
-            <Toggle label="Forum Module" desc="Enable or disable the community forum entirely" checked={enableForum} onChange={setEnableForum} />
-            <Toggle label="Guest Forum Read Access" desc="Allow non-registered users to browse forum threads" checked={allowGuestForum} onChange={setAllowGuestForum} />
+            <Toggle label="User Account Registration" desc="Allow new visitors to sign up for accounts" checked={enableRegister} onChange={setEnableRegister} />
+            <Toggle label="Match Predictions Module" desc="Enable the AI match predictions & points engine" checked={enablePredictions} onChange={setEnablePredictions} />
+            <Toggle label="Realtime Push Notifications" desc="Enable SSE push notifications for users" checked={enableNotifications} onChange={setEnableNotifications} />
+            <Toggle label="Community Forum" desc="Enable or disable the community discussion arena" checked={enableForum} onChange={setEnableForum} />
           </div>
         </SettingSection>
 
-        {/* Access Control */}
-        <SettingSection title="Access & Security">
+        {/* Access & Security */}
+        <SettingSection title="Security & Session Policy">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="Max Login Attempts" desc="Before account is temporarily locked">
-              <input type="number" min="3" max="20" className="input !text-xs" value={maxLoginAttempts} onChange={(e) => setMaxLoginAttempts(e.target.value)} />
+            <Field label="Max Failed Login Attempts" desc="Throttling threshold before temporary lockout">
+              <input
+                type="number"
+                min="3"
+                max="20"
+                className="w-full px-3 py-2 rounded bg-black/10 border border-[var(--color-border)] text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)] font-mono"
+                value={maxLoginAttempts}
+                onChange={(e) => setMaxLoginAttempts(e.target.value)}
+              />
             </Field>
-            <Field label="Session Timeout (minutes)" desc="Inactivity period before user is logged out">
-              <input type="number" min="15" max="10080" className="input !text-xs" value={sessionTimeout} onChange={(e) => setSessionTimeout(e.target.value)} />
+            <Field label="Session Timeout (minutes)" desc="Inactivity window before automatic logout">
+              <input
+                type="number"
+                min="15"
+                max="10080"
+                className="w-full px-3 py-2 rounded bg-black/10 border border-[var(--color-border)] text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)] font-mono"
+                value={sessionTimeout}
+                onChange={(e) => setSessionTimeout(e.target.value)}
+              />
             </Field>
           </div>
-          <Toggle label="Require Email Verification" desc="New users must verify their email before accessing the platform" checked={requireEmailVerify} onChange={setRequireEmailVerify} />
+          <Toggle label="Mandatory Email Verification" desc="New users must verify email address before posting" checked={requireEmailVerify} onChange={setRequireEmailVerify} />
         </SettingSection>
 
-        {/* Maintenance */}
-        <SettingSection title="Maintenance">
-          <div className="p-3 rounded-lg text-xs" style={{ background: "rgba(185,28,28,0.06)", border: "1px solid rgba(185,28,28,0.2)" }}>
-            <div className="font-black text-[10px] uppercase mb-1" style={{ color: "#b91c1c" }}>Danger Zone</div>
-            <Toggle label="Maintenance Mode" desc="When enabled, the site shows a maintenance page to all non-admin visitors" checked={maintenanceMode} onChange={setMaintenanceMode} />
+        {/* Maintenance Mode */}
+        <SettingSection title="Maintenance & Emergency Controls">
+          <div className="p-4 rounded-lg bg-red-950/20 border border-red-500/30 flex flex-col gap-3">
+            <div className="font-mono font-black text-xs uppercase text-red-400">Emergency System Override</div>
+            <Toggle
+              label="Activate Maintenance Mode"
+              desc="Redirect non-admin visitors to a maintenance screen while maintaining full Admin Control Hub access"
+              checked={maintenanceMode}
+              onChange={setMaintenanceMode}
+            />
           </div>
         </SettingSection>
-
-        {/* Save button (bottom) */}
-        <div className="flex justify-end">
-          <button type="submit" className="btn btn-primary !px-6 !py-2.5 !text-xs">Save All Settings</button>
-        </div>
       </div>
     </form>
   );

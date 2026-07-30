@@ -1,3 +1,8 @@
+import dotenv from 'dotenv';
+import path from 'node:path';
+dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
 import cron from 'node-cron';
 import { randomUUID } from 'node:crypto';
 import { getGotScraping } from './crawler/got-helper';

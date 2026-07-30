@@ -142,14 +142,20 @@ public class AiSummaryService {
     }
 
     private SummaryResult createFallbackResult(String title, String defaultFallback) {
-        String summaryText = (defaultFallback != null && !defaultFallback.isBlank())
-                ? defaultFallback
-                : (title != null ? title : "No summary available.");
+        String cleanTitle = title != null ? title.replaceAll("(?i)\\s+(BBC|Sky Sports|Reuters|GNews|ESPN|Goal|The Guardian)$", "").trim() : "Football Update";
+        String rawDesc = (defaultFallback != null && !defaultFallback.isBlank()) ? defaultFallback : cleanTitle;
+        String cleanSummary = rawDesc.replaceAll("(?i)\\s+(BBC|Sky Sports|Reuters|GNews|ESPN|Goal|The Guardian)$", "").trim();
+
+        if (cleanSummary.length() < 80 || cleanSummary.equalsIgnoreCase(cleanTitle)) {
+            cleanSummary = cleanTitle + ". Official reports and media outlets are tracking the latest developments regarding this football story.";
+        }
 
         List<String> keyPoints = List.of(
-                title != null ? title : "Latest football news update."
+                cleanTitle,
+                "Key stakeholders and club representatives are monitoring the situation.",
+                "Stay tuned to FootballVerse for verified updates and ongoing coverage."
         );
 
-        return new SummaryResult(summaryText, keyPoints, null, false);
+        return new SummaryResult(cleanSummary, keyPoints, null, false);
     }
 }

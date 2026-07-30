@@ -14,6 +14,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
           queries: {
             refetchOnWindowFocus: false,
             retry: false,
+            staleTime: 1000 * 60 * 2, // Cache queries for 2 minutes to prevent repeated fetching on page switch
           },
         },
       })

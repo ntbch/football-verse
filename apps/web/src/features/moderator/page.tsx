@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { qk } from "@/shared/lib/query-keys";
 import { http, data } from "@/shared/lib/api-client";
@@ -14,20 +15,73 @@ type ModStats = {
   hiddenPosts: number;
 };
 
-function KpiCard({ label, value, sub, accent = false, icon }: {
-  label: string; value: string | number; sub?: string; accent?: boolean; icon: React.ReactNode;
+type AuditActivity = {
+  id: string;
+  moderator: string;
+  action: string;
+  target: string;
+  timeAgo: string;
+  type: "HIDE" | "WARN" | "RESOLVE" | "LOCK";
+};
+
+const recentActivities: AuditActivity[] = [];
+
+function KpiCard({
+  label,
+  value,
+  sub,
+  accent = false,
+  icon,
+}: {
+  label: string;
+  value: string | number;
+  sub?: string;
+  accent?: boolean;
+  icon: React.ReactNode;
 }) {
   return (
-    <div className="card flex flex-col gap-3 p-5 hover:shadow-md transition-shadow">
+    <div
+      className="card flex flex-col justify-between gap-4 p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg relative overflow-hidden group"
+      style={{
+        borderColor: accent ? "var(--color-accent)" : "var(--color-border)",
+        background: accent ? "rgba(180,95,53,0.06)" : "var(--color-card-bg)",
+      }}
+    >
+      {accent && (
+        <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--color-accent)]/10 rounded-full blur-2xl pointer-events-none" />
+      )}
+
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "var(--color-text-secondary)" }}>{label}</span>
-        <span style={{ color: "var(--color-text-secondary)" }}>{icon}</span>
+        <span
+          className="text-[10px] font-black uppercase tracking-widest"
+          style={{ color: accent ? "var(--color-accent)" : "var(--color-text-secondary)" }}
+        >
+          {label}
+        </span>
+        <span
+          className="p-2 rounded-lg transition-colors"
+          style={{
+            backgroundColor: accent ? "rgba(180,95,53,0.12)" : "rgba(255,255,255,0.03)",
+            color: accent ? "var(--color-accent)" : "var(--color-text-secondary)",
+          }}
+        >
+          {icon}
+        </span>
       </div>
+
       <div>
-        <div className="text-3xl font-black tabular-nums tracking-tight font-serif-title" style={{ color: accent ? "var(--color-accent)" : "var(--color-text-primary)" }}>
+        <div
+          className="text-3xl font-black tabular-nums tracking-tight font-mono"
+          style={{ color: accent ? "var(--color-accent)" : "var(--color-text-primary)" }}
+        >
           {value}
         </div>
-        {sub && <div className="text-[10px] font-semibold mt-1" style={{ color: "var(--color-text-secondary)" }}>{sub}</div>}
+        {sub && (
+          <div className="text-[10px] font-medium mt-1 flex items-center gap-1.5" style={{ color: "var(--color-text-secondary)" }}>
+            <span className={`w-1.5 h-1.5 rounded-full ${accent ? "bg-[var(--color-accent)]" : "bg-gray-400"}`} />
+            {sub}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -49,20 +103,28 @@ export default function ModeratorDashboardPage() {
   if (error && !stats) return <ErrorBlock message="Moderation statistics could not be loaded." onRetry={() => refetch()} />;
 
   return (
-    <div className="flex flex-col gap-5 w-full">
+    <div className="flex flex-col gap-6 w-full">
       {/* ── Page header ── */}
       <div className="flex items-center justify-between pb-4" style={{ borderBottom: "1px solid var(--color-border)" }}>
         <div>
-          <h1 className="text-lg font-black font-serif-title tracking-tight m-0" style={{ color: "var(--color-text-primary)" }}>
+          <h1 className="text-xl font-black font-serif-title tracking-tight m-0" style={{ color: "var(--color-text-primary)" }}>
             Moderator Console
           </h1>
           <p className="text-[11px] font-medium mt-0.5" style={{ color: "var(--color-text-secondary)" }}>
             {mounted ? formatDate(new Date().toISOString(), { weekday: "long", year: "numeric", month: "long", day: "numeric" }) : "—"}
           </p>
         </div>
-        <div className="flex items-center gap-1.5 text-[10px] font-bold" style={{ color: "#B45F35" }}>
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)] animate-pulse inline-block" />
-          LIVE
+        <div className="flex items-center gap-3">
+          <Link
+            href="/moderator/reports"
+            className="py-1.5 px-3 rounded text-[11px] font-black uppercase transition-all bg-[var(--color-accent)] text-white hover:opacity-90 active:scale-[0.98]"
+          >
+            Review Reports Queue
+          </Link>
+          <div className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--color-accent)] px-2.5 py-1 rounded-full bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)] animate-pulse inline-block" />
+            LIVE
+          </div>
         </div>
       </div>
 
@@ -70,7 +132,7 @@ export default function ModeratorDashboardPage() {
 
       {/* ── KPI tiles ── */}
       {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full">
           <KpiCard
             accent
             label="Pending Reports"
@@ -115,17 +177,80 @@ export default function ModeratorDashboardPage() {
         </div>
       )}
 
-      {/* ── Guidelines ── */}
-      <div className="card p-5 w-full">
-        <div className="flex flex-col gap-3">
-          <h4 className="font-serif-title m-0 text-sm font-bold uppercase text-[var(--color-accent)] tracking-wider">
-            Moderation Guidelines
-          </h4>
-          <div className="text-[11px] leading-relaxed font-medium text-[var(--color-text-secondary)] flex flex-col gap-2">
-            <p className="m-0">1. Review open report flags. Read post content within thread contexts before resolving.</p>
-            <p className="m-0">2. Mute or hide toxic comments immediately to protect the Fan Community Arena.</p>
-            <p className="m-0">3. Lock discussion threads that decay into flame wars or ads.</p>
-            <p className="m-0">4. Keep pin limits low: pin only official match predictions or important announcements.</p>
+      {/* ── Grid split: Recent Activity + Guidelines ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 w-full">
+        {/* Recent Audit Feed (2 cols) */}
+        <div className="card p-5 lg:col-span-2 flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-serif-title m-0 text-sm font-bold uppercase tracking-wider text-[var(--color-text-primary)]">
+                Recent Moderation Activity
+              </h3>
+              <p className="text-[11px] text-[var(--color-text-secondary)] m-0 mt-0.5">
+                Live audit trail of actions performed by team members
+              </p>
+            </div>
+            <Link
+              href="/moderator/audit-log"
+              className="text-[11px] font-bold text-[var(--color-accent)] hover:underline"
+            >
+              View Full Audit Log →
+            </Link>
+          </div>
+
+          <div className="divide-y divide-[var(--color-border)] flex flex-col">
+            {recentActivities.length === 0 ? (
+              <div className="py-8 text-center text-xs italic text-[var(--color-text-secondary)]">
+                No recent moderation audit activity recorded yet.
+              </div>
+            ) : (
+              recentActivities.map((act) => (
+                <div key={act.id} className="py-3 flex items-center justify-between text-xs transition-colors hover:bg-white/[0.02]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-full bg-[var(--color-accent)]/10 text-[var(--color-accent)] font-bold text-[10px] flex items-center justify-center font-mono">
+                      {act.moderator.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <span className="font-bold text-[var(--color-text-primary)]">@{act.moderator}</span>
+                      <span className="text-[var(--color-text-secondary)] ml-1.5">{act.action}</span>
+                      <span className="font-mono text-[10px] text-[var(--color-text-secondary)] ml-2">({act.target})</span>
+                    </div>
+                  </div>
+                  <span className="font-mono text-[10px] text-[var(--color-text-secondary)]">
+                    {act.timeAgo}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Guidelines Card (1 col) */}
+        <div className="card p-5 flex flex-col gap-4">
+          <h3 className="font-serif-title m-0 text-sm font-bold uppercase tracking-wider text-[var(--color-accent)]">
+            Moderation Policy
+          </h3>
+
+          <div className="text-[11px] leading-relaxed font-medium text-[var(--color-text-secondary)] flex flex-col gap-3">
+            <div className="flex items-start gap-2.5 p-2.5 rounded bg-black/10 border border-[var(--color-border)]">
+              <span className="w-5 h-5 rounded bg-[var(--color-accent)]/15 text-[var(--color-accent)] font-bold text-[10px] flex items-center justify-center shrink-0">1</span>
+              <p className="m-0">Review open flags thoroughly. Read full thread context before resolving reports.</p>
+            </div>
+
+            <div className="flex items-start gap-2.5 p-2.5 rounded bg-black/10 border border-[var(--color-border)]">
+              <span className="w-5 h-5 rounded bg-[var(--color-accent)]/15 text-[var(--color-accent)] font-bold text-[10px] flex items-center justify-center shrink-0">2</span>
+              <p className="m-0">Mute or hide toxic comments immediately to protect the Fan Arena integrity.</p>
+            </div>
+
+            <div className="flex items-start gap-2.5 p-2.5 rounded bg-black/10 border border-[var(--color-border)]">
+              <span className="w-5 h-5 rounded bg-[var(--color-accent)]/15 text-[var(--color-accent)] font-bold text-[10px] flex items-center justify-center shrink-0">3</span>
+              <p className="m-0">Lock discussion threds that decay into flame wars, hate speech, or unsolicited ads.</p>
+            </div>
+
+            <div className="flex items-start gap-2.5 p-2.5 rounded bg-black/10 border border-[var(--color-border)]">
+              <span className="w-5 h-5 rounded bg-[var(--color-accent)]/15 text-[var(--color-accent)] font-bold text-[10px] flex items-center justify-center shrink-0">4</span>
+              <p className="m-0">Keep pin limits strict: pin only official match predictions or club announcements.</p>
+            </div>
           </div>
         </div>
       </div>
