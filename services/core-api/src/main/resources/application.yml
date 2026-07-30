@@ -43,13 +43,17 @@ app:
     url: ${APP_CONTENT_INGESTION_URL:http://localhost:8085}
   clustering:
     mode: ${APP_CLUSTERING_MODE:vector-shadow}
-    window-hours: 48
-    candidate-limit: 20
-    semantic-weight: 0.75
-    lexical-weight: 0.10
-    entity-weight: 0.10
-    time-weight: 0.05
-    auto-merge-threshold: 0.25
+    window-hours: ${APP_CLUSTERING_WINDOW_HOURS:36}
+    candidate-limit: ${APP_CLUSTERING_CANDIDATE_LIMIT:40}
+    semantic-weight: ${APP_CLUSTERING_SEMANTIC_WEIGHT:0.65}
+    lexical-weight: ${APP_CLUSTERING_LEXICAL_WEIGHT:0.10}
+    entity-weight: ${APP_CLUSTERING_ENTITY_WEIGHT:0.20}
+    time-weight: ${APP_CLUSTERING_TIME_WEIGHT:0.05}
+    auto-merge-threshold: ${APP_CLUSTERING_AUTO_MERGE_THRESHOLD:0.78}
+    review-threshold: ${APP_CLUSTERING_REVIEW_THRESHOLD:0.68}
+    minimum-semantic-score: ${APP_CLUSTERING_MINIMUM_SEMANTIC_SCORE:0.72}
+    minimum-entity-score: ${APP_CLUSTERING_MINIMUM_ENTITY_SCORE:0.15}
+    fail-closed-on-vector-error: ${APP_CLUSTERING_FAIL_CLOSED_ON_VECTOR_ERROR:true}
   seed:
     enabled: ${APP_SEED_ENABLED:false}
     admin-password: ${APP_ADMIN_PASSWORD:}
