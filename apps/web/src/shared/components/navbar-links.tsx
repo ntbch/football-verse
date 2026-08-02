@@ -61,8 +61,8 @@ export const publicNavItems: NavItem[] = [
   },
   {
     href: "/career",
-    label: "Career",
-    tooltip: "Career & Matches",
+    label: "Games",
+    tooltip: "Football Games",
     icon: (active) => (
       <svg
         className={`w-5 h-5 transition-transform duration-200 ${

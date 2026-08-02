@@ -1,6 +1,10 @@
 spring:
   application:
     name: football-verse-api
+  task:
+    scheduling:
+      pool:
+        size: 4
   cache:
     type: simple
   datasource:
@@ -92,6 +96,12 @@ app:
     outbox-poll-ms: ${APP_MAIL_OUTBOX_POLL_MS:30000}
   prediction-service:
     url: ${PREDICTION_SERVICE_URL:http://127.0.0.1:8090}
+  minigame:
+      espn:
+        base-url: ${MINIGAME_ESPN_BASE_URL:https://site.api.espn.com/apis/site/v2/sports/soccer}
+      sports-db:
+        base-url: ${MINIGAME_SPORTSDB_BASE_URL:https://www.thesportsdb.com/api/v1/json}
+        key: ${MINIGAME_SPORTSDB_KEY:123}
   upload:
     dir: ${APP_UPLOAD_DIR:uploads}
   telegram:

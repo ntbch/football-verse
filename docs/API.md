@@ -108,6 +108,28 @@ Rich article HTML permits iframe embeds only from YouTube and Brightcove (`youtu
 - `GET /users/me/notification-preferences` returns current notification choices. `PATCH` updates supplied
   `forumReplies` and/or `predictionScored` fields; Core applies them before creating those notifications.
 
+## Daily minigames
+
+Daily minigames are served by Core at `/minigames`; the public page is `/career`.
+ESPN is the minigame roster source and TheSportsDB enriches historical facts only. `football-data.org` remains a predictions source.
+
+- `GET /minigames/daily` returns the Vietnam-local daily snapshots for Who Am I? and Football Grid. The
+  response never contains answers or accepted aliases. It includes an authenticated user's official attempt
+  when present.
+- `POST /minigames/daily/who-am-i|grid/attempt?practice=false` creates or resumes the current user's official
+  attempt. Set `practice=true` only after the official attempt is complete; practice attempts are unranked.
+- `GET /minigames/players?q=...` requires authentication and returns up to eight catalog autocomplete choices.
+- `POST /minigames/attempts/{id}/guess` accepts a catalog `playerId`, the attempt `version`, and a Grid `cell`
+  when applicable. Stale versions return `409` and must refetch before retrying; a Grid player cannot be reused
+  after being named in any cell.
+- `POST /minigames/attempts/{id}/reveal` reveals the next Who Am I? clue with the attempt `version`.
+- `GET /minigames/leaderboard?scope=combined|who-am-i|grid` is public and returns the daily top entries plus
+  the authenticated user's rank when applicable.
+
+An official attempt is unique per user, game, and Vietnam-local date. The first completed official attempt
+is the only one ranked. API keys, raw provider responses, answers, and aliases are never returned until the
+eligible attempt has completed.
+
 ## Forum and moderation
 
 - `GET /forum/categories` lists forum categories.
