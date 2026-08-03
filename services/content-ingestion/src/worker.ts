@@ -40,6 +40,10 @@ const CRAWL_CRON = process.env.CRAWL_CRON || '*/15 * * * *';
 const INGESTION_MODE = process.env.INGESTION_MODE || 'rss_metadata_shadow';
 const WORKER_INSTANCE_ID = process.env.WORKER_INSTANCE_ID || randomUUID();
 const SPOOL_BATCH_SIZE = Math.min(Math.max(Number(process.env.SPOOL_BATCH_SIZE || 25), 1), 100);
+const CORE_IMPORT_TIMEOUT_MS = Math.min(
+  Math.max(Number(process.env.CORE_IMPORT_TIMEOUT_MS || 30_000), 15_000),
+  120_000,
+);
 
 const feedCache = new Map<string, { etag?: string; lastModified?: string }>();
 let cycleRunning = false;
@@ -112,7 +116,7 @@ export async function processSpoolQueue(): Promise<void> {
         },
         json: item.payload,
         responseType: 'json',
-        timeout: { request: 10000 }
+        timeout: { request: CORE_IMPORT_TIMEOUT_MS }
       });
 
       const apiResult = response.body as ApiResponse<ImportResponseData | string>;
@@ -243,7 +247,7 @@ export async function runCrawlCycle(): Promise<void> {
           console.log(`[Worker] Source #${source.id} is leased by another worker; skipping.`);
           continue;
         }
-        const retryAfter = await getSourceRetryAfter(source.id);
+        const retryAfter = await getSourceRetryAfter(source.id, source.fetchIntervalSeconds ?? 900);
         if (retryAfter) {
           console.log(`[Worker] Source #${source.id} is deferred until ${retryAfter.toISOString()}.`);
           continue;

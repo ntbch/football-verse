@@ -36,9 +36,14 @@ function cleanSummaryText(text?: string): string {
   return result || cleaned;
 }
 
-export default function NewsDetailPage() {
+type NewsDetailPageProps = {
+  initialArticle?: NewsArticleResponse;
+  initialSlug?: string;
+};
+
+export default function NewsDetailPage({ initialArticle, initialSlug }: NewsDetailPageProps) {
   const params = useParams();
-  const slug = params.slug as string;
+  const slug = initialSlug ?? (params.slug as string);
   const auth = useAuthStore((state) => state.auth);
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -58,6 +63,8 @@ export default function NewsDetailPage() {
   } = useQuery({
     queryKey: qk.news.detail(slug),
     queryFn: () => data<NewsArticleResponse>(http.get(`/news/${slug}`)),
+    initialData: initialArticle?.slug === slug ? initialArticle : undefined,
+    initialDataUpdatedAt: 0,
   });
 
   // 2. Fetch Article Comments
@@ -331,9 +338,10 @@ export default function NewsDetailPage() {
             ) : (
               <div className="editorial-story overflow-hidden bg-[var(--color-background-surface)]">
                 <img
-                  src={getArticleImage(article.id, undefined, article.imageUrl)}
+                  src={getArticleImage(article.id, undefined, article.imageUrl, 1600)}
                   alt={article.title}
                   referrerPolicy="no-referrer"
+                  decoding="async"
                   className="h-auto max-h-[380px] w-full object-cover"
                   onError={handleImageError}
                 />
@@ -417,9 +425,10 @@ export default function NewsDetailPage() {
             {/* Article Image */}
             <div className="editorial-story overflow-hidden bg-[var(--color-background-surface)]">
               <img
-                src={getArticleImage(article.id, article.content, article.imageUrl)}
+                src={getArticleImage(article.id, article.content, article.imageUrl, 1600)}
                 alt={article.title}
                 referrerPolicy="no-referrer"
+                decoding="async"
                 className="h-auto max-h-[520px] w-full object-cover"
                 onError={handleImageError}
               />

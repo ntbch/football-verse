@@ -21,6 +21,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
+import java.util.Set;
+import java.util.HashMap;
+import java.util.List;
 import java.util.stream.Collectors;
 import com.footballverse.security.CurrentUser;
 
@@ -40,11 +44,13 @@ public class SearchService {
     public SearchResponse search(String query, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
 
-        Page<NewsArticleResponse> newsResult = articles.searchPublishedArticles(query, pageable)
-                .map(this::toArticleResponse);
+        Page<NewsArticle> newsArticles = articles.searchPublishedArticles(query, pageable);
+        NewsInteractions newsInteractions = newsInteractions(newsArticles.getContent());
+        Page<NewsArticleResponse> newsResult = newsArticles.map(article -> toArticleResponse(article, newsInteractions));
 
-        Page<ThreadResponse> forumResult = threads.searchThreads(query, pageable)
-                .map(this::toThreadResponse);
+        Page<ForumThread> forumThreads = threads.searchThreads(query, pageable);
+        ThreadInteractions threadInteractions = threadInteractions(forumThreads.getContent());
+        Page<ThreadResponse> forumResult = forumThreads.map(thread -> toThreadResponse(thread, threadInteractions));
 
         return new SearchResponse(
                 PageResponse.from(newsResult),
@@ -52,20 +58,17 @@ public class SearchService {
         );
     }
 
-    private NewsArticleResponse toArticleResponse(NewsArticle article) {
+    private NewsArticleResponse toArticleResponse(NewsArticle article, NewsInteractions interactions) {
         com.footballverse.user.model.UserAccount user = currentUser.getOrNull();
-        boolean isLiked = false;
-        boolean isBookmarked = false;
-        if (user != null) {
-            isLiked = likes.findByArticleAndUser(article, user).isPresent();
-            isBookmarked = bookmarks.findByArticleAndUser(article, user).isPresent();
-        }
+        boolean isLiked = user != null && interactions.likedArticleIds().contains(article.getId());
+        boolean isBookmarked = user != null && interactions.bookmarkedArticleIds().contains(article.getId());
         return new NewsArticleResponse(
                 article.getId(), article.getTitle(), article.getSlug(),
                 article.getSummary(), article.getContent(), article.getStatus(),
                 article.getCategory() == null ? null : article.getCategory().getName(),
                 article.getTags().stream().map(NewsTag::getName).collect(Collectors.toSet()),
-                likes.countByArticleId(article.getId()), bookmarks.countByArticleId(article.getId()),
+                interactions.likeCounts().getOrDefault(article.getId(), 0L),
+                interactions.bookmarkCounts().getOrDefault(article.getId(), 0L),
                 article.getPublishedAt(),
                 isLiked,
                 isBookmarked,
@@ -82,7 +85,7 @@ public class SearchService {
         );
     }
 
-    private ThreadResponse toThreadResponse(ForumThread thread) {
+    private ThreadResponse toThreadResponse(ForumThread thread, ThreadInteractions interactions) {
         return new ThreadResponse(
                 thread.getId(),
                 thread.getTitle(),
@@ -96,9 +99,44 @@ public class SearchService {
                 thread.isSolved(),
                 thread.getBestAnswer() == null ? null : thread.getBestAnswer().getId(),
                 false,
-                posts.countByThreadIdAndHiddenFalse(thread.getId()),
-                postLikes.countByThreadId(thread.getId()),
+                interactions.postCounts().getOrDefault(thread.getId(), 0L),
+                interactions.likeCounts().getOrDefault(thread.getId(), 0L),
                 thread.getLastActivityAt()
         );
     }
+
+    private NewsInteractions newsInteractions(List<NewsArticle> articles) {
+        List<Long> ids = articles.stream().map(NewsArticle::getId).toList();
+        if (ids.isEmpty()) return new NewsInteractions(Map.of(), Map.of(), Set.of(), Set.of());
+        UserAccount user = currentUser.getOrNull();
+        return new NewsInteractions(
+                counts(likes.countByArticleIds(ids)),
+                counts(bookmarks.countByArticleIds(ids)),
+                user == null ? Set.of() : Set.copyOf(likes.findArticleIdsByArticleIdInAndUserId(ids, user.getId())),
+                user == null ? Set.of() : Set.copyOf(bookmarks.findArticleIdsByArticleIdInAndUserId(ids, user.getId()))
+        );
+    }
+
+    private ThreadInteractions threadInteractions(List<ForumThread> threads) {
+        List<Long> ids = threads.stream().map(ForumThread::getId).toList();
+        if (ids.isEmpty()) return new ThreadInteractions(Map.of(), Map.of());
+        return new ThreadInteractions(counts(posts.countVisibleByThreadIds(ids)), counts(postLikes.countByThreadIds(ids)));
+    }
+
+    private Map<Long, Long> counts(List<Object[]> rows) {
+        Map<Long, Long> result = new HashMap<>();
+        for (Object[] row : rows) {
+            result.put(((Number) row[0]).longValue(), ((Number) row[1]).longValue());
+        }
+        return result;
+    }
+
+    private record NewsInteractions(
+            Map<Long, Long> likeCounts,
+            Map<Long, Long> bookmarkCounts,
+            Set<Long> likedArticleIds,
+            Set<Long> bookmarkedArticleIds
+    ) {}
+
+    private record ThreadInteractions(Map<Long, Long> postCounts, Map<Long, Long> likeCounts) {}
 }

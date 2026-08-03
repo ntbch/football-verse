@@ -4,6 +4,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Instant;
+import java.util.concurrent.atomic.AtomicReference;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class AiSummaryServiceTest {
@@ -24,6 +27,7 @@ class AiSummaryServiceTest {
         assertThat(result.aiGenerated()).isFalse();
         assertThat(result.summary()).isEqualTo("Arsenal scored three goals in a dominant victory.");
         assertThat(result.keyPoints()).contains("Arsenal Win 3-0 Against Chelsea");
+        assertThat(result.keyPoints()).hasSize(3);
     }
 
     @Test
@@ -41,5 +45,25 @@ class AiSummaryServiceTest {
 
         assertThat(result.aiGenerated()).isFalse();
         assertThat(result.summary()).isEqualTo("Real Madrid complete striker signing.");
+    }
+
+    @Test
+    @DisplayName("When the circuit is open, Gemini is skipped and fallback keeps exactly three key points")
+    void testFallbackWhenCircuitIsOpen() {
+        AiSummaryService service = new AiSummaryService();
+        ReflectionTestUtils.setField(service, "apiKey", "mock-api-key");
+        ReflectionTestUtils.setField(service, "dailyLimit", 20);
+        ReflectionTestUtils.setField(service, "blockedUntil",
+                new AtomicReference<>(Instant.now().plusSeconds(60)));
+
+        AiSummaryService.SummaryResult result = service.generateSummaryAndKeyPoints(
+                "Liverpool win",
+                "Liverpool won the match.",
+                "Liverpool won the match."
+        );
+
+        assertThat(result.aiGenerated()).isFalse();
+        assertThat(result.keyPoints()).hasSize(3);
+        assertThat(result.keyPoints()).allMatch(point -> point != null && !point.isBlank());
     }
 }

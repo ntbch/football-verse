@@ -31,6 +31,9 @@ public class TelegramNotificationService {
     @Value("${app.telegram.enabled:true}")
     private boolean enabled;
 
+    @Value("${app.telegram.instant-breaking-enabled:false}")
+    private boolean instantBreakingEnabled;
+
     @Value("${app.telegram.bot-token:}")
     private String botToken;
 
@@ -164,7 +167,7 @@ public class TelegramNotificationService {
      */
     @Transactional
     public void checkAndPushBreakingNews(NewsArticle article) {
-        if (article == null || article.getId() == null) return;
+        if (!instantBreakingEnabled || article == null || article.getId() == null) return;
 
         // Deduplication check
         if (pushedArticlesCache.containsKey(article.getId())) {
@@ -196,6 +199,11 @@ public class TelegramNotificationService {
     @Transactional
     public void deliverPending() {
         for (TelegramDeliveryOutbox delivery : outbox.findPendingForUpdate(Instant.now(), PageRequest.of(0, 20))) {
+            if (!instantBreakingEnabled) {
+                delivery.setFailedAt(Instant.now());
+                delivery.setLastError("INSTANT_PUSH_DISABLED");
+                continue;
+            }
             if (sendBreaking(delivery.getArticle())) {
                 delivery.setSentAt(Instant.now());
                 delivery.setLastError(null);
@@ -230,7 +238,7 @@ public class TelegramNotificationService {
     }
 
     /**
-     * Formats and pushes a top 5 daily news digest.
+     * Formats and pushes the selected news digest.
      */
     public boolean sendDailyDigest(List<NewsArticle> articles, String digestTitle) {
         if (articles == null || articles.isEmpty()) return false;

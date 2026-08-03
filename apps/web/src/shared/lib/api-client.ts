@@ -19,6 +19,16 @@ export const http = axios.create({ baseURL: apiBaseUrl, timeout: 15_000, withCre
 type RetryConfig = InternalAxiosRequestConfig & { _retry?: boolean };
 let refreshPromise: Promise<AuthResponse> | null = null;
 
+const isPublicRead = (config: InternalAxiosRequestConfig) => {
+  if (config.method?.toLowerCase() !== "get") return false;
+  const target = new URL(config.url ?? "", config.baseURL ?? apiBaseUrl);
+  const apiPath = new URL(apiBaseUrl).pathname;
+  const path = target.pathname.slice(apiPath.length) || "/";
+  if (["/news", "/news/categories", "/news/tags", "/news/trending", "/predictions/leaderboard", "/forum/categories"].includes(path)) return true;
+  const following = (config.params as { following?: boolean } | undefined)?.following;
+  return /^\/forum\/categories\/[^/]+\/threads$/.test(path) && !following;
+};
+
 const refreshAccessToken = () => {
   if (!refreshPromise) {
     refreshPromise = axios.post<ApiEnvelope<AuthResponse>>(
@@ -32,7 +42,7 @@ const refreshAccessToken = () => {
 
 http.interceptors.request.use((config) => {
   const token = getAuthToken();
-  if (token) {
+  if (token && !isPublicRead(config)) {
     const target = new URL(config.url ?? "", config.baseURL ?? apiBaseUrl);
     if (target.origin !== apiOrigin) {
       return Promise.reject(new Error("Refusing to send credentials outside the configured API origin"));

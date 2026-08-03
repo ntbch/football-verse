@@ -21,13 +21,20 @@ import {
 
 type ThreadView = "latest" | "following" | "unanswered";
 
-export default function ForumPage() {
+type ForumInitialData = {
+  categories?: ForumCategoryResponse[];
+  threadsPage?: PageResponse<ThreadResponse>;
+};
+
+export default function ForumPage({ initialData }: { initialData?: ForumInitialData }) {
   const auth = useAuthStore((state) => state.auth);
   const queryClient = useQueryClient();
   const toast = useToast();
-  const [activeCategorySlug, setActiveCategorySlug] = useState<string | null>(null);
+  const initialCategorySlug = initialData?.categories?.[0]?.slug ?? null;
+  const [activeCategorySlug, setActiveCategorySlug] = useState<string | null>(initialCategorySlug);
   const [threadView, setThreadView] = useState<ThreadView>("latest");
   const [page, setPage] = useState(0);
+  const [initialDataUpdatedAt] = useState(() => Date.now());
   const unansweredOnly = threadView === "unanswered";
   const followingOnly = threadView === "following";
 
@@ -36,12 +43,15 @@ export default function ForumPage() {
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
   const [newTags, setNewTags] = useState("");
-  const [targetCategorySlug, setTargetCategorySlug] = useState("");
+  const [targetCategorySlug, setTargetCategorySlug] = useState(initialCategorySlug ?? "");
 
   // 1. Fetch categories
   const { data: categories = [], isLoading: isCategoriesLoading, isError: isCategoriesError, refetch: refetchCategories } = useQuery({
     queryKey: qk.forum.categories(),
     queryFn: () => data<ForumCategoryResponse[]>(http.get("/forum/categories")),
+    initialData: initialData?.categories,
+    initialDataUpdatedAt: initialData?.categories ? initialDataUpdatedAt : undefined,
+    staleTime: 5 * 60_000,
   });
 
   // Set first category slug as default when loaded
@@ -64,6 +74,9 @@ export default function ForumPage() {
       );
     },
     enabled: !!activeCategorySlug,
+    initialData: activeCategorySlug === initialCategorySlug && threadView === "latest" && page === 0 ? initialData?.threadsPage : undefined,
+    initialDataUpdatedAt: initialData?.threadsPage ? initialDataUpdatedAt : undefined,
+    staleTime: 60_000,
   });
 
   const threads = threadsPage?.content || [];

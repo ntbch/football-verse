@@ -72,7 +72,8 @@ export function computeItemKey(sourceUrl: string, payload?: unknown): string {
 export async function getSourceCheckpoint(sourceId: number): Promise<ProviderCheckpoint | undefined> {
   const result = await pool.query(
     `SELECT etag, last_modified AS "lastModified", cursor_value AS cursor,
-            config_revision AS "configRevision"
+            config_revision AS "configRevision",
+            last_success_at AS "lastSuccessAt"
      FROM source_checkpoints
      WHERE source_id = $1`,
     [sourceId],
@@ -106,12 +107,19 @@ export async function saveSourceCheckpoint(
   );
 }
 
-export async function getSourceRetryAfter(sourceId: number): Promise<Date | undefined> {
+export async function getSourceRetryAfter(sourceId: number, fetchIntervalSeconds = 0): Promise<Date | undefined> {
   const result = await pool.query(
-    `SELECT next_attempt_at AS "nextAttemptAt"
+    `SELECT GREATEST(
+              COALESCE(next_attempt_at, CURRENT_TIMESTAMP),
+              COALESCE(last_success_at + ($2 * INTERVAL '1 second'), CURRENT_TIMESTAMP)
+            ) AS "nextAttemptAt"
      FROM source_checkpoints
-     WHERE source_id = $1 AND next_attempt_at > CURRENT_TIMESTAMP`,
-    [sourceId],
+     WHERE source_id = $1
+       AND GREATEST(
+             COALESCE(next_attempt_at, CURRENT_TIMESTAMP),
+             COALESCE(last_success_at + ($2 * INTERVAL '1 second'), CURRENT_TIMESTAMP)
+           ) > CURRENT_TIMESTAMP`,
+    [sourceId, Math.max(0, Math.floor(fetchIntervalSeconds))],
   );
   return result.rows[0]?.nextAttemptAt;
 }

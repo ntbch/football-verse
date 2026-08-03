@@ -51,7 +51,8 @@ public class InternalNewsController {
                         source.getSourceType(),
                         source.getCssSelector(),
                         source.getProvider(),
-                        source.getName()
+                        source.getName(),
+                        source.getFetchIntervalSeconds()
                 ))
                 .toList();
                 

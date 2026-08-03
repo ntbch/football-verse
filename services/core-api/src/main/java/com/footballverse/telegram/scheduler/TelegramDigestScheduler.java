@@ -41,7 +41,7 @@ public class TelegramDigestScheduler {
 
     public boolean publishDigestForPeriod(String periodName, int hoursBack) {
         Instant since = Instant.now().minus(hoursBack, ChronoUnit.HOURS);
-        List<NewsArticle> topArticles = newsArticleRepository.findTopTrendingArticles(since, PageRequest.of(0, 5));
+        List<NewsArticle> topArticles = newsArticleRepository.findTopTrendingArticles(since, PageRequest.of(0, 1));
 
         if (topArticles.isEmpty()) {
             log.info("[TelegramScheduler] No articles found for {} Digest.", periodName);

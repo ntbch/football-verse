@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto';
-import * as cheerio from 'cheerio';
 import {
   CollectResult,
   NormalizedItemV1,
@@ -53,7 +52,7 @@ export class XAdapter implements SourceAdapter {
     maxItems: number = 20,
   ): Promise<CollectResult> {
     if (!source.feedUrl) {
-      return this.emptyResult(checkpoint);
+      throw new Error('X_SOURCE_URL_MISSING');
     }
 
     const bearerToken = process.env.TWITTER_BEARER_TOKEN;
@@ -108,11 +107,9 @@ export class XAdapter implements SourceAdapter {
           });
         }
 
-        if (items.length > 0) {
-          return this.buildResult(items, checkpoint, tweets.length);
-        }
-      } catch (err: any) {
-        console.warn(`[XAdapter] X API v2 recent search for @${username} returned status ${err?.statusCode || err?.message}. Using GNews fallback...`);
+        return this.buildResult(items, checkpoint, tweets.length);
+      } catch (err) {
+        throw err;
       }
     }
 
@@ -157,62 +154,13 @@ export class XAdapter implements SourceAdapter {
           });
           return this.buildResult(items, checkpoint, 1);
         }
-      } catch (err: any) {
-        console.warn(`[XAdapter] Twitter oEmbed fetch failed:`, err?.message || err);
+        if (items.length === 0) throw new Error('X_OEMBED_EMPTY');
+      } catch (err) {
+        throw err;
       }
     }
 
-    // 3. Fallback to Google News search query for Journalist handle
-    try {
-      const query = source.name || username;
-      const gnewsUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}+football&hl=en-US&gl=US&ceid=US:en`;
-      const response = await gotScraping({
-        url: gnewsUrl,
-        timeout: { request: 10000 },
-      });
-
-      const $ = cheerio.load(response.body, { xmlMode: true });
-      const entries = $('item').toArray().slice(0, maxItems);
-
-      for (const node of entries) {
-        const $item = $(node);
-        const title = $item.children('title').text().trim();
-        const rawLink = $item.children('link').text().trim();
-        const description = $item.children('description').text().trim();
-        const pubDate = $item.children('pubDate').text().trim();
-        const guid = $item.children('guid').text().trim() || rawLink;
-
-        if (!title || !rawLink) continue;
-
-        const identityKey = `x:${source.id}:${this.sha256(guid)}`;
-        const revisionFingerprint = this.sha256(`${title}:${description}:${rawLink}`);
-
-        items.push({
-          schemaVersion: 1,
-          idempotencyKey: this.sha256(`${identityKey}:${revisionFingerprint}`),
-          identityKey,
-          revisionFingerprint,
-          connectorId: source.id,
-          provider: 'x',
-          externalId: this.sha256(guid),
-          contentType: 'ARTICLE',
-          originalUrl: rawLink,
-          canonicalUrl: rawLink,
-          title: title.slice(0, 500),
-          description: description.replace(/<[^>]+>/g, ' ').slice(0, 5000),
-          author: { name: source.name, username },
-          publishedAt: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
-          collectedAt: new Date().toISOString(),
-          media: [],
-          language: 'en',
-        });
-      }
-
-      return this.buildResult(items, checkpoint, entries.length);
-    } catch (fallbackErr: any) {
-      console.warn(`[XAdapter] Fallback fetch failed for @${username}:`, fallbackErr?.message);
-      return this.emptyResult(checkpoint);
-    }
+    throw new Error('X_API_TOKEN_MISSING');
   }
 
   extractStatusId(url: string): string | undefined {
@@ -248,10 +196,6 @@ export class XAdapter implements SourceAdapter {
         duplicateIdentityCount: 0,
       },
     };
-  }
-
-  private emptyResult(checkpoint?: ProviderCheckpoint): CollectResult {
-    return this.buildResult([], checkpoint, 0);
   }
 
   private sha256(text: string): string {

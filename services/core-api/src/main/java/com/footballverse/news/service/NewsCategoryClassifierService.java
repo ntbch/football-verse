@@ -13,6 +13,10 @@ public class NewsCategoryClassifierService {
 
     private final NewsCategoryRepository categoryRepository;
 
+    public NewsCategory classify(String title, String content) {
+        return classify(title, content, null);
+    }
+
     public NewsCategory classify(String title, String content, String aiCategoryHint) {
         if (aiCategoryHint != null && !aiCategoryHint.isBlank()) {
             String slug = mapCategoryNameToSlug(aiCategoryHint);

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "check:performance": "node ../../scripts/check_web_budgets.mjs",
     "start": "next start",
     "lint": "next lint"
   },

@@ -10,6 +10,8 @@ import com.footballverse.common.exception.ResourceNotFoundException;
 import com.footballverse.news.dto.NewsSourceRequest;
 import com.footballverse.news.dto.NewsSourceResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,10 +27,12 @@ public class NewsSourceService {
     private final RawItemRepository rawItems;
 
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "newsSources")
     public List<NewsSourceResponse> sources() {
         return sources.findAll().stream().map(this::toSource).toList();
     }
 
+    @CacheEvict(cacheNames = "newsSources", allEntries = true)
     public NewsSourceResponse createSource(NewsSourceRequest request) {
         NewsSource source = new NewsSource(request.name(), request.feedUrl());
         // ponytail: fallback RSS when type is null (backward compat with admin UI sans type)
@@ -44,6 +48,7 @@ public class NewsSourceService {
         return toSource(source);
     }
 
+    @CacheEvict(cacheNames = "newsSources", allEntries = true)
     public boolean deleteSource(Long id) {
         NewsSource source = sources.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Source not found"));
@@ -57,6 +62,7 @@ public class NewsSourceService {
         return true;
     }
 
+    @CacheEvict(cacheNames = "newsSources", allEntries = true)
     public NewsSourceResponse toggleSource(Long id) {
         NewsSource source = sources.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Source not found"));
@@ -64,6 +70,7 @@ public class NewsSourceService {
         return toSource(sources.save(source));
     }
 
+    @CacheEvict(cacheNames = "newsSources", allEntries = true)
     public NewsSourceResponse toggleAutoPublish(Long id) {
         NewsSource source = sources.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Source not found"));
@@ -81,7 +88,8 @@ public class NewsSourceService {
                 source.getSourceType(),
                 source.getCssSelector(),
                 source.getProvider(),
-                source.getPublisher() == null ? source.getName() : source.getPublisher().getName()
+                source.getPublisher() == null ? source.getName() : source.getPublisher().getName(),
+                source.getFetchIntervalSeconds()
         );
     }
 }

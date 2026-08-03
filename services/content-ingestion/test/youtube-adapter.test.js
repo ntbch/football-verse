@@ -83,3 +83,49 @@ test('YouTubeAdapter keeps ONLY match highlight videos and skips non-highlight c
   assert.equal(result.stats.seenCount, 2);
   assert.equal(result.stats.skippedMissingTitleCount, 1);
 });
+
+test('YouTubeAdapter reads the uploads playlist through Data API and preserves video provenance', async () => {
+  const calls = [];
+  const previousKey = process.env.YOUTUBE_DATA_API_KEY;
+  process.env.YOUTUBE_DATA_API_KEY = 'test-key';
+  try {
+    const adapter = new YouTubeAdapter(async (url) => {
+      calls.push(url);
+      if (url.includes('/channels?')) {
+        return {
+          statusCode: 200,
+          headers: {},
+          body: JSON.stringify({ items: [{ contentDetails: { relatedPlaylists: { uploads: 'UU_TEST' } } }] }),
+        };
+      }
+      return {
+        statusCode: 200,
+        headers: {},
+        body: JSON.stringify({
+          items: [{
+            contentDetails: { videoId: 'video-1' },
+            snippet: {
+              title: 'Arsenal vs Chelsea Match Highlights',
+              description: 'All goals from the match.',
+              publishedAt: '2026-08-03T10:00:00Z',
+              thumbnails: { high: { url: 'https://img.test/video-1.jpg' } },
+            },
+            status: { privacyStatus: 'public' },
+          }],
+        }),
+      };
+    });
+
+    const result = await adapter.collect(sourceYouTube);
+    assert.equal(result.items.length, 1);
+    assert.equal(result.items[0].externalId, 'video-1');
+    assert.equal(result.items[0].originalUrl, 'https://www.youtube.com/watch?v=video-1');
+    assert.equal(calls.length, 2);
+    assert.ok(calls[0].includes('/channels?'));
+    assert.ok(calls[1].includes('/playlistItems?'));
+    assert.ok(calls[1].includes('playlistId=UU_TEST'));
+  } finally {
+    if (previousKey === undefined) delete process.env.YOUTUBE_DATA_API_KEY;
+    else process.env.YOUTUBE_DATA_API_KEY = previousKey;
+  }
+});

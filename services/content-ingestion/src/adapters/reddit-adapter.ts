@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto';
-import * as cheerio from 'cheerio';
 import {
   CollectResult,
   NormalizedItemV1,
@@ -54,13 +53,16 @@ export class RedditAdapter implements SourceAdapter {
     const gotScraping = await getGotScraping();
     const items: NormalizedItemV1[] = [];
 
-    // 1. Try Reddit JSON API
+    const accessToken = process.env.REDDIT_ACCESS_TOKEN;
     try {
-      const jsonUrl = `https://www.reddit.com/r/${subreddit}/new.json?limit=${Math.min(maxItems, 50)}`;
+      const jsonUrl = accessToken
+        ? `https://oauth.reddit.com/r/${subreddit}/new.json?limit=${Math.min(maxItems, 50)}`
+        : `https://www.reddit.com/r/${subreddit}/new.json?limit=${Math.min(maxItems, 50)}`;
       const response = await gotScraping({
         url: jsonUrl,
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         },
         responseType: 'json',
         timeout: { request: 8000 },
@@ -109,62 +111,9 @@ export class RedditAdapter implements SourceAdapter {
         });
       }
 
-      if (items.length > 0) {
-        return this.buildResult(items, checkpoint, posts.length);
-      }
+      return this.buildResult(items, checkpoint, posts.length);
     } catch (err: any) {
-      console.warn(`[RedditAdapter] Direct JSON fetch for r/${subreddit} failed (${err?.message}), using GNews fallback...`);
-    }
-
-    // 2. Fallback to Google News RSS query for Subreddit topics
-    try {
-      const gnewsUrl = `https://news.google.com/rss/search?q=reddit+${encodeURIComponent(subreddit)}&hl=en-US&gl=US&ceid=US:en`;
-      const response = await gotScraping({
-        url: gnewsUrl,
-        timeout: { request: 10000 },
-      });
-
-      const $ = cheerio.load(response.body, { xmlMode: true });
-      const entries = $('item').toArray().slice(0, maxItems);
-
-      for (const node of entries) {
-        const $item = $(node);
-        const title = $item.children('title').text().trim();
-        const rawLink = $item.children('link').text().trim();
-        const description = $item.children('description').text().trim();
-        const pubDate = $item.children('pubDate').text().trim();
-        const guid = $item.children('guid').text().trim() || rawLink;
-
-        if (!title || !rawLink) continue;
-
-        const identityKey = `reddit:${source.id}:${this.sha256(guid)}`;
-        const revisionFingerprint = this.sha256(`${title}:${description}:${rawLink}`);
-
-        items.push({
-          schemaVersion: 1,
-          idempotencyKey: this.sha256(`${identityKey}:${revisionFingerprint}`),
-          identityKey,
-          revisionFingerprint,
-          connectorId: source.id,
-          provider: 'reddit',
-          externalId: this.sha256(guid),
-          contentType: 'ARTICLE',
-          originalUrl: rawLink,
-          canonicalUrl: rawLink,
-          title: title.slice(0, 500),
-          description: description.replace(/<[^>]+>/g, ' ').slice(0, 5000),
-          author: { name: `r/${subreddit}`, username: subreddit },
-          publishedAt: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
-          collectedAt: new Date().toISOString(),
-          media: [],
-          language: 'en',
-        });
-      }
-
-      return this.buildResult(items, checkpoint, entries.length);
-    } catch (fallbackErr: any) {
-      console.warn(`[RedditAdapter] Fallback fetch failed for r/${subreddit}:`, fallbackErr?.message);
-      return this.emptyResult(checkpoint);
+      throw err;
     }
   }
 
@@ -181,10 +130,6 @@ export class RedditAdapter implements SourceAdapter {
         duplicateIdentityCount: 0,
       },
     };
-  }
-
-  private emptyResult(checkpoint?: ProviderCheckpoint): CollectResult {
-    return this.buildResult([], checkpoint, 0);
   }
 
   private sha256(text: string): string {

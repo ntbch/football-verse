@@ -5,7 +5,7 @@ import type { LeaderboardEntryResponse, MatchCentreFixture } from "@/features/pr
 import type { ThreadResponse } from "@/features/forum/types";
 import type { NewsArticleResponse } from "@/features/news/types";
 import { ErrorBlock } from "@/shared/components/state-blocks";
-import { handleImageError } from "@/shared/lib/images";
+import { getArticleImage, handleImageError } from "@/shared/lib/images";
 import { formatDateTime } from "@/shared/lib/format";
 
 function timeAgo(dateStr: string) {
@@ -174,10 +174,9 @@ export function CommunityWidget({ threads, error, onRetry }: CommunityWidgetProp
 // ─────────────────────────────────────────────
 interface EditorsPickWidgetProps {
   articles: NewsArticleResponse[];
-  getImage: (id: number, content: string) => string;
 }
 
-export function EditorsPickWidget({ articles, getImage }: EditorsPickWidgetProps) {
+export function EditorsPickWidget({ articles }: EditorsPickWidgetProps) {
   return (
     <div className="editorial-panel overflow-hidden flex flex-col">
       <div className="px-5 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
@@ -204,9 +203,10 @@ export function EditorsPickWidget({ articles, getImage }: EditorsPickWidgetProps
             >
               <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-[var(--color-surface-muted)]">
                 <img
-                  src={getImage(art.id, art.content)}
+                  src={getArticleImage(art.id, undefined, art.imageUrl, 320)}
                   alt={art.title}
                   loading="lazy"
+                  decoding="async"
                   onError={handleImageError}
                   className="w-full h-full object-cover"
                 />

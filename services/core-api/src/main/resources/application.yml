@@ -6,7 +6,7 @@ spring:
       pool:
         size: 4
   cache:
-    type: simple
+    type: ${SPRING_CACHE_TYPE:redis}
   datasource:
     url: ${DB_URL:jdbc:postgresql://127.0.0.1:55432/football_verse}
     username: ${DB_USERNAME:football_verse}
@@ -106,14 +106,20 @@ app:
     dir: ${APP_UPLOAD_DIR:uploads}
   telegram:
     enabled: ${TELEGRAM_ENABLED:false}
+    instant-breaking-enabled: ${TELEGRAM_INSTANT_BREAKING_ENABLED:false}
     bot-token: ${TELEGRAM_BOT_TOKEN:}
     channel-id: ${TELEGRAM_CHANNEL_ID:@footballverse_news}
     outbox-poll-ms: ${TELEGRAM_OUTBOX_POLL_MS:30000}
   ai:
     gemini-api-key: ${GEMINI_API_KEY:}
     gemini-model: ${GEMINI_MODEL:gemini-3.5-flash}
-    daily-limit: ${AI_DAILY_LIMIT:100}
+    daily-limit: ${AI_DAILY_LIMIT:20}
+    outbox-poll-ms: ${AI_OUTBOX_POLL_MS:5000}
 
 server:
+  compression:
+    enabled: true
+    min-response-size: 1024
+    mime-types: application/json,application/javascript,text/css,text/html,text/plain,application/xml
   servlet:
     context-path: /api/v1

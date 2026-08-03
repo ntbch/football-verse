@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { io, type Socket } from "socket.io-client";
+import type { Socket } from "socket.io-client";
 import { useToast } from "@/shared/components/toast";
 import { apiBaseUrl } from "@/shared/lib/api-client";
 import { useAuthStore } from "@/shared/lib/auth-store";
@@ -28,40 +28,45 @@ export function useRealtimeNotifications() {
       console.error("Failed to parse apiBaseUrl for socket connection", error);
     }
 
-    const socket: Socket = io(socketUrl, {
-      auth: { token: auth.accessToken },
-      transports: ["websocket", "polling"],
-    });
+    let socket: Socket | undefined;
+    let disposed = false;
 
-    socket.on("connect", () => {
-      console.log("Connected to Realtime Gateway Socket.io server");
-    });
+    void import("socket.io-client").then(({ io }) => {
+      if (disposed) return;
+      socket = io(socketUrl, {
+        auth: { token: auth.accessToken },
+        transports: ["websocket", "polling"],
+      });
 
-    socket.on("notification", (notification: RealtimeNotification) => {
-      try {
-        toast({
-          body: notification.message,
-          type: "info",
-          autoHideDuration: 6000,
-        });
-        queryClient.invalidateQueries({ queryKey: qk.user.notifications() });
+      socket.on("notification", (notification: RealtimeNotification) => {
+        try {
+          toast({
+            body: notification.message,
+            type: "info",
+            autoHideDuration: 6000,
+          });
+          queryClient.invalidateQueries({ queryKey: qk.user.notifications() });
 
-        if (notification.type === "PREDICTION_SCORED") {
-          queryClient.invalidateQueries({ queryKey: ["predictions"] });
-          queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
-          queryClient.invalidateQueries({ queryKey: ["match-centre"] });
+          if (notification.type === "PREDICTION_SCORED") {
+            queryClient.invalidateQueries({ queryKey: ["predictions"] });
+            queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
+            queryClient.invalidateQueries({ queryKey: ["match-centre"] });
+          }
+        } catch (error) {
+          console.error("Failed to handle Socket.io notification", error);
         }
-      } catch (error) {
-        console.error("Failed to handle Socket.io notification", error);
-      }
-    });
+      });
 
-    socket.on("connect_error", (error) => {
-      console.warn("Socket.io connection error", error);
+      socket.on("connect_error", (error) => {
+        console.warn("Socket.io connection error", error);
+      });
+    }).catch((error) => {
+      if (!disposed) console.warn("Failed to load Socket.io client", error);
     });
 
     return () => {
-      socket.disconnect();
+      disposed = true;
+      socket?.disconnect();
     };
   }, [auth?.accessToken, auth?.userId, queryClient, toast]);
 }

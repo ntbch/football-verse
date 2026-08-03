@@ -258,10 +258,11 @@ function SearchContent() {
                         {/* Image header */}
                         <div className="h-44 w-full relative overflow-hidden flex-shrink-0">
                           <img
-                            src={getArticleImage(art.id, art.content, art.imageUrl)}
+                            src={getArticleImage(art.id, undefined, art.imageUrl, 800)}
                             alt={art.title}
                             loading={idx < 6 ? "eager" : "lazy"}
                             fetchPriority={idx < 3 ? "high" : "auto"}
+                            decoding="async"
                             className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
                           />
                           <div className="absolute top-2 left-2 bg-[var(--color-accent)] text-[var(--color-text-inverse)] text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">

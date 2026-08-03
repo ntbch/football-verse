@@ -16,6 +16,14 @@ import { LeaderboardWidget, CommunityWidget, EditorsPickWidget, MatchdayPulseWid
 import { FollowTargetButton, followTopics, useFollowingFeed, useSetFollowTarget } from "@/features/following";
 import { useAuthStore } from "@/shared/lib/auth-store";
 
+type HomeInitialData = {
+  newsPage?: PageResponse<NewsArticleResponse>;
+  leaderboard?: LeaderboardEntryResponse[];
+  matchday?: MatchCentreResponse;
+  categories?: ForumCategoryResponse[];
+  threadsPage?: PageResponse<ThreadResponse>;
+};
+
 function timeAgo(dateStr: string) {
   const now = Date.now();
   const then = new Date(dateStr).getTime();
@@ -28,9 +36,10 @@ function timeAgo(dateStr: string) {
   return `${days}d ago`;
 }
 
-export default function HomePage() {
+export default function HomePage({ initialData }: { initialData?: HomeInitialData }) {
   const auth = useAuthStore((state) => state.auth);
   const [playerName, setPlayerName] = React.useState("");
+  const [initialDataUpdatedAt] = React.useState(() => Date.now());
   const setFollowTarget = useSetFollowTarget();
   /* 1 — News */
   const { data: newsPage, isLoading: newsLoading, isError: newsError, refetch: refetchNews } = useQuery({
@@ -39,6 +48,9 @@ export default function HomePage() {
       data<PageResponse<NewsArticleResponse>>(
         http.get("/news", { params: { page: 0, size: 15 } })
       ),
+    initialData: initialData?.newsPage,
+    initialDataUpdatedAt: initialData?.newsPage ? initialDataUpdatedAt : undefined,
+    staleTime: 60_000,
   });
   const rawArticles = newsPage?.content ?? [];
   const articles = [...rawArticles].sort(
@@ -56,11 +68,16 @@ export default function HomePage() {
       data<LeaderboardEntryResponse[]>(
         http.get("/predictions/leaderboard", { params: { period: "weekly", limit: 5 } })
       ),
+    initialData: initialData?.leaderboard,
+    initialDataUpdatedAt: initialData?.leaderboard ? initialDataUpdatedAt : undefined,
+    staleTime: 60_000,
   });
 
   const { data: matchday, isError: matchdayError, refetch: refetchMatchday } = useQuery({
     queryKey: ["home-matchday-pulse"] as const,
     queryFn: () => data<MatchCentreResponse>(http.get("/predictions/match-centre", { params: { league: "premier-league" } })),
+    initialData: initialData?.matchday,
+    initialDataUpdatedAt: initialData?.matchday ? initialDataUpdatedAt : undefined,
     staleTime: 120_000,
   });
   const matchdayFixtures = (matchday?.fixtures ?? []).filter((fixture) => fixture.status === "upcoming" || fixture.status === "live");
@@ -69,6 +86,9 @@ export default function HomePage() {
   const { data: categories = [], isError: categoriesError, refetch: refetchCategories } = useQuery({
     queryKey: qk.forum.categories(),
     queryFn: () => data<ForumCategoryResponse[]>(http.get("/forum/categories")),
+    initialData: initialData?.categories,
+    initialDataUpdatedAt: initialData?.categories ? initialDataUpdatedAt : undefined,
+    staleTime: 5 * 60_000,
   });
   const firstCatSlug = categories[0]?.slug ?? "";
   const { data: threadsPage, isError: threadsError, refetch: refetchThreads } = useQuery({
@@ -78,6 +98,9 @@ export default function HomePage() {
         http.get(`/forum/categories/${firstCatSlug}/threads`, { params: { size: 4 } })
       ),
     enabled: !!firstCatSlug,
+    initialData: initialData?.threadsPage,
+    initialDataUpdatedAt: initialData?.threadsPage ? initialDataUpdatedAt : undefined,
+    staleTime: 60_000,
   });
   const threads = threadsPage?.content?.slice(0, 4) ?? [];
   const { data: followingFeed, isLoading: followingLoading, isError: followingError, refetch: refetchFollowing } = useFollowingFeed(Boolean(auth));
@@ -98,10 +121,11 @@ export default function HomePage() {
               className="xl:col-span-7 editorial-story relative min-h-[390px] md:min-h-[500px] group block bg-[var(--color-surface-muted)] transition-shadow duration-500"
             >
               <img
-                src={getArticleImage(hero.id, hero.content, hero.imageUrl)}
+                src={getArticleImage(hero.id, undefined, hero.imageUrl, 1600)}
                 alt={hero.title}
                 loading="eager"
                 fetchPriority="high"
+                decoding="async"
                 onError={handleImageError}
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
               />
@@ -132,9 +156,10 @@ export default function HomePage() {
                   className="editorial-story relative flex-1 min-h-[205px] group block bg-[var(--color-surface-muted)] transition-shadow duration-500"
                 >
                   <img
-                    src={getArticleImage(art.id, art.content, art.imageUrl)}
+                    src={getArticleImage(art.id, undefined, art.imageUrl, 800)}
                     alt={art.title}
-                    loading="eager"
+                    loading="lazy"
+                    decoding="async"
                     onError={handleImageError}
                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
                   />
@@ -195,9 +220,10 @@ export default function HomePage() {
                     >
                       <div className="relative h-48 overflow-hidden bg-[var(--color-surface-muted)]">
                         <img
-                          src={getArticleImage(art.id, art.content, art.imageUrl)}
+                          src={getArticleImage(art.id, undefined, art.imageUrl, 800)}
                           alt={art.title}
                           loading="lazy"
+                          decoding="async"
                           onError={handleImageError}
                           className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500 ease-out"
                         />
@@ -285,7 +311,7 @@ export default function HomePage() {
                 void refetchThreads();
               }}
             />
-            <EditorsPickWidget articles={sideArticles} getImage={getArticleImage} />
+            <EditorsPickWidget articles={sideArticles} />
           </aside>
         </div>
       </div>

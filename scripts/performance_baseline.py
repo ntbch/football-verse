@@ -1,9 +1,13 @@
 import argparse
+import base64
+import gzip
+import hashlib
+import hmac
 import json
 import math
+import os
 import threading
 import time
-import uuid
 from collections import Counter, defaultdict
 from pathlib import Path
 from urllib.error import HTTPError, URLError
@@ -13,7 +17,7 @@ from urllib.request import Request, urlopen
 
 def call(method, url, token=None, payload=None, timeout=15):
     data = None if payload is None else json.dumps(payload).encode("utf-8")
-    headers = {"Accept": "application/json"}
+    headers = {"Accept": "application/json", "Accept-Encoding": "gzip"}
     if data is not None:
         headers["Content-Type"] = "application/json"
     if token:
@@ -21,12 +25,14 @@ def call(method, url, token=None, payload=None, timeout=15):
     started = time.perf_counter()
     try:
         with urlopen(Request(url, data=data, headers=headers, method=method), timeout=timeout) as response:
-            raw = response.read()
-            return response.status, (time.perf_counter() - started) * 1000, len(raw), raw
+            encoded = response.read()
+            headers = {key.lower(): value for key, value in response.headers.items()}
+            raw = gzip.decompress(encoded) if headers.get("content-encoding") == "gzip" else encoded
+            return response.status, (time.perf_counter() - started) * 1000, len(encoded), raw, headers
     except HTTPError as error:
-        return error.code, (time.perf_counter() - started) * 1000, 0, b""
+        return error.code, (time.perf_counter() - started) * 1000, 0, b"", {key.lower(): value for key, value in (error.headers or {}).items()}
     except (URLError, TimeoutError, OSError):
-        return 0, (time.perf_counter() - started) * 1000, 0, b""
+        return 0, (time.perf_counter() - started) * 1000, 0, b"", {}
 
 
 def unwrap(raw):
@@ -42,32 +48,36 @@ def percentile(values, ratio):
     return round(ordered[index], 2)
 
 
+def access_token(email, secret):
+    def encode(value):
+        raw = json.dumps(value, separators=(",", ":")).encode("utf-8")
+        return base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
+
+    unsigned = f"{encode({'alg': 'HS256', 'typ': 'JWT'})}.{encode({'sub': email, 'uid': 1, 'roles': [], 'iss': 'football-verse-core', 'aud': 'football-verse-api', 'exp': int(time.time()) + 3600})}"
+    signature = base64.urlsafe_b64encode(hmac.new(secret.encode("utf-8"), unsigned.encode("utf-8"), hashlib.sha256).digest()).rstrip(b"=").decode("ascii")
+    return f"{unsigned}.{signature}"
+
+
 def main():
     parser = argparse.ArgumentParser(description="Reproducible HTTP performance baseline")
     parser.add_argument("--base", default="http://127.0.0.1:18100")
     parser.add_argument("--duration", type=int, default=900)
     parser.add_argument("--workers", type=int, default=16)
     parser.add_argument("--output")
+    parser.add_argument("--jwt-secret", default=os.environ.get("JWT_SECRET", ""))
     args = parser.parse_args()
 
-    suffix = uuid.uuid4().hex[:10]
-    credentials = {
-        "email": f"load-{suffix}@example.test",
-        "username": f"load_{suffix}",
-        "password": "LoadOnlyPassword123!",
-    }
-    status, _, _, raw = call("POST", f"{args.base}/api/v1/auth/register", payload=credentials)
-    if status != 200:
-        raise SystemExit(f"Could not register load identity: HTTP {status}")
-    token = unwrap(raw)["accessToken"]
+    if len(args.jwt_secret) < 32:
+        raise SystemExit("A JWT secret of at least 32 characters is required for authenticated workload requests")
+    token = access_token("perf-1@example.test", args.jwt_secret)
 
-    status, _, _, raw = call("GET", f"{args.base}/api/v1/news?page=0&size=100")
+    status, _, _, raw, _ = call("GET", f"{args.base}/api/v1/news?page=0&size=100")
     articles = unwrap(raw)["content"] if status == 200 else []
     if len(articles) < args.workers:
         raise SystemExit("Performance articles are missing")
     article_ids = [article["id"] for article in articles]
 
-    status, _, _, raw = call("GET", f"{args.base}/api/v1/forum/categories")
+    status, _, _, raw, _ = call("GET", f"{args.base}/api/v1/forum/categories")
     categories = unwrap(raw) if status == 200 else []
     if not categories:
         raise SystemExit("Forum categories are missing")
@@ -80,17 +90,25 @@ def main():
     counter_lock = threading.Lock()
     operation_index = 0
     latencies = defaultdict(list)
+    response_sizes = defaultdict(list)
     statuses = defaultdict(Counter)
     sizes_over_budget = Counter()
+    compressed = Counter()
+    cache_headers = Counter()
 
     def record(phase, group, result):
-        response_status, latency, size, _ = result
+        response_status, latency, size, _, headers = result
         key = f"{phase}:{group}"
         with lock:
             latencies[key].append(latency)
+            response_sizes[key].append(size)
             statuses[key][str(response_status)] += 1
             if size > 1_000_000:
                 sizes_over_budget[key] += 1
+            if headers.get("content-encoding"):
+                compressed[key] += 1
+            if headers.get("cache-control"):
+                cache_headers[key] += 1
 
     def worker(worker_id):
         nonlocal operation_index
@@ -116,8 +134,8 @@ def main():
                     result = call("GET", f"{args.base}/api/v1/predictions/leaderboard?period=weekly")
                     group = "public-leaderboard"
                 else:
-                    result = call("GET", f"{args.base}/matches/premier-league/fixtures")
-                    group = "public-provider"
+                    result = call("GET", f"{args.base}/api/v1/news/trending?page=0&size=20")
+                    group = "public-trending"
                 record(phase, group, result)
             elif bucket < 9:
                 route = index % 3
@@ -142,6 +160,7 @@ def main():
         "workers": args.workers,
         "mix": {"publicRead": 70, "authenticatedRead": 20, "write": 10},
         "dataset": {"users": 10000, "articles": 50000, "forumPosts": 100000, "predictions": 100000},
+        "authenticatedIdentity": "performance-seeded-user",
         "phases": {},
     }
     for key, values in sorted(latencies.items()):
@@ -155,8 +174,15 @@ def main():
             "p50Ms": percentile(values, 0.50),
             "p95Ms": percentile(values, 0.95),
             "p99Ms": percentile(values, 0.99),
+            "responseBytes": {
+                "p50": percentile(response_sizes[key], 0.50),
+                "p95": percentile(response_sizes[key], 0.95),
+                "p99": percentile(response_sizes[key], 0.99),
+            },
             "errorRatePercent": round(server_errors * 100 / max(1, total), 3),
             "statuses": dict(status_counts),
+            "compressedResponses": compressed[key],
+            "responsesWithCacheHeader": cache_headers[key],
             "responsesOver1Mb": sizes_over_budget[key],
         }
     totals = {"publicRead": 0, "authenticatedRead": 0, "write": 0}

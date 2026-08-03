@@ -43,7 +43,7 @@ export class GNewsAdapter implements SourceAdapter {
     maxItems: number = 30,
   ): Promise<CollectResult> {
     if (!source.feedUrl) {
-      return this.emptyResult(checkpoint);
+      throw new Error('GNEWS_SOURCE_URL_MISSING');
     }
 
     // Check if it's GNews API (JSON) vs Google News RSS (XML)
@@ -118,9 +118,8 @@ export class GNewsAdapter implements SourceAdapter {
           duplicateIdentityCount: 0,
         },
       };
-    } catch (err: any) {
-      console.warn(`[GNewsAdapter] Failed to fetch Google News RSS for source #${source.id}:`, err?.message || err);
-      return this.emptyResult(checkpoint);
+    } catch (err) {
+      throw err;
     }
   }
 
@@ -186,25 +185,9 @@ export class GNewsAdapter implements SourceAdapter {
           duplicateIdentityCount: 0,
         },
       };
-    } catch (err: any) {
-      console.warn(`[GNewsAdapter] Failed to fetch GNews API for source #${source.id}:`, err?.message || err);
-      return this.emptyResult(checkpoint);
+    } catch (err) {
+      throw err;
     }
-  }
-
-  private emptyResult(checkpoint?: ProviderCheckpoint): CollectResult {
-    return {
-      items: [],
-      checkpoint: checkpoint || {},
-      notModified: true,
-      stats: {
-        seenCount: 0,
-        skippedMissingTitleCount: 0,
-        missingMediaCount: 0,
-        invalidMediaCount: 0,
-        duplicateIdentityCount: 0,
-      },
-    };
   }
 
   private stripHtml(html: string): string {

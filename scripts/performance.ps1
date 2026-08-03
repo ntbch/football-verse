@@ -25,13 +25,15 @@ $env:MATCH_GAME_DB_PASSWORD = "performance-career-db-password"
 $env:INTERNAL_TOKEN = "performance-internal-token-12345"
 $env:JWT_SECRET = "performance-jwt-secret-key-for-verification-only-12345"
 $env:APP_SEED_ENABLED = "true"
+$env:RATE_LIMIT_MAX = "100000"
+$env:RATE_LIMIT_WINDOW_MS = "60000"
     $env:CORS_ORIGIN = "http://localhost:3000"
 
 Push-Location $repoRoot
 try {
     docker compose --progress quiet -p $project up -d --build postgres redis match-game-postgres match-engine game-service prediction-service core-service gateway-service web-client
     if ($LASTEXITCODE -ne 0) { throw "Could not start performance topology" }
-    & $python scripts/smoke.py --base "http://127.0.0.1:18100" --web "http://127.0.0.1:13100"
+    & $python scripts/smoke.py --base "http://127.0.0.1:18100" --web "http://127.0.0.1:13100" --readiness-only
     if ($LASTEXITCODE -ne 0) { throw "Topology readiness smoke failed" }
     docker compose -p $project cp scripts/performance_seed.sql postgres:/tmp/performance_seed.sql
     docker compose -p $project exec -T postgres psql -U $env:DB_USERNAME -d $env:DB_NAME -f /tmp/performance_seed.sql

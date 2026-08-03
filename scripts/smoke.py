@@ -66,10 +66,10 @@ def main():
     parser.add_argument("--web", default="http://127.0.0.1:3000")
     parser.add_argument("--email", default=os.environ.get("SMOKE_EMAIL"))
     parser.add_argument("--password", default=os.environ.get("SMOKE_PASSWORD"))
+    parser.add_argument("--readiness-only", action="store_true")
     args = parser.parse_args()
 
     suffix = uuid.uuid4().hex[:10]
-    require(args.email and args.password, "Set SMOKE_EMAIL and SMOKE_PASSWORD for a verified non-privileged test account")
 
     wait_for("Gateway", lambda: request("GET", f"{args.base}/health"))
     _, gateway_headers = request("GET", f"{args.base}/health", return_headers=True)
@@ -82,6 +82,11 @@ def main():
     )
     require(isinstance(news, dict) and "content" in news, "News list contract changed")
     require(provider.get("league") == "premier-league", "Prediction league contract changed")
+    if args.readiness_only:
+        print(json.dumps({"status": "passed", "checks": ["web", "news", "prediction"]}))
+        return
+
+    require(args.email and args.password, "Set SMOKE_EMAIL and SMOKE_PASSWORD for a verified non-privileged test account")
 
     auth, auth_headers = request(
         "POST",

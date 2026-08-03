@@ -30,6 +30,8 @@ import com.footballverse.user.model.UserAccount;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,6 +65,10 @@ public class NewsArticleService {
         boolean hasTags = tagIds != null && !tagIds.isEmpty();
         boolean hasProvider = provider != null && !provider.isBlank() && !"ALL".equalsIgnoreCase(provider);
         String cleanProvider = hasProvider ? provider.trim().toLowerCase() : "";
+        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "publishedAt"));
+        if (!hasCategories && !hasTags && !hasProvider) {
+            return toPage(articles.findByStatus(ArticleStatus.PUBLISHED, pageable));
+        }
         return toPage(articles.filterPublishedArticles(
                 hasCategories,
                 categoryIds,
@@ -70,7 +76,7 @@ public class NewsArticleService {
                 tagIds,
                 hasProvider,
                 cleanProvider,
-                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "publishedAt"))
+                pageable
         ));
     }
 
@@ -223,6 +229,7 @@ public class NewsArticleService {
     // --- categories ---
 
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "newsCategories")
     public List<NewsCategoryResponse> categories() {
         return categories.findAll().stream()
                 .sorted(Comparator.comparing((NewsCategory c) -> "others".equals(c.getSlug())).thenComparing(NewsCategory::getId))
@@ -237,6 +244,7 @@ public class NewsArticleService {
                 .toList();
     }
 
+    @CacheEvict(cacheNames = "newsCategories", allEntries = true)
     public NewsCategoryResponse createCategory(NewsCategoryRequest request) {
         NewsCategory category = categories.save(new NewsCategory(request.name(), SlugUtil.slug(request.name())));
         return new NewsCategoryResponse(category.getId(), category.getName(), category.getSlug());
@@ -274,7 +282,7 @@ public class NewsArticleService {
         }
         ArticleInteractions interactions = interactions(pageArticles);
         return new PageResponse<>(
-                pageArticles.stream().map(article -> toArticle(article, true, interactions)).toList(),
+                pageArticles.stream().map(article -> toArticle(article, false, interactions, false)).toList(),
                 page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages());
     }
 
@@ -296,6 +304,15 @@ public class NewsArticleService {
     }
 
     private NewsArticleResponse toArticle(NewsArticle article, boolean includeSources, ArticleInteractions interactions) {
+        return toArticle(article, includeSources, interactions, true);
+    }
+
+    private NewsArticleResponse toArticle(
+            NewsArticle article,
+            boolean includeSources,
+            ArticleInteractions interactions,
+            boolean includeContent
+    ) {
         com.footballverse.user.model.UserAccount user = interactions == null ? currentUser.getOrNull() : null;
         boolean isLiked = interactions != null && interactions.likedArticleIds().contains(article.getId());
         boolean isBookmarked = interactions != null && interactions.bookmarkedArticleIds().contains(article.getId());
@@ -305,7 +322,7 @@ public class NewsArticleService {
         }
         return new NewsArticleResponse(
                 article.getId(), article.getTitle(), article.getSlug(),
-                article.getSummary(), article.getContent(), article.getStatus(),
+                article.getSummary(), includeContent ? article.getContent() : "", article.getStatus(),
                 article.getCategory() == null ? null : article.getCategory().getName(),
                 article.getTags().stream().map(NewsTag::getName).collect(Collectors.toSet()),
                 interactions == null ? likes.countByArticleId(article.getId()) : interactions.likeCounts().getOrDefault(article.getId(), 0L),

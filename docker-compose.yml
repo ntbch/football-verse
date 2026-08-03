@@ -117,8 +117,10 @@ services:
       - APP_UPLOAD_DIR=/app/uploads
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.5-flash}
-      - AI_DAILY_LIMIT=${AI_DAILY_LIMIT:-100}
+      - AI_DAILY_LIMIT=${AI_DAILY_LIMIT:-20}
+      - AI_OUTBOX_POLL_MS=${AI_OUTBOX_POLL_MS:-5000}
       - TELEGRAM_ENABLED=${TELEGRAM_ENABLED:-false}
+      - TELEGRAM_INSTANT_BREAKING_ENABLED=${TELEGRAM_INSTANT_BREAKING_ENABLED:-false}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - TELEGRAM_CHANNEL_ID=${TELEGRAM_CHANNEL_ID:-}
     volumes:
@@ -146,6 +148,8 @@ services:
       - JWT_ISSUER=${JWT_ISSUER:-football-verse-core}
       - JWT_AUDIENCE=${JWT_AUDIENCE:-football-verse-api}
       - APP_ENV=${APP_ENV:-development}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-300}
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
     depends_on:
       - redis
       - prediction-service
@@ -161,6 +165,8 @@ services:
       - CRAWL_CRON=${CRAWL_CRON:-*/15 * * * *}
       - REDDIT_ACCESS_TOKEN=${REDDIT_ACCESS_TOKEN:-}
       - TWITTER_BEARER_TOKEN=${TWITTER_BEARER_TOKEN:-}
+      - YOUTUBE_DATA_API_KEY=${YOUTUBE_DATA_API_KEY:-}
+      - CORE_IMPORT_TIMEOUT_MS=${CORE_IMPORT_TIMEOUT_MS:-30000}
       - INGESTION_MODE=${INGESTION_MODE:-rss_metadata_publish}
       - RUN_CRAWL_ON_STARTUP=${RUN_CRAWL_ON_STARTUP:-false}
       - PORT=8085

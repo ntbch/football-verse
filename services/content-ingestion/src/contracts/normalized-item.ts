@@ -58,6 +58,7 @@ export interface SourceDescriptor {
   provider?: string;
   publisherName?: string;
   cssSelector?: string;
+  fetchIntervalSeconds?: number;
 }
 
 export interface ProviderCheckpoint {
@@ -65,6 +66,7 @@ export interface ProviderCheckpoint {
   lastModified?: string;
   cursor?: string;
   configRevision?: number;
+  lastSuccessAt?: string;
 }
 
 export interface CollectionStats {

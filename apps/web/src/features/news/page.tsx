@@ -14,17 +14,26 @@ import { formatDate } from "@/shared/lib/format";
 
 type SourceType = "ALL" | "NEWS" | "REDDIT" | "X" | "YOUTUBE";
 
-export default function NewsListingPage() {
+type NewsListingInitialData = {
+  categories?: NewsCategoryResponse[];
+  pageData?: PageResponse<NewsArticleResponse>;
+};
+
+export default function NewsListingPage({ initialData }: { initialData?: NewsListingInitialData }) {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [selectedSourceType, setSelectedSourceType] = useState<SourceType>("ALL");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [page, setPage] = useState(0);
+  const [initialDataUpdatedAt] = useState(() => Date.now());
   const size = 24;
 
   // 1. Fetch categories
   const { data: categories = [] } = useQuery({
     queryKey: qk.admin.newsCategories(),
     queryFn: () => data<NewsCategoryResponse[]>(http.get("/news/categories")),
+    initialData: initialData?.categories,
+    initialDataUpdatedAt: initialData?.categories ? initialDataUpdatedAt : undefined,
+    staleTime: 5 * 60_000,
   });
 
   // 2. Fetch news articles page
@@ -46,6 +55,8 @@ export default function NewsListingPage() {
       }
       return data<PageResponse<NewsArticleResponse>>(http.get("/news", { params }));
     },
+    initialData: selectedCategory === null && selectedSourceType === "ALL" && page === 0 ? initialData?.pageData : undefined,
+    initialDataUpdatedAt: initialData?.pageData ? initialDataUpdatedAt : undefined,
     staleTime: 2 * 60_000,
     refetchOnWindowFocus: true,
   });
@@ -99,10 +110,8 @@ export default function NewsListingPage() {
     return { label: "NEWS", color: "news-badge-info" };
   };
 
-  const articles = rawArticles.filter(art => {
-    if (selectedSourceType === "ALL") return true;
-    return getSourceType(art) === selectedSourceType;
-  });
+  // The API already applies the provider filter; keep listing responses free of story detail graphs.
+  const articles = rawArticles;
 
   const handleSourceTypeChange = (type: SourceType) => {
     setSelectedSourceType(type);
@@ -326,9 +335,10 @@ export default function NewsListingPage() {
                         <div key={art.id} className="card p-4 flex flex-col gap-2.5 overflow-hidden group relative">
                           <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-[var(--color-text-primary)] flex items-center justify-center">
                             <img
-                              src={getArticleImage(art.id, art.content, art.imageUrl)}
+                              src={getArticleImage(art.id, undefined, art.imageUrl, 800)}
                               alt={art.title}
                               loading="lazy"
+                              decoding="async"
                               className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500 opacity-90"
                               onError={(event) => handleImageError(event, art.imageUrl)}
                             />
@@ -377,9 +387,10 @@ export default function NewsListingPage() {
                         {/* Left image thumbnail */}
                         <div className="aspect-[16/9] md:w-48 w-full rounded-lg overflow-hidden flex-shrink-0 bg-[var(--color-surface-muted)] border border-[var(--color-border)] relative">
                           <img
-                            src={getArticleImage(art.id, art.content, art.imageUrl)}
+                            src={getArticleImage(art.id, undefined, art.imageUrl, 800)}
                             alt={art.title}
                             loading="lazy"
+                            decoding="async"
                             className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
                             onError={(event) => handleImageError(event, art.imageUrl)}
                           />

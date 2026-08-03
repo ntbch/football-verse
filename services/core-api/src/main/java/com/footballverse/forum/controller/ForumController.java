@@ -17,6 +17,8 @@ import com.footballverse.forum.service.ForumThreadService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
+import java.time.Duration;
 
 @RestController
 @RequestMapping("/forum")
@@ -38,8 +41,10 @@ public class ForumController {
     private final ForumReportService reportService;
 
     @GetMapping("/categories")
-    public ApiResponse<List<ForumCategoryResponse>> categories() {
-        return ApiResponse.ok(threadService.categories());
+    public ResponseEntity<ApiResponse<List<ForumCategoryResponse>>> categories() {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(5)).sMaxAge(Duration.ofMinutes(5)).cachePublic().staleWhileRevalidate(Duration.ofMinutes(5)))
+                .body(ApiResponse.ok(threadService.categories()));
     }
 
     @PreAuthorize("!#following or isAuthenticated()")

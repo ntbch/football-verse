@@ -138,6 +138,9 @@ public class NewsInteractionIntegrityTest {
         assertThat(firstResponse.bookmarks()).isEqualTo(1);
         assertThat(firstResponse.liked()).isTrue();
         assertThat(firstResponse.bookmarked()).isTrue();
+        assertThat(firstResponse.content()).isEmpty();
+        assertThat(firstResponse.sources()).isEmpty();
+        assertThat(firstResponse.keyPoints()).isEmpty();
         assertThat(secondResponse.likes()).isZero();
         assertThat(secondResponse.liked()).isFalse();
     }

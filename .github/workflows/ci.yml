@@ -68,3 +68,7 @@ jobs:
       - name: Run the repository verification gate
         shell: pwsh
         run: ./scripts/verify.ps1 -Python python
+
+      - name: Enforce web performance budgets
+        shell: pwsh
+        run: npm --prefix apps/web run check:performance

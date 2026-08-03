@@ -32,9 +32,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 import java.util.UUID;
+import java.time.Duration;
 
 @RestController
 @RequestMapping("/predictions")
@@ -122,11 +125,13 @@ public class PredictionController {
     }
 
     @GetMapping("/leaderboard")
-    public ApiResponse<List<LeaderboardEntryResponse>> leaderboard(
+    public ResponseEntity<ApiResponse<List<LeaderboardEntryResponse>>> leaderboard(
             @RequestParam(defaultValue = "weekly") String period,
             @RequestParam(defaultValue = "50") int limit
     ) {
-        return ApiResponse.ok(leaderboardService.leaderboard(period, Math.min(Math.max(limit, 1), 100)));
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(1)).sMaxAge(Duration.ofMinutes(1)).cachePublic().staleWhileRevalidate(Duration.ofMinutes(5)))
+                .body(ApiResponse.ok(leaderboardService.leaderboard(period, Math.min(Math.max(limit, 1), 100))));
     }
 
     @GetMapping("/leaderboard/page")

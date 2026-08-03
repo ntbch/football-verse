@@ -5,10 +5,6 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { qk } from "@/shared/lib/query-keys";
 import { http, data } from "@/shared/lib/api-client";
-import {
-  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  BarChart, Bar, Cell,
-} from "recharts";
 import type { AdminUser } from "./types";
 import { ErrorBlock } from "@/shared/components/state-blocks";
 import { formatDate } from "@/shared/lib/format";
@@ -56,8 +52,12 @@ function KpiCard({ label, value, sub, accent = false, icon }: {
 
 export default function AdminDashboardPage() {
   const [mounted, setMounted] = useState(false);
+  const [charts, setCharts] = useState<typeof import("recharts") | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    void import("recharts").then(setCharts);
+  }, []);
 
   const { data: stats, error: statsError, refetch: refetchStats } = useQuery({
     queryKey: qk.admin.dashboardStats(),
@@ -190,21 +190,21 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="h-48">
-            {growthError ? <ErrorBlock message="User-growth data could not be loaded." onRetry={() => refetchGrowth()} /> : mounted && growth.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={growth} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
+            {growthError ? <ErrorBlock message="User-growth data could not be loaded." onRetry={() => refetchGrowth()} /> : mounted && charts && growth.length > 0 ? (
+              <charts.ResponsiveContainer width="100%" height="100%">
+                <charts.AreaChart data={growth} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
                   <defs>
                     <linearGradient id="growthGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="var(--color-accent)" stopOpacity={0.3} />
                       <stop offset="95%" stopColor="var(--color-accent)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="date" stroke={CHART_COLORS.axis} fontSize={9} tickLine={false} tick={{ fill: CHART_COLORS.axis }} tickFormatter={(v) => v.slice(5)} />
-                  <YAxis stroke={CHART_COLORS.axis} fontSize={9} tickLine={false} tick={{ fill: CHART_COLORS.axis }} allowDecimals={false} />
-                  <Tooltip contentStyle={{ background: CHART_COLORS.tooltip_bg, border: `1px solid ${CHART_COLORS.tooltip_border}`, borderRadius: 8, fontSize: 11, color: "var(--color-text-primary)" }} labelStyle={{ color: "var(--color-text-secondary)", fontWeight: 700 }} itemStyle={{ color: "var(--color-accent)" }} />
-                  <Area type="monotone" dataKey="count" stroke={CHART_COLORS.area_stroke} strokeWidth={2} fill="url(#growthGrad)" dot={false} />
-                </AreaChart>
-              </ResponsiveContainer>
+                  <charts.XAxis dataKey="date" stroke={CHART_COLORS.axis} fontSize={9} tickLine={false} tick={{ fill: CHART_COLORS.axis }} tickFormatter={(v) => v.slice(5)} />
+                  <charts.YAxis stroke={CHART_COLORS.axis} fontSize={9} tickLine={false} tick={{ fill: CHART_COLORS.axis }} allowDecimals={false} />
+                  <charts.Tooltip contentStyle={{ background: CHART_COLORS.tooltip_bg, border: `1px solid ${CHART_COLORS.tooltip_border}`, borderRadius: 8, fontSize: 11, color: "var(--color-text-primary)" }} labelStyle={{ color: "var(--color-text-secondary)", fontWeight: 700 }} itemStyle={{ color: "var(--color-accent)" }} />
+                  <charts.Area type="monotone" dataKey="count" stroke={CHART_COLORS.area_stroke} strokeWidth={2} fill="url(#growthGrad)" dot={false} />
+                </charts.AreaChart>
+              </charts.ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center text-xs italic text-[var(--color-text-secondary)]">No signup data recorded</div>
             )}
@@ -217,18 +217,18 @@ export default function AdminDashboardPage() {
             <div className="text-[10px] font-black uppercase tracking-widest text-[var(--color-accent)]">Content Distribution</div>
             <div className="text-xs font-medium mt-0.5 text-[var(--color-text-secondary)]">{totalArticles} total articles stored</div>
           </div>
-          {mounted && (
+          {mounted && charts && (
             <div className="h-32">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={articleBreakdown} margin={{ top: 0, right: 0, left: -28, bottom: 0 }}>
-                  <XAxis dataKey="name" stroke={CHART_COLORS.axis} fontSize={9} tickLine={false} tick={{ fill: CHART_COLORS.axis }} />
-                  <YAxis stroke={CHART_COLORS.axis} fontSize={9} tickLine={false} tick={{ fill: CHART_COLORS.axis }} allowDecimals={false} />
-                  <Tooltip contentStyle={{ background: CHART_COLORS.tooltip_bg, border: `1px solid ${CHART_COLORS.tooltip_border}`, borderRadius: 8, fontSize: 11, color: "var(--color-text-primary)" }} itemStyle={{ color: "var(--color-text-primary)" }} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                    {articleBreakdown.map((e) => <Cell key={e.name} fill={e.color} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <charts.ResponsiveContainer width="100%" height="100%">
+                <charts.BarChart data={articleBreakdown} margin={{ top: 0, right: 0, left: -28, bottom: 0 }}>
+                  <charts.XAxis dataKey="name" stroke={CHART_COLORS.axis} fontSize={9} tickLine={false} tick={{ fill: CHART_COLORS.axis }} />
+                  <charts.YAxis stroke={CHART_COLORS.axis} fontSize={9} tickLine={false} tick={{ fill: CHART_COLORS.axis }} allowDecimals={false} />
+                  <charts.Tooltip contentStyle={{ background: CHART_COLORS.tooltip_bg, border: `1px solid ${CHART_COLORS.tooltip_border}`, borderRadius: 8, fontSize: 11, color: "var(--color-text-primary)" }} itemStyle={{ color: "var(--color-text-primary)" }} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+                  <charts.Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                    {articleBreakdown.map((e) => <charts.Cell key={e.name} fill={e.color} />)}
+                  </charts.Bar>
+                </charts.BarChart>
+              </charts.ResponsiveContainer>
             </div>
           )}
           <div className="flex flex-col gap-2 mt-auto pt-2 border-t border-[var(--color-border)]">
