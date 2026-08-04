@@ -13,7 +13,7 @@ import type { ForumCategoryResponse, ThreadResponse } from "@/features/forum/typ
 import { getArticleImage, handleImageError } from "@/shared/lib/images";
 import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import { LeaderboardWidget, CommunityWidget, EditorsPickWidget, MatchdayPulseWidget } from "./_components";
-import { FollowTargetButton, followTopics, useFollowingFeed, useSetFollowTarget } from "@/features/following";
+import { FollowingOnboarding, useFollowingFeed } from "@/features/following";
 import { useAuthStore } from "@/shared/lib/auth-store";
 
 type HomeInitialData = {
@@ -38,9 +38,7 @@ function timeAgo(dateStr: string) {
 
 export default function HomePage({ initialData }: { initialData?: HomeInitialData }) {
   const auth = useAuthStore((state) => state.auth);
-  const [playerName, setPlayerName] = React.useState("");
   const [initialDataUpdatedAt] = React.useState(() => Date.now());
-  const setFollowTarget = useSetFollowTarget();
   /* 1 — News */
   const { data: newsPage, isLoading: newsLoading, isError: newsError, refetch: refetchNews } = useQuery({
     queryKey: ["home-news"] as const,
@@ -56,10 +54,6 @@ export default function HomePage({ initialData }: { initialData?: HomeInitialDat
   const articles = [...rawArticles].sort(
     (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
   );
-  const hero = articles[0];
-  const secondary = articles.slice(1, 3);
-  const mainFeed = articles.slice(3, 11);
-  const sideArticles = articles.slice(11, 15);
 
   /* 2 — Leaderboard */
   const { data: leaderboard = [], isError: leaderboardError, refetch: refetchLeaderboard } = useQuery({
@@ -104,6 +98,12 @@ export default function HomePage({ initialData }: { initialData?: HomeInitialDat
   });
   const threads = threadsPage?.content?.slice(0, 4) ?? [];
   const { data: followingFeed, isLoading: followingLoading, isError: followingError, refetch: refetchFollowing } = useFollowingFeed(Boolean(auth));
+  const personalizedStories = followingFeed?.items.map(({ article }) => article) ?? [];
+  const primaryArticles = followingFeed?.follows.length && personalizedStories.length ? personalizedStories : articles;
+  const hero = primaryArticles[0];
+  const secondary = primaryArticles.slice(1, 3);
+  const mainFeed = primaryArticles.slice(3, 11);
+  const sideArticles = primaryArticles.slice(11, 15);
 
   return (
     <PublicShell>
@@ -270,15 +270,10 @@ export default function HomePage({ initialData }: { initialData?: HomeInitialDat
 
                 {followingLoading ? <LoadingBlock label="Loading following feed" /> : followingError ? <ErrorBlock message="Following feed could not be loaded." onRetry={() => void refetchFollowing()} /> : !followingFeed?.follows.length ? (
                   <div className="flex flex-col gap-3">
-                    <p className="m-0 text-sm text-[var(--color-text-secondary)]">Choose a topic now, or follow clubs and leagues from any Matchday.</p>
-                    <div className="flex flex-wrap gap-2">
-                      {followTopics.map((target) => <FollowTargetButton follows={[]} key={target.targetKey} target={target} />)}
-                    </div>
-                    <form className="flex gap-2" onSubmit={(event) => { event.preventDefault(); const name = playerName.trim(); if (name) setFollowTarget.mutate({ targetType: "PLAYER", targetKey: name, targetName: name, following: true }, { onSuccess: () => setPlayerName("") }); }}>
-                      <input aria-label="Player name" className="min-w-0 flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-background-surface)] px-3 text-sm" maxLength={120} onChange={(event) => setPlayerName(event.target.value)} placeholder="Follow a player" required value={playerName} />
-                      <button className="min-h-11 rounded-xl border border-[var(--color-border)] px-3 text-xs font-bold text-[var(--color-text-primary)] disabled:opacity-50" disabled={setFollowTarget.isPending} type="submit">Follow</button>
-                    </form>
+                    <FollowingOnboarding follows={[]} />
                   </div>
+                ) : followingFeed.follows.length < 3 ? (
+                  <FollowingOnboarding follows={followingFeed.follows} />
                 ) : followingFeed.items.length === 0 ? (
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="m-0 text-sm text-[var(--color-text-secondary)]">No recent stories match your follows yet.</p>
@@ -297,6 +292,10 @@ export default function HomePage({ initialData }: { initialData?: HomeInitialDat
                 )}
               </section>
             ) : null}
+            {!auth ? <section className="editorial-panel flex flex-wrap items-center justify-between gap-3 p-5 sm:p-6">
+              <div><p className="editorial-kicker m-0">Personal intelligence</p><h3 className="editorial-section-title m-0 mt-1">Follow teams to tune Home</h3><p className="m-0 mt-1 text-sm text-[var(--color-text-secondary)]">Save your clubs, players and competitions in one feed.</p></div>
+              <Link className="min-h-11 inline-flex items-center rounded-full bg-[var(--color-accent)] px-4 text-xs font-bold text-[var(--color-text-inverse)]" href="/login?next=/">Start with a follow</Link>
+            </section> : null}
           </div>
 
           {/* Right Column — 1/3: Widgets Sidebar */}

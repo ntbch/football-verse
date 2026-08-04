@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import type { NewsArticleResponse } from "../types";
 import { formatDateTime } from "@/shared/lib/format";
+import { trackEvent } from "@/shared/lib/analytics";
 import { buildSourceTimeline } from "./story-timeline";
 
 const verificationLabels = {
@@ -82,6 +83,7 @@ export function StoryTrustPanel({ article }: { article: NewsArticleResponse }) {
   }, [timeline]);
 
   const toggleGroup = (name: string) => {
+    if (!expanded[name]) trackEvent("story_evidence_viewed", { storyId: article.id, sourceCount });
     setExpanded((prev) => ({ ...prev, [name]: !prev[name] }));
   };
 
@@ -123,9 +125,12 @@ export function StoryTrustPanel({ article }: { article: NewsArticleResponse }) {
             return (
               <div key={group.publisherName} className="flex flex-col py-1.5 first:pt-0 last:pb-0">
                 {/* Publisher Header Row */}
-                <div
+                <button
+                  aria-controls={`story-evidence-${article.id}-${group.publisherName.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`}
+                  aria-expanded={isExpanded}
+                  type="button"
                   onClick={() => toggleGroup(group.publisherName)}
-                  className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-lg cursor-pointer transition-colors hover:bg-[var(--color-surface-hover)]/60"
+                  className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-[var(--color-surface-hover)]/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]"
                 >
                   <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
                     <span className="font-black text-[12px] text-[var(--color-text-primary)] truncate">
@@ -155,11 +160,11 @@ export function StoryTrustPanel({ article }: { article: NewsArticleResponse }) {
                       {isExpanded ? "▲" : "▼"}
                     </span>
                   </div>
-                </div>
+                </button>
 
                 {/* Sub-items ONLY shown when explicitly expanded */}
                 {isExpanded && (
-                  <ul className="m-0 flex list-none flex-col gap-1.5 pl-4 pr-1 pt-1.5 pb-1 text-[11px]">
+                  <ul className="m-0 flex list-none flex-col gap-1.5 pl-4 pr-1 pt-1.5 pb-1 text-[11px]" id={`story-evidence-${article.id}-${group.publisherName.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`}>
                     {group.items.map((item, idx) => (
                       <li key={`${item.url}-${idx}`} className="flex flex-col gap-0.5 border-l-2 border-[var(--color-accent)]/40 pl-2.5 py-0.5">
                         <a
@@ -177,6 +182,20 @@ export function StoryTrustPanel({ article }: { article: NewsArticleResponse }) {
               </div>
             );
           })}
+        </div>
+      ) : null}
+
+      {timeline.length ? (
+        <div className="border-t border-[var(--color-border)]/60 pt-3">
+          <h3 className="m-0 text-[10px] font-black uppercase tracking-wider text-[var(--color-text-primary)]">Evidence timeline</h3>
+          <ol className="m-0 mt-2 flex list-none flex-col gap-2 p-0">
+            {timeline.map((item, index) => (
+              <li className="grid grid-cols-[5.5rem_1fr] gap-2 text-[11px]" key={`${item.url}-${index}`}>
+                <time className="font-mono text-[var(--color-text-secondary)]" dateTime={item.publishedAt ?? undefined}>{item.publishedAt ? formatDateTime(item.publishedAt) : "Time unavailable"}</time>
+                <span className="text-[var(--color-text-primary)]"><strong>{normalizePublisherName(item.name)}</strong>{item.claims.length ? ` · ${item.claims.map((claim) => `${claim.relation.toLowerCase()}: ${claim.keyPoint}`).join("; ")}` : " · Source update"}</span>
+              </li>
+            ))}
+          </ol>
         </div>
       ) : null}
     </section>

@@ -8,7 +8,7 @@ const routes = {
   "/news/page": { js: 170_000, css: 20_000 },
   "/news/[slug]/page": { js: 170_000, css: 20_000 },
   "/forum/page": { js: 170_000, css: 20_000 },
-  "/career/page": { js: 170_000, css: 21_000, layouts: ["/career/layout"] },
+  "/games/page": { js: 170_000, css: 21_000 },
   "/admin/page": { js: 160_000, css: 20_000 },
 };
 

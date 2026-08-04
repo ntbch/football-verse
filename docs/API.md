@@ -110,7 +110,7 @@ Rich article HTML permits iframe embeds only from YouTube and Brightcove (`youtu
 
 ## Daily minigames
 
-Daily minigames are served by Core at `/minigames`; the public page is `/career`.
+Daily minigames are served by Core at `/minigames`; the public page is `/games`.
 ESPN is the minigame roster source and TheSportsDB enriches historical facts only. `football-data.org` remains a predictions source.
 
 - `GET /minigames/daily` returns the Vietnam-local daily snapshots for Who Am I? and Football Grid. The

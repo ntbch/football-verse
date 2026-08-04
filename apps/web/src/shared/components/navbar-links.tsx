@@ -37,8 +37,8 @@ export const publicNavItems: NavItem[] = [
   },
   {
     href: "/news",
-    label: "News",
-    tooltip: "News & Articles",
+    label: "Stories",
+    tooltip: "Football intelligence stories",
     icon: (active) => (
       <svg
         className={`w-5 h-5 transition-transform duration-200 ${
@@ -60,7 +60,7 @@ export const publicNavItems: NavItem[] = [
     ),
   },
   {
-    href: "/career",
+    href: "/games",
     label: "Games",
     tooltip: "Football Games",
     icon: (active) => (
@@ -81,9 +81,9 @@ export const publicNavItems: NavItem[] = [
     ),
   },
   {
-    href: "/predictions",
-    label: "Predictions",
-    tooltip: "Predictions & Stats",
+    href: "/matchday",
+    label: "Matchday",
+    tooltip: "Fixtures, predictions & stats",
     icon: (active) => (
       <svg
         className={`w-5 h-5 transition-transform duration-200 ${
@@ -127,6 +127,7 @@ export const publicNavItems: NavItem[] = [
 ];
 
 function activePath(pathname: string, href: string) {
+  if (href === "/matchday") return pathname.startsWith("/matchday") || pathname.startsWith("/predictions");
   return href === "/" ? pathname === href : pathname.startsWith(href);
 }
 

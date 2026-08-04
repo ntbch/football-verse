@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { draftSubstitutions, scoreAt } from "./_playback.ts";
-import type { Lineup, MatchEvent } from "../career/_types";
+import type { Lineup, MatchEvent } from "../career/_types.ts";
 
 test("scoreAt only counts visible goals for the selected team", () => {
   const events = [

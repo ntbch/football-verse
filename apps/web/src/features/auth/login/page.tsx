@@ -258,13 +258,13 @@ export default function LoginPage() {
       {/* Footer Legal Terms */}
       <div className="absolute bottom-4 left-0 right-0 text-center text-[10px] sm:text-[11px] text-[var(--color-text-secondary)] font-medium z-10 pointer-events-none">
         By signing in, you agree to Football Verse&apos;s{" "}
-        <a href="#terms" className="hover:underline pointer-events-auto font-semibold text-[var(--color-text-primary)]">
+        <Link href="/terms" className="hover:underline pointer-events-auto font-semibold text-[var(--color-text-primary)]">
           Terms of Service
-        </a>{" "}
+        </Link>{" "}
         and{" "}
-        <a href="#privacy" className="hover:underline pointer-events-auto font-semibold text-[var(--color-text-primary)]">
+        <Link href="/privacy" className="hover:underline pointer-events-auto font-semibold text-[var(--color-text-primary)]">
           Privacy Policy
-        </a>
+        </Link>
         .
       </div>
     </div>

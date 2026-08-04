@@ -219,7 +219,7 @@ function SearchContent() {
                       : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                   }`}
                 >
-                  News Articles ({newsList.length})
+                  Stories ({newsList.length})
                 </button>
                 <button
                   onClick={() => handleTabChange("forum")}
@@ -242,7 +242,7 @@ function SearchContent() {
                 filteredNewsList.length === 0 ? (
                   <div className="text-center py-16 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl p-8 flex flex-col items-center gap-3">
                     <h3 className="m-0 font-serif-title font-black text-lg text-[var(--color-text-primary)]">
-                      No News Articles Found
+                      No Stories Found
                     </h3>
                     <p className="text-xs text-[var(--color-text-secondary)]">
                       No articles found matching the active filters and keyword.

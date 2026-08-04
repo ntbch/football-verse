@@ -327,13 +327,13 @@ export default function RegisterPage() {
       {/* Footer Legal Terms */}
       <div className="mt-4 sm:mt-5 text-center text-[10px] sm:text-[11px] text-[var(--color-text-secondary)] font-medium z-10">
         By registering, you agree to Football Verse&apos;s{" "}
-        <a href="#terms" className="hover:underline font-semibold text-[var(--color-text-primary)]">
+        <Link href="/terms" className="hover:underline font-semibold text-[var(--color-text-primary)]">
           Terms of Service
-        </a>{" "}
+        </Link>{" "}
         and{" "}
-        <a href="#privacy" className="hover:underline font-semibold text-[var(--color-text-primary)]">
+        <Link href="/privacy" className="hover:underline font-semibold text-[var(--color-text-primary)]">
           Privacy Policy
-        </a>
+        </Link>
         .
       </div>
     </div>

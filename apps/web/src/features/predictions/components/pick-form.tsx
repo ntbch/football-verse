@@ -7,6 +7,7 @@ import type { Fixture, UserPrediction, MatchCentreFixture } from "../types";
 import { AwayIcon, DrawIcon, HomeIcon } from "./icons";
 import { UserPickDisplay } from "./user-pick-display";
 import { ScorePicker } from "./score-picker";
+import { trackEvent } from "@/shared/lib/analytics";
 
 type PickFormProps = {
   match: Fixture | MatchCentreFixture;
@@ -81,6 +82,7 @@ export const PickForm = ({ match, auth, onSuccess, onClosed, loginHref = "/login
       {
         onSuccess: () => {
           setSaveState("saved");
+          trackEvent("prediction_submitted", { fixtureId: match.id });
           if (onSuccess) onSuccess();
         },
         onError: (submitError) => {

@@ -19,6 +19,20 @@ type NewsListingInitialData = {
   pageData?: PageResponse<NewsArticleResponse>;
 };
 
+const verificationLabel: Record<NonNullable<NewsArticleResponse["verificationStatus"]>, string> = {
+  OFFICIAL: "Official",
+  MULTIPLE_REPORTS: "Verified across sources",
+  SINGLE_REPORT: "Single source",
+  RUMOUR: "Unverified",
+  CONFLICTING: "Conflicting reports",
+};
+
+function storyStatus(art: NewsArticleResponse) {
+  return art.contentKind === "AGGREGATED_STORY"
+    ? verificationLabel[art.verificationStatus ?? "SINGLE_REPORT"]
+    : "Article";
+}
+
 export default function NewsListingPage({ initialData }: { initialData?: NewsListingInitialData }) {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [selectedSourceType, setSelectedSourceType] = useState<SourceType>("ALL");
@@ -315,10 +329,10 @@ export default function NewsListingPage({ initialData }: { initialData?: NewsLis
             ) : articles.length === 0 ? (
               <div className="text-center py-12 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl p-6 flex flex-col items-center gap-2">
                 <h3 className="m-0 font-sans font-black text-lg text-[var(--color-text-primary)]">
-                  No Articles Found
+                  No Stories Found
                 </h3>
                 <p className="text-xs text-[var(--color-text-secondary)]">
-                  No articles found for the selected provider or category.
+                  No stories found for the selected provider or category.
                 </p>
               </div>
             ) : (
@@ -405,16 +419,18 @@ export default function NewsListingPage({ initialData }: { initialData?: NewsLis
                             <div className="flex items-center justify-between text-[11px] font-bold text-[var(--color-text-secondary)]">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="text-[var(--color-accent)] font-extrabold">
-                                  {art.sourceName || "Football News"}
+                                  {art.sourceName || "Football Verse"}
                                 </span>
-                                {art.sourceCount && art.sourceCount > 1 ? (
+                                {art.contentKind === "AGGREGATED_STORY" ? (
                                   <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                                    {art.sourceCount} Outlets Clustered
+                                    {storyStatus(art)} · {art.sourceCount ?? 1} source{(art.sourceCount ?? 1) === 1 ? "" : "s"}
                                   </span>
                                 ) : null}
+                                {art.verificationStatus === "CONFLICTING" ? <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/30">Needs context</span> : null}
                               </div>
-                              <span>
+                              <span className="text-right">
                                 {formatDate(art.publishedAt)}
+                                {art.lastMaterialChangeAt ? <span className="block text-[9px] font-medium">Updated {formatDate(art.lastMaterialChangeAt)}</span> : null}
                               </span>
                             </div>
 
@@ -429,6 +445,7 @@ export default function NewsListingPage({ initialData }: { initialData?: NewsLis
                                 {art.summary}
                               </p>
                             )}
+                            {(art.category || art.tags?.length) ? <p className="m-0 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">{art.category || "Football intelligence"}{art.tags?.length ? ` · ${art.tags.slice(0, 2).join(" · ")}` : ""}</p> : null}
                           </div>
 
                           <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-2 mt-0.5 text-[11px] font-bold text-[var(--color-text-secondary)]">

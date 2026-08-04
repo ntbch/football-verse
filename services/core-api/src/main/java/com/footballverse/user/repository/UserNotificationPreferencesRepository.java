@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface UserNotificationPreferencesRepository extends JpaRepository<UserNotificationPreferences, Long> {
     Optional<UserNotificationPreferences> findByUserId(Long userId);
+
+    void deleteByUserId(Long userId);
 }

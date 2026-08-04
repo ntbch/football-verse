@@ -108,6 +108,14 @@ public class AuthController {
         return ApiResponse.ok("Logged out", null);
     }
 
+    @PostMapping("/revoke-sessions")
+    public ApiResponse<Void> revokeSessions(HttpServletRequest request, HttpServletResponse response) {
+        requireBrowserOrigin(request);
+        authService.revokeAllSessions();
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookieService.clear().toString());
+        return ApiResponse.ok("All sessions revoked", null);
+    }
+
     @GetMapping("/me")
     public ApiResponse<CurrentUserResponse> me() {
         return ApiResponse.ok(authService.me());

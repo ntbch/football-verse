@@ -126,7 +126,7 @@ export function Navbar() {
                   onBlur={() => {
                     if (!q.trim()) setSearchOpen(false);
                   }}
-                  placeholder="Search news, posts..."
+                  placeholder="Search stories, posts..."
                   className="h-11 w-44 md:w-56 px-3.5 py-1.5 text-xs font-semibold rounded-full border border-[var(--color-border)] bg-[var(--color-background-body)] text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)] transition-all shadow-inner"
                 />
                 <button
@@ -354,7 +354,7 @@ export function Navbar() {
               type="text"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search news, posts..."
+              placeholder="Search stories, posts..."
               className="w-full px-4 py-2.5 pl-9 rounded-full text-xs font-semibold border border-[var(--color-border)] bg-[var(--color-background-body)] text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)]/60 focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] shadow-inner"
             />
             <svg

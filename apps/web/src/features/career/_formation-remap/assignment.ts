@@ -1,6 +1,6 @@
-import { dutiesFor, ROLES } from "../_formations";
+import { dutiesFor, ROLES } from "../_formations.ts";
 import type { Duty, LineupSlot, Player, PlayerRole, Position } from "../_types";
-import { familiarityRank, scorePlayerForPosition } from "./scoring";
+import { familiarityRank, scorePlayerForPosition } from "./scoring.ts";
 
 export function assignStarters(positions: readonly Position[], players: readonly Player[]): Player[] {
   const rows = positions.length;

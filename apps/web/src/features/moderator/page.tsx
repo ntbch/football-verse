@@ -15,17 +15,6 @@ type ModStats = {
   hiddenPosts: number;
 };
 
-type AuditActivity = {
-  id: string;
-  moderator: string;
-  action: string;
-  target: string;
-  timeAgo: string;
-  type: "HIDE" | "WARN" | "RESOLVE" | "LOCK";
-};
-
-const recentActivities: AuditActivity[] = [];
-
 function KpiCard({
   label,
   value,
@@ -184,44 +173,16 @@ export default function ModeratorDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-serif-title m-0 text-sm font-bold uppercase tracking-wider text-[var(--color-text-primary)]">
-                Recent Moderation Activity
+                Moderation Audit
               </h3>
               <p className="text-[11px] text-[var(--color-text-secondary)] m-0 mt-0.5">
-                Live audit trail of actions performed by team members
+                Persisted audit history is not enabled yet. Report actions still use the existing moderation controls.
               </p>
             </div>
-            <Link
-              href="/moderator/audit-log"
-              className="text-[11px] font-bold text-[var(--color-accent)] hover:underline"
-            >
-              View Full Audit Log →
-            </Link>
           </div>
 
-          <div className="divide-y divide-[var(--color-border)] flex flex-col">
-            {recentActivities.length === 0 ? (
-              <div className="py-8 text-center text-xs italic text-[var(--color-text-secondary)]">
-                No recent moderation audit activity recorded yet.
-              </div>
-            ) : (
-              recentActivities.map((act) => (
-                <div key={act.id} className="py-3 flex items-center justify-between text-xs transition-colors hover:bg-white/[0.02]">
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-full bg-[var(--color-accent)]/10 text-[var(--color-accent)] font-bold text-[10px] flex items-center justify-center font-mono">
-                      {act.moderator.substring(0, 2).toUpperCase()}
-                    </div>
-                    <div>
-                      <span className="font-bold text-[var(--color-text-primary)]">@{act.moderator}</span>
-                      <span className="text-[var(--color-text-secondary)] ml-1.5">{act.action}</span>
-                      <span className="font-mono text-[10px] text-[var(--color-text-secondary)] ml-2">({act.target})</span>
-                    </div>
-                  </div>
-                  <span className="font-mono text-[10px] text-[var(--color-text-secondary)]">
-                    {act.timeAgo}
-                  </span>
-                </div>
-              ))
-            )}
+          <div className="border border-dashed border-[var(--color-border)] p-6 text-center text-xs text-[var(--color-text-secondary)]">
+            Audit history will appear here after server-side persistence is shipped.
           </div>
         </div>
 

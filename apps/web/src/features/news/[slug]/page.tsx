@@ -20,6 +20,7 @@ import { formatDate } from "@/shared/lib/format";
 import { CommentNode } from "./comment-node";
 import { RelatedContent } from "./related-content";
 import { YouTubeEmbed } from "../components/YouTubeEmbed";
+import { FollowTargetButton, useFollowTargets } from "@/features/following";
 
 function cleanSummaryText(text?: string): string {
   if (!text) return "";
@@ -36,6 +37,14 @@ function cleanSummaryText(text?: string): string {
   return result || cleaned;
 }
 
+const storyStateLabel = (status?: NewsArticleResponse["verificationStatus"]) => ({
+  OFFICIAL: "Officially reported",
+  MULTIPLE_REPORTS: "Reported by multiple sources",
+  SINGLE_REPORT: "Single-source report",
+  RUMOUR: "Unverified report",
+  CONFLICTING: "Conflicting reports",
+}[status ?? "SINGLE_REPORT"]);
+
 type NewsDetailPageProps = {
   initialArticle?: NewsArticleResponse;
   initialSlug?: string;
@@ -45,6 +54,7 @@ export default function NewsDetailPage({ initialArticle, initialSlug }: NewsDeta
   const params = useParams();
   const slug = initialSlug ?? (params.slug as string);
   const auth = useAuthStore((state) => state.auth);
+  const { data: follows = [] } = useFollowTargets(Boolean(auth));
   const queryClient = useQueryClient();
   const toast = useToast();
   const router = useRouter();
@@ -244,7 +254,7 @@ export default function NewsDetailPage({ initialArticle, initialSlug }: NewsDeta
         {/* Article Breadcrumbs & Meta */}
         <div className="flex items-center justify-between text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-secondary)] border-b border-[var(--color-border)] pb-3">
           <Link href="/news" className="hover:text-[var(--color-accent)] transition-colors">
-            ← Back to Touchline News
+            ← Back to Stories
           </Link>
           <span>{article.category || "Football Verse Editorial"}</span>
         </div>
@@ -322,6 +332,16 @@ export default function NewsDetailPage({ initialArticle, initialSlug }: NewsDeta
             </div>
           </div>
         </div>
+
+        {article.contentKind === "AGGREGATED_STORY" ? <section aria-label="Story actions" className="flex flex-wrap items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)]/60 px-4 py-3">
+          <>
+            <span className="mr-1 text-xs font-bold text-[var(--color-text-secondary)]">Current state: {storyStateLabel(article.verificationStatus)}</span>
+            <FollowTargetButton follows={follows} loginHref={auth ? undefined : `/login?next=${encodeURIComponent(`/news/${article.slug}`)}`} target={{ targetType: "TOPIC", targetKey: article.category || "football-intelligence", targetName: article.category || "Football intelligence" }} />
+            <Link className="min-h-11 inline-flex items-center rounded-full border border-[var(--color-border)] px-4 text-xs font-bold text-[var(--color-text-secondary)] hover:border-[var(--color-accent)]" href="/matchday">Open Matchday</Link>
+            <Link className="min-h-11 inline-flex items-center rounded-full border border-[var(--color-border)] px-4 text-xs font-bold text-[var(--color-text-secondary)] hover:border-[var(--color-accent)]" href="/games">Play today&apos;s game</Link>
+            <a className="min-h-11 inline-flex items-center rounded-full border border-[var(--color-border)] px-4 text-xs font-bold text-[var(--color-text-secondary)] hover:border-[var(--color-accent)]" href="#story-discussion">Discuss this story</a>
+          </>
+        </section> : null}
 
         {article.contentKind === "AGGREGATED_STORY" && <StoryTrustPanel article={article} />}
 
@@ -453,9 +473,9 @@ export default function NewsDetailPage({ initialArticle, initialSlug }: NewsDeta
         />
 
         {/* Comment Section */}
-        <section className="editorial-panel p-6 md:p-8 flex flex-col gap-6 mt-4">
+        <section id="story-discussion" aria-labelledby="story-discussion-title" className="editorial-panel p-6 md:p-8 flex flex-col gap-6 mt-4">
           <h2 className="m-0 font-serif-title font-black text-xl text-[var(--color-text-primary)] flex items-center gap-2">
-            <span>Comments</span>
+            <span id="story-discussion-title">Discuss this story</span>
             <span className="text-sm font-bold text-[var(--color-text-secondary)] tabular-nums">
               ({flatComments.length})
             </span>

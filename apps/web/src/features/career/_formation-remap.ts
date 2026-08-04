@@ -1,11 +1,11 @@
-import { FORMATIONS } from "./_formations";
+import { FORMATIONS } from "./_formations.ts";
 import type { Player } from "./_types";
-import { assignStarters, roleAndDutyFor } from "./_formation-remap/assignment";
-import { positionFamiliarity, scorePlayerForPosition } from "./_formation-remap/scoring";
+import { assignStarters, roleAndDutyFor } from "./_formation-remap/assignment.ts";
+import { positionFamiliarity, scorePlayerForPosition } from "./_formation-remap/scoring.ts";
 import type { FormationMove, FormationRemapInput, FormationRemapResult, FormationRoleReset } from "./_formation-remap/types";
 
-export * from "./_formation-remap/scoring";
-export type * from "./_formation-remap/types";
+export * from "./_formation-remap/scoring.ts";
+export type * from "./_formation-remap/types.ts";
 
 export function remapFormation(input: FormationRemapInput): FormationRemapResult {
   const positions = FORMATIONS[input.nextFormation];

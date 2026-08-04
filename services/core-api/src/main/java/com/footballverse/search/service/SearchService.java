@@ -12,7 +12,7 @@ import com.footballverse.news.repository.NewsArticleRepository;
 import com.footballverse.news.repository.NewsBookmarkRepository;
 import com.footballverse.news.repository.NewsLikeRepository;
 import com.footballverse.news.model.NewsTag;
-import com.footballverse.news.dto.NewsArticleResponse;
+import com.footballverse.search.dto.SearchArticleSummaryResponse;
 import com.footballverse.search.dto.SearchResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -46,7 +46,7 @@ public class SearchService {
 
         Page<NewsArticle> newsArticles = articles.searchPublishedArticles(query, pageable);
         NewsInteractions newsInteractions = newsInteractions(newsArticles.getContent());
-        Page<NewsArticleResponse> newsResult = newsArticles.map(article -> toArticleResponse(article, newsInteractions));
+        Page<SearchArticleSummaryResponse> newsResult = newsArticles.map(article -> toArticleResponse(article, newsInteractions));
 
         Page<ForumThread> forumThreads = threads.searchThreads(query, pageable);
         ThreadInteractions threadInteractions = threadInteractions(forumThreads.getContent());
@@ -58,13 +58,13 @@ public class SearchService {
         );
     }
 
-    private NewsArticleResponse toArticleResponse(NewsArticle article, NewsInteractions interactions) {
+    private SearchArticleSummaryResponse toArticleResponse(NewsArticle article, NewsInteractions interactions) {
         com.footballverse.user.model.UserAccount user = currentUser.getOrNull();
         boolean isLiked = user != null && interactions.likedArticleIds().contains(article.getId());
         boolean isBookmarked = user != null && interactions.bookmarkedArticleIds().contains(article.getId());
-        return new NewsArticleResponse(
+        return new SearchArticleSummaryResponse(
                 article.getId(), article.getTitle(), article.getSlug(),
-                article.getSummary(), article.getContent(), article.getStatus(),
+                article.getSummary(), article.getStatus(),
                 article.getCategory() == null ? null : article.getCategory().getName(),
                 article.getTags().stream().map(NewsTag::getName).collect(Collectors.toSet()),
                 interactions.likeCounts().getOrDefault(article.getId(), 0L),

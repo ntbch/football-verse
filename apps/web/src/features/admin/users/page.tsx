@@ -8,6 +8,7 @@ import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import { formatDate } from "@/shared/lib/format";
 import { useToast } from "@/shared/components/toast";
 import type { AdminUser } from "../types";
+import type { PageResponse } from "@/shared/lib/api-types";
 import { UserDetailDrawer } from "./components/user-detail-drawer";
 
 type RoleTab = "ALL" | "ADMIN" | "MODERATOR" | "USER";
@@ -16,6 +17,7 @@ const STATUS_STYLES: Record<string, { label: string; bg: string; color: string }
   ACTIVE: { label: "Active", bg: "rgba(74,124,89,0.15)", color: "#4a7c59" },
   MUTED: { label: "Muted", bg: "rgba(217,119,6,0.15)", color: "#d97706" },
   BANNED: { label: "Banned", bg: "rgba(185,28,28,0.15)", color: "#b91c1c" },
+  DELETED: { label: "Deleted", bg: "rgba(107,114,128,0.15)", color: "#6b7280" },
 };
 
 export default function AdminUsersPage() {
@@ -23,13 +25,16 @@ export default function AdminUsersPage() {
   const toast = useToast();
   const [tab, setTab] = useState<RoleTab>("ALL");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
   const [activeUser, setActiveUser] = useState<AdminUser | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const { data: users = [], isLoading, error, refetch } = useQuery({
-    queryKey: qk.admin.users(),
-    queryFn: () => data<AdminUser[]>(http.get("/admin/users")),
+  const roleParam = tab === "ALL" ? undefined : tab;
+  const { data: usersPage, isLoading, error, refetch } = useQuery({
+    queryKey: [...qk.admin.users(), page, search, roleParam],
+    queryFn: () => data<PageResponse<AdminUser>>(http.get("/admin/users", { params: { page, size: 50, search, role: roleParam } })),
   });
+  const users = usersPage?.content ?? [];
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: AdminUser["status"] }) =>
@@ -54,24 +59,15 @@ export default function AdminUsersPage() {
   });
 
   const counts = useMemo(() => ({
-    ALL: users.length,
+    ALL: usersPage?.totalElements ?? 0,
     ADMIN: users.filter((u) => u.roles.includes("ADMIN")).length,
     MODERATOR: users.filter((u) => u.roles.includes("MODERATOR") && !u.roles.includes("ADMIN")).length,
     USER: users.filter((u) => !u.roles.includes("ADMIN") && !u.roles.includes("MODERATOR")).length,
-  }), [users]);
+  }), [users, usersPage?.totalElements]);
 
   const filtered = useMemo(() => {
-    let base = users;
-    if (tab === "ADMIN") base = users.filter((u) => u.roles.includes("ADMIN"));
-    else if (tab === "MODERATOR") base = users.filter((u) => u.roles.includes("MODERATOR") && !u.roles.includes("ADMIN"));
-    else if (tab === "USER") base = users.filter((u) => !u.roles.includes("ADMIN") && !u.roles.includes("MODERATOR"));
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      base = base.filter((u) => u.username.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
-    }
-    return base;
-  }, [users, tab, search]);
+    return users;
+  }, [users]);
 
   const handleOpenDrawer = (user: AdminUser) => {
     setActiveUser(user);
@@ -83,9 +79,9 @@ export default function AdminUsersPage() {
 
   const TABS: { key: RoleTab; label: string }[] = [
     { key: "ALL", label: `All (${counts.ALL})` },
-    { key: "USER", label: `Users (${counts.USER})` },
-    { key: "MODERATOR", label: `Moderators (${counts.MODERATOR})` },
-    { key: "ADMIN", label: `Admins (${counts.ADMIN})` },
+    { key: "USER", label: "Users" },
+    { key: "MODERATOR", label: "Moderators" },
+    { key: "ADMIN", label: "Admins" },
   ];
 
   return (
@@ -107,7 +103,7 @@ export default function AdminUsersPage() {
           <input
             placeholder="Search username or email..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
             className="w-full px-4 py-2 pl-9 rounded-full text-xs font-semibold border border-[var(--color-border)] bg-black/10 text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)]/50 focus:outline-none focus:border-[var(--color-accent)] transition-all"
           />
           <svg className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
@@ -121,7 +117,7 @@ export default function AdminUsersPage() {
         {TABS.map((t) => (
           <button
             key={t.key}
-            onClick={() => setTab(t.key)}
+            onClick={() => { setTab(t.key); setPage(0); }}
             className="px-4 py-2.5 text-xs font-bold transition-all relative cursor-pointer"
             style={{
               color: tab === t.key ? "var(--color-accent)" : "var(--color-text-secondary)",
@@ -133,6 +129,14 @@ export default function AdminUsersPage() {
           </button>
         ))}
       </div>
+
+      {(usersPage?.totalPages ?? 0) > 1 ? (
+        <nav aria-label="Admin user pages" className="flex items-center justify-between gap-3 text-xs text-[var(--color-text-secondary)]">
+          <button className="min-h-11 rounded-lg border border-[var(--color-border)] px-4 font-bold disabled:opacity-40" disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))} type="button">Previous</button>
+          <span>Page {page + 1} of {usersPage?.totalPages}</span>
+          <button className="min-h-11 rounded-lg border border-[var(--color-border)] px-4 font-bold disabled:opacity-40" disabled={page >= (usersPage?.totalPages ?? 1) - 1} onClick={() => setPage((value) => value + 1)} type="button">Next</button>
+        </nav>
+      ) : null}
 
       {/* Table Card */}
       <div className="card overflow-hidden">

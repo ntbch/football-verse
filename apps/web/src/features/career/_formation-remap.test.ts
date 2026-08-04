@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { FORMATIONS } from "./_formations";
-import { remapFormation } from "./_formation-remap";
-import type { Formation, LineupSlot, Player, PlayerRole, Position } from "./_types";
+import { FORMATIONS } from "./_formations.ts";
+import { remapFormation } from "./_formation-remap.ts";
+import type { Formation, LineupSlot, Player, PlayerRole, Position } from "./_types.ts";
 
 const attributes = Object.fromEntries([
   "passing", "first_touch", "dribbling", "tackling", "finishing", "pace", "strength", "stamina", "aerial",

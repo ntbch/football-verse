@@ -12,6 +12,7 @@ import com.footballverse.user.dto.FollowTargetResponse;
 import com.footballverse.user.dto.FollowingFeedResponse;
 import com.footballverse.user.dto.NotificationPreferencesRequest;
 import com.footballverse.user.dto.NotificationPreferencesResponse;
+import com.footballverse.user.dto.AccountExportResponse;
 import com.footballverse.user.service.UserFollowTargetService;
 import com.footballverse.user.service.NotificationPreferenceService;
 import com.footballverse.user.service.UserService;
@@ -20,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -83,5 +85,16 @@ public class UserController {
             @RequestBody NotificationPreferencesRequest request
     ) {
         return ApiResponse.ok(notificationPreferenceService.update(request));
+    }
+
+    @GetMapping("/me/export")
+    public ApiResponse<AccountExportResponse> exportAccount() {
+        return ApiResponse.ok(userService.exportAccount());
+    }
+
+    @DeleteMapping("/me")
+    public ApiResponse<Void> deleteAccount() {
+        userService.deleteAccount();
+        return ApiResponse.ok("Account deleted. Community content is retained in anonymized form.", null);
     }
 }

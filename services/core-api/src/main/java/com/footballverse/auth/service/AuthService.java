@@ -194,6 +194,11 @@ public class AuthService {
         refreshTokens.findByToken(token).ifPresent(refreshToken -> refreshToken.setRevokedAt(Instant.now()));
     }
 
+    @Transactional
+    public void revokeAllSessions() {
+        refreshTokens.revokeActiveByUserId(currentUser.get().getId(), Instant.now());
+    }
+
     @Transactional(readOnly = true)
     public CurrentUserResponse me() {
         UserAccount user = currentUser.get();
@@ -201,7 +206,7 @@ public class AuthService {
     }
 
     private AuthResponse tokens(UserAccount user) {
-        if (user.getStatus() == UserStatus.BANNED) {
+        if (user.getStatus() != UserStatus.ACTIVE) {
             throw new BadRequestException("Invalid credentials");
         }
         RefreshToken refreshToken = refreshTokens.save(new RefreshToken(

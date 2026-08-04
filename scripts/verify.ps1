@@ -76,7 +76,58 @@ function Stop-TestInfrastructure {
     }
 }
 
+function Seed-MinigameSmokeData {
+    $fixturePath = Join-Path $repoRoot "scripts/minigame-smoke-fixture.sql"
+    $fixture = Get-Content -LiteralPath $fixturePath -Raw
+    for ($attempt = 0; $attempt -lt 60; $attempt++) {
+        $applied = $false
+        try {
+            $fixture | docker compose -p $smokeProject exec -T postgres psql -v ON_ERROR_STOP=1 -U $env:DB_USERNAME -d $env:DB_NAME -f - 1>$null 2>$null
+            $applied = $LASTEXITCODE -eq 0
+        } catch {
+            # Core migrations can still be running; retry until the schema exists.
+        }
+        if ($applied) { return }
+        Start-Sleep -Seconds 2
+    }
+    throw "Could not load deterministic Minigame smoke fixture"
+}
+
+function Seed-SmokeUser {
+    if (-not $script:SmokeUserAutoSeed) {
+        return
+    }
+    # Isolated smoke-only account: no role row, removed with the smoke database volume.
+    $smokeHash = '$2a$10$9T4S.FzAm4swQW1pDEQtXOgEdlz.6NYrMG9jyflK6RASHXrOZ7iDu'
+    $sql = @"
+INSERT INTO users (created_at, updated_at, email, username, password_hash, status, email_verified, email_verified_at)
+VALUES (CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, '$($env:SMOKE_EMAIL)', '$($env:SMOKE_USERNAME)', '$smokeHash', 'ACTIVE', true, CURRENT_TIMESTAMP)
+ON CONFLICT (email) DO UPDATE SET status = 'ACTIVE', email_verified = true, email_verified_at = COALESCE(users.email_verified_at, CURRENT_TIMESTAMP);
+INSERT INTO user_profiles (user_id, display_name)
+SELECT id, '$($env:SMOKE_USERNAME)' FROM users WHERE email = '$($env:SMOKE_EMAIL)'
+ON CONFLICT (user_id) DO NOTHING;
+"@
+    for ($attempt = 0; $attempt -lt 60; $attempt++) {
+        $applied = $false
+        try {
+            $sql | docker compose -p $smokeProject exec -T postgres psql -v ON_ERROR_STOP=1 -U $env:DB_USERNAME -d $env:DB_NAME -f - 1>$null 2>$null
+            $applied = $LASTEXITCODE -eq 0
+        } catch {
+            # Retry if the migration transaction has not finished yet.
+        }
+        if ($applied) { return }
+        Start-Sleep -Seconds 2
+    }
+    throw "Could not seed isolated smoke account"
+}
+
 function Invoke-IntegratedSmoke {
+    $script:SmokeUserAutoSeed = [string]::IsNullOrWhiteSpace($env:SMOKE_EMAIL) -and [string]::IsNullOrWhiteSpace($env:SMOKE_PASSWORD)
+    if ($script:SmokeUserAutoSeed) {
+        $env:SMOKE_EMAIL = "smoke-$PID@example.test"
+        $env:SMOKE_USERNAME = "smoke_$PID"
+        $env:SMOKE_PASSWORD = "ChangeMe123!"
+    }
     if ([string]::IsNullOrWhiteSpace($env:SMOKE_EMAIL) -or [string]::IsNullOrWhiteSpace($env:SMOKE_PASSWORD)) {
         throw "Integrated smoke requires SMOKE_EMAIL and SMOKE_PASSWORD for a verified non-privileged test account."
     }
@@ -110,6 +161,8 @@ function Invoke-IntegratedSmoke {
     try {
         docker compose -p $smokeProject up -d --build postgres redis match-game-postgres match-engine game-service prediction-service core-service gateway-service web-client
         if ($LASTEXITCODE -ne 0) { throw "Could not start integrated smoke topology" }
+        Seed-MinigameSmokeData
+        Seed-SmokeUser
         & $predictionPython (Join-Path $repoRoot "scripts/smoke.py") --base "http://127.0.0.1:18000" --web "http://127.0.0.1:13000" --email $env:SMOKE_EMAIL --password $env:SMOKE_PASSWORD
         if ($LASTEXITCODE -ne 0) { throw "Integrated smoke failed" }
         node (Join-Path $repoRoot "scripts/browser-auth-smoke.js")
@@ -131,7 +184,8 @@ if ($IntegratedSmokeOnly) {
 
 $steps = @(
     @{ Name = "Web build"; Path = "apps/web"; Command = { & $npmCommand run build } },
-    @{ Name = "Web focused tests"; Path = "apps/web"; Command = { node --test --experimental-strip-types src/features/career/_navigation.test.ts src/features/matches/_playback.test.ts tests/auth-privacy.test.ts } },
+    @{ Name = "Web typecheck"; Path = "apps/web"; Command = { & $npmCommand run typecheck } },
+    @{ Name = "Web tests"; Path = "apps/web"; Command = { & $npmCommand test } },
     @{ Name = "Gateway"; Path = "services/gateway"; Command = { & $npmCommand test } },
     @{ Name = "Content Ingestion"; Path = "services/content-ingestion"; Command = { & $npmCommand test } },
     @{ Name = "Core API"; Path = "services/core-api"; Command = { & $mavenCommand test } },

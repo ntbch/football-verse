@@ -3,6 +3,7 @@ package com.footballverse.news.clustering;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -13,12 +14,20 @@ class ClusterScorerTest {
 
     @Test
     void classifiesTransferAndInjuryEventsCorrectly() {
-        assertThat(eventClassifier.classify("Manchester United sign João Neves", "Agreement reached"))
-                .isEqualTo(EventFamily.TRANSFER_OFFICIAL);
-
-        assertThat(eventClassifier.classify("Arsenal star ruled out with knee injury", "Fitness update"))
-                .isEqualTo(EventFamily.INJURY);
+        Stream.of(
+                new ClassificationCase("Manchester United sign João Neves", "Agreement reached", EventFamily.TRANSFER_OFFICIAL),
+                new ClassificationCase("Manchester United reach an agreement for João Neves", "Talks continue", EventFamily.TRANSFER_AGREEMENT),
+                new ClassificationCase("Manchester United linked with João Neves", "He has signed for the club", EventFamily.TRANSFER_RUMOUR),
+                new ClassificationCase("Manchester United", "João Neves has signed for the club", EventFamily.TRANSFER_OFFICIAL),
+                new ClassificationCase("Arsenal star ruled out with knee injury", "Fitness update", EventFamily.INJURY),
+                new ClassificationCase("Player injury update", "", EventFamily.INJURY_UPDATE),
+                new ClassificationCase(null, null, EventFamily.GENERAL)
+        ).forEach(testCase -> assertThat(eventClassifier.classify(testCase.title(), testCase.summary()))
+                .as("%s / %s", testCase.title(), testCase.summary())
+                .isEqualTo(testCase.expected()));
     }
+
+    private record ClassificationCase(String title, String summary, EventFamily expected) { }
 
     @Test
     void extractsClubsAndCalculatesEntitySimilarity() {

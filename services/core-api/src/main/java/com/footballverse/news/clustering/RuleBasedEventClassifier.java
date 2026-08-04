@@ -9,8 +9,9 @@ public class RuleBasedEventClassifier implements EventClassifier {
 
     @Override
     public EventFamily classify(String title, String summary) {
-        String text = ((title == null ? "" : title) + " " + (summary == null ? "" : summary))
-                .toLowerCase(Locale.ROOT);
+        String titleText = normalize(title);
+        String summaryText = normalize(summary);
+        String text = (titleText + " " + summaryText).trim();
 
         if (containsAny(text, "new contract", "extends contract", "extended contract", "contract extension",
                 "renewed contract", "renews contract", "signs extension", "signed extension")) {
@@ -22,12 +23,10 @@ public class RuleBasedEventClassifier implements EventClassifier {
         if (containsAny(text, "appointed", "named manager", "named head coach", "new manager", "new head coach")) {
             return EventFamily.MANAGER_APPOINTMENT;
         }
-        if (containsAny(text, "injury update", "fitness update", "return to training", "back in training", "set to return")) {
-            return EventFamily.INJURY_UPDATE;
-        }
-        if (containsAny(text, "injury", "injured", "ruled out", "hamstring", "acl", "sidelined")) {
-            return EventFamily.INJURY;
-        }
+        EventFamily injuryFamily = injuryFamily(titleText);
+        if (injuryFamily != EventFamily.GENERAL) return injuryFamily;
+        injuryFamily = injuryFamily(summaryText);
+        if (injuryFamily != EventFamily.GENERAL) return injuryFamily;
         if (containsAny(text, "starting xi", "starting lineup", "team news", "line-up", "lineup")) {
             return EventFamily.LINEUP;
         }
@@ -37,6 +36,15 @@ public class RuleBasedEventClassifier implements EventClassifier {
         if (containsAny(text, "match report", " beat ", "defeated", "full-time", "full time", "win over", "draw with")) {
             return EventFamily.MATCH_RESULT;
         }
+        EventFamily transferFamily = transferFamily(titleText);
+        if (transferFamily != EventFamily.GENERAL) return transferFamily;
+        transferFamily = transferFamily(summaryText);
+        if (transferFamily != EventFamily.GENERAL) return transferFamily;
+
+        return EventFamily.GENERAL;
+    }
+
+    private EventFamily transferFamily(String text) {
         if (containsAny(text, "rumour", "rumor", "gossip", "linked with", "linked to", "eyeing")) {
             return EventFamily.TRANSFER_RUMOUR;
         }
@@ -46,15 +54,28 @@ public class RuleBasedEventClassifier implements EventClassifier {
         if (containsAny(text, "bid", "offer", "submitted proposal", "submit proposal")) {
             return EventFamily.TRANSFER_BID;
         }
+        if (containsAny(text, "official", "confirm signing", "confirmed signing", "joins", "completed transfer",
+                "has signed", "have signed", "signs for", "signed for", " sign ", " signs ", " signed ")) {
+            return EventFamily.TRANSFER_OFFICIAL;
+        }
         if (containsAny(text, "agreement", "deal agreed", "agreed terms", "personal terms agreed", "here we go")) {
             return EventFamily.TRANSFER_AGREEMENT;
         }
-        if (containsAny(text, "official", "confirm signing", "confirmed signing", "joins", "completed transfer",
-                "has signed", "have signed", "signs for", "signed for")) {
-            return EventFamily.TRANSFER_OFFICIAL;
-        }
-
         return EventFamily.GENERAL;
+    }
+
+    private EventFamily injuryFamily(String text) {
+        if (containsAny(text, "injury update", "fitness update", "return to training", "back in training", "set to return")) {
+            return EventFamily.INJURY_UPDATE;
+        }
+        if (containsAny(text, "injury", "injured", "ruled out", "hamstring", "acl", "sidelined")) {
+            return EventFamily.INJURY;
+        }
+        return EventFamily.GENERAL;
+    }
+
+    private String normalize(String value) {
+        return (value == null ? "" : value).toLowerCase(Locale.ROOT).trim();
     }
 
     private boolean containsAny(String text, String... terms) {

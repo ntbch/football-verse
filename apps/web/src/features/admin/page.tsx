@@ -304,7 +304,6 @@ export default function AdminDashboardPage() {
           { href: "/admin/users", label: "User Accounts & RBAC", desc: "Manage roles, bans & strikes" },
           { href: "/admin/news", label: "News CMS", desc: "Publish & edit articles" },
           { href: "/admin/news/sources", label: "Ingestion Crawlers", desc: "Monitor RSS, API, Reddit & X feeds" },
-          { href: "/admin/settings", label: "System Settings", desc: "Feature flags & cache flush" },
         ].map((q) => (
           <Link key={q.href} href={q.href}
             className="card flex flex-col gap-1.5 p-4 hover:shadow-md transition-all active:scale-[0.98] group"

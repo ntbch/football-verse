@@ -40,7 +40,7 @@ export function LeaderboardWidget({ leaderboard, error, onRetry }: LeaderboardWi
           <span>Top Predictors</span>
         </h3>
         <Link
-          href="/predictions"
+          href="/matchday"
           className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-accent)] hover:underline underline-offset-4 active:scale-[0.98] transition-all"
         >
           Play →
@@ -81,7 +81,7 @@ export function LeaderboardWidget({ leaderboard, error, onRetry }: LeaderboardWi
         </div>
       )}
       <Link
-        href="/predictions"
+        href="/matchday"
         className="block text-center py-3 border-t border-[var(--color-border)] text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] active:bg-[var(--color-surface-muted)] transition-all active:scale-[0.98]"
       >
         Make Your Predictions
@@ -103,7 +103,7 @@ export function MatchdayPulseWidget({ fixtures, error, onRetry }: { fixtures: Ma
   return <section className="editorial-panel overflow-hidden">
     <div className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-4">
       <h3 className="m-0 font-serif-title text-sm font-black">Matchday pulse</h3>
-      <Link className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-accent)] hover:underline" href="/predictions">Matchday →</Link>
+      <Link className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-accent)] hover:underline" href="/matchday">Matchday →</Link>
     </div>
     {error ? <ErrorBlock message="Could not load fixtures." onRetry={onRetry} /> : fixtures.length ? <ol className="m-0 list-none divide-y divide-[var(--color-border)] p-0">
       {fixtures.slice(0, 3).map((fixture) => <li key={fixture.fixtureId}>
