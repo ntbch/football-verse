@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: pgvector/pgvector:pg16
+    image: pgvector/pgvector:pg16@sha256:1d533553fefe4f12e5d80c7b80622ba0c382abb5758856f52983d8789179f0fb
     environment:
       POSTGRES_DB: ${DB_NAME:-football_verse}
       POSTGRES_USER: ${DB_USERNAME:-football_verse}
@@ -18,53 +18,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-
-  match-game-postgres:
-    image: postgres:16-alpine@sha256:e013e867e712fec275706a6c51c966f0bb0c93cfa8f51000f85a15f9865a28cb
-    environment:
-      POSTGRES_DB: ${MATCH_GAME_DB_NAME:-match_game_db}
-      POSTGRES_USER: ${MATCH_GAME_DB_USER:-match_game}
-      POSTGRES_PASSWORD: ${MATCH_GAME_DB_PASSWORD:-match_game}
-    ports:
-      - "127.0.0.1:${MATCH_GAME_DB_PORT:-54330}:5432"
-    volumes:
-      - match_game_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  match-engine:
-    build: ./services/match-engine
-    expose:
-      - "8091"
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8091/health')"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  game-service:
-    build: ./services/career
-    environment:
-      - MATCH_GAME_DB_URL=jdbc:postgresql://match-game-postgres:5432/${MATCH_GAME_DB_NAME:-match_game_db}
-      - MATCH_GAME_DB_USER=${MATCH_GAME_DB_USER:-match_game}
-      - MATCH_GAME_DB_PASSWORD=${MATCH_GAME_DB_PASSWORD:-match_game}
-      - MATCH_ENGINE_URL=http://match-engine:8091
-      - INTERNAL_TOKEN=${INTERNAL_TOKEN}
-      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me-dev-secret-change-me}
-      - JWT_ISSUER=${JWT_ISSUER:-football-verse-core}
-      - JWT_AUDIENCE=${JWT_AUDIENCE:-football-verse-api}
-      - APP_ENV=${APP_ENV:-development}
-      - ALLOW_LEGACY_GAME_AUTH=${ALLOW_LEGACY_GAME_AUTH:-false}
-    expose:
-      - "8081"
-    depends_on:
-      match-game-postgres:
-        condition: service_healthy
-      match-engine:
-        condition: service_started
 
   prediction-service:
     build: ./services/prediction
@@ -88,6 +41,9 @@ services:
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
       - PREDICTION_SERVICE_URL=http://prediction-service:8090
+      - MINIGAME_SPORTSDB_KEY=${MINIGAME_SPORTSDB_KEY:-123}
+      - MINIGAME_SPORTSDB_BASE_URL=${MINIGAME_SPORTSDB_BASE_URL:-https://www.thesportsdb.com/api/v1/json}
+      - MINIGAME_ESPN_BASE_URL=${MINIGAME_ESPN_BASE_URL:-https://site.api.espn.com/apis/site/v2/sports/soccer}
       - APP_GATEWAY_URL=${APP_GATEWAY_URL:-http://localhost:3000}
       - APP_PUBLIC_URL=${APP_PUBLIC_URL:-http://localhost:3000}
       - APP_CONTENT_INGESTION_URL=http://content-ingestion:8085
@@ -109,13 +65,33 @@ services:
       - APP_SEED_ENABLED=${APP_SEED_ENABLED:-false}
       - APP_CLUSTERING_MODE=${APP_CLUSTERING_MODE:-vector}
       - APP_ENV=${APP_ENV:-development}
+      - BILLING_ENABLED=${BILLING_ENABLED:-false}
+      - BILLING_SALES_ENABLED=${BILLING_SALES_ENABLED:-false}
+      - BILLING_EXPIRY_POLL_MS=${BILLING_EXPIRY_POLL_MS:-300000}
+      - SEPAY_ENV=${SEPAY_ENV:-sandbox}
+      - SEPAY_MERCHANT_ID=${SEPAY_MERCHANT_ID:-}
+      - SEPAY_SECRET_KEY=${SEPAY_SECRET_KEY:-}
+      - SEPAY_IPN_SECRET=${SEPAY_IPN_SECRET:-}
+      - SEPAY_CHECKOUT_URL=${SEPAY_CHECKOUT_URL:-https://pay-sandbox.sepay.vn/v1/checkout/init}
+      - SEPAY_API_URL=${SEPAY_API_URL:-https://pgapi-sandbox.sepay.vn}
+      - SEPAY_BANKHUB_API_KEY=${SEPAY_BANKHUB_API_KEY:-}
+      - SEPAY_QR_BANK_CODE=${SEPAY_QR_BANK_CODE:-}
+      - SEPAY_QR_ACCOUNT_NUMBER=${SEPAY_QR_ACCOUNT_NUMBER:-}
+      - SEPAY_QR_ACCOUNT_NAME=${SEPAY_QR_ACCOUNT_NAME:-}
+      - SEPAY_QR_TEMPLATE=${SEPAY_QR_TEMPLATE:-compact}
+      - PREMIUM_1_MONTH_PRICE_VND=${PREMIUM_1_MONTH_PRICE_VND:-49000}
+      - PREMIUM_3_MONTH_PRICE_VND=${PREMIUM_3_MONTH_PRICE_VND:-129000}
+      - PREMIUM_6_MONTH_PRICE_VND=${PREMIUM_6_MONTH_PRICE_VND:-219000}
+      - PREMIUM_12_MONTH_PRICE_VND=${PREMIUM_12_MONTH_PRICE_VND:-349000}
       - AUTH_COOKIE_SECURE=${AUTH_COOKIE_SECURE:-false}
       - AUTH_COOKIE_SAME_SITE=${AUTH_COOKIE_SAME_SITE:-Lax}
       - APP_UPLOAD_DIR=/app/uploads
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.5-flash}
-      - AI_DAILY_LIMIT=${AI_DAILY_LIMIT:-100}
+      - AI_DAILY_LIMIT=${AI_DAILY_LIMIT:-20}
+      - AI_OUTBOX_POLL_MS=${AI_OUTBOX_POLL_MS:-5000}
       - TELEGRAM_ENABLED=${TELEGRAM_ENABLED:-false}
+      - TELEGRAM_INSTANT_BREAKING_ENABLED=${TELEGRAM_INSTANT_BREAKING_ENABLED:-false}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - TELEGRAM_CHANNEL_ID=${TELEGRAM_CHANNEL_ID:-}
     volumes:
@@ -134,7 +110,6 @@ services:
       - PORT=8000
       - BACKEND_URL=http://core-service:8080
       - PREDICTION_SERVICE_URL=http://prediction-service:8090
-      - GAME_SERVICE_URL=http://game-service:8081
       - CONTENT_INGESTION_URL=http://content-ingestion:8085
       - REDIS_URL=redis://redis:6379
       - INTERNAL_TOKEN=${INTERNAL_TOKEN}
@@ -143,10 +118,12 @@ services:
       - JWT_ISSUER=${JWT_ISSUER:-football-verse-core}
       - JWT_AUDIENCE=${JWT_AUDIENCE:-football-verse-api}
       - APP_ENV=${APP_ENV:-development}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-300}
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
+      - BILLING_IPN_RATE_LIMIT_MAX=${BILLING_IPN_RATE_LIMIT_MAX:-60}
     depends_on:
       - redis
       - prediction-service
-      - game-service
       - core-service
 
   content-ingestion:
@@ -157,6 +134,9 @@ services:
       - INGESTION_DB_URL=postgresql://${INGESTION_DB_USER:-ingestion_user}:${INGESTION_DB_PASSWORD:-ingestion_pass}@postgres:5432/${INGESTION_DB_NAME:-ingestion_db}
       - CRAWL_CRON=${CRAWL_CRON:-*/15 * * * *}
       - REDDIT_ACCESS_TOKEN=${REDDIT_ACCESS_TOKEN:-}
+      - TWITTER_BEARER_TOKEN=${TWITTER_BEARER_TOKEN:-}
+      - YOUTUBE_DATA_API_KEY=${YOUTUBE_DATA_API_KEY:-}
+      - CORE_IMPORT_TIMEOUT_MS=${CORE_IMPORT_TIMEOUT_MS:-30000}
       - INGESTION_MODE=${INGESTION_MODE:-rss_metadata_publish}
       - RUN_CRAWL_ON_STARTUP=${RUN_CRAWL_ON_STARTUP:-false}
       - PORT=8085
@@ -184,7 +164,17 @@ services:
     depends_on:
       - gateway-service
 
+  ngrok:
+    image: ngrok/ngrok:latest
+    restart: unless-stopped
+    command: ["http", "gateway-service:8000"]
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+    depends_on:
+      - gateway-service
+    ports:
+      - "${NGROK_INSPECTOR_PORT:-4040}:4040"
+
 volumes:
   postgres_data:
-  match_game_postgres_data:
   core_uploads:

@@ -21,12 +21,11 @@ export const setupSocket = (server: HttpServer): void => {
       const payload = verifySocketToken(token);
 
       socket.data.userId = payload.uid.toString();
-      socket.data.email = payload.sub;
       socket.data.roles = payload.roles ?? [];
 
       next();
-    } catch (err) {
-      console.warn('Socket.io authentication failed:', err instanceof Error ? err.message : err);
+    } catch {
+      console.warn('Socket.io authentication failed');
       next(new Error('Unauthorized'));
     }
   });
@@ -42,7 +41,7 @@ export const setupSocket = (server: HttpServer): void => {
     if (userId) {
       const room = `room:user:${userId}`;
       socket.join(room);
-      console.log(`Socket ${socket.id} joined user room: ${room} (email: ${socket.data.email})`);
+      console.log(`Socket ${socket.id} joined user room: ${room}`);
     }
 
     socket.on('join_thread', (data: { slug: string }) => {
@@ -86,18 +85,17 @@ export const setupSocket = (server: HttpServer): void => {
 
   // Handle standard messages
   redisSub.on('message', (channel: string, message: string) => {
-    console.log(`[Socket Gateway] Received Redis message on channel "${channel}":`, message);
     try {
       const data: unknown = JSON.parse(message);
       io.emit(channel, data);
     } catch (error: unknown) {
-      console.error(`Error parsing message on channel ${channel}:`, error);
+      console.error(`Error parsing Redis message on channel ${channel}`);
     }
   });
 
   // Handle pattern-matched messages
   redisSub.on('pmessage', (pattern: string, channel: string, message: string) => {
-    console.log(`[Socket Gateway] Received Redis pmessage on channel "${channel}" (pattern "${pattern}"):`, message);
+    // Redis payloads are intentionally not logged.
     try {
       const data: unknown = JSON.parse(message);
       
@@ -107,23 +105,21 @@ export const setupSocket = (server: HttpServer): void => {
         const userId = parts[2];
         if (userId) {
           const room = `room:user:${userId}`;
-          console.log(`[Socket Gateway] Forwarding notification to room: ${room}`);
           io.to(room).emit('notification', data);
         } else {
-          console.warn('[Socket Gateway] userId not found in channel name:', channel);
+          console.warn('[Socket Gateway] userId not found in channel name');
         }
       } else if (pattern === 'realtime:threads:*') {
         const slug = parts[2];
         if (slug) {
           const room = `room:thread:${slug}`;
-          console.log(`[Socket Gateway] Forwarding new reply to room: ${room}`);
           io.to(room).emit('new_reply', data);
         } else {
-          console.warn('[Socket Gateway] thread slug not found in channel name:', channel);
+          console.warn('[Socket Gateway] thread slug not found in channel name');
         }
       }
     } catch (error: unknown) {
-      console.error(`Error parsing pmessage on channel ${channel}:`, error);
+      console.error(`Error parsing Redis pattern message on channel ${channel}`);
     }
   });
 };

@@ -20,6 +20,7 @@ public interface StoryClusterProfileRepository extends JpaRepository<StoryCluste
           AND article.last_source_at >= :windowStart
           AND article.last_source_at <= :windowEnd
           AND profile.model = :model
+          AND profile.model_revision = :modelRevision
           AND profile.centroid IS NOT NULL
         ORDER BY profile.centroid <=> CAST(:vectorStr AS vector)
         LIMIT :limitCount
@@ -29,6 +30,7 @@ public interface StoryClusterProfileRepository extends JpaRepository<StoryCluste
             @Param("windowStart") Instant windowStart,
             @Param("windowEnd") Instant windowEnd,
             @Param("model") String model,
+            @Param("modelRevision") String modelRevision,
             @Param("limitCount") int limitCount
     );
 

@@ -1,5 +1,6 @@
 package com.footballverse.user.service;
 
+import com.footballverse.billing.service.BillingService;
 import com.footballverse.news.service.NewsArticleService;
 import com.footballverse.security.CurrentUser;
 import com.footballverse.user.dto.FollowTargetRequest;
@@ -25,13 +26,14 @@ class UserFollowTargetServiceTest {
     @Mock private UserFollowTargetRepository follows;
     @Mock private NewsArticleService news;
     @Mock private CurrentUser currentUser;
+    @Mock private BillingService billingService;
     @Mock private UserAccount user;
 
     private UserFollowTargetService service;
 
     @BeforeEach
     void setUp() {
-        service = new UserFollowTargetService(follows, news, currentUser);
+        service = new UserFollowTargetService(follows, news, currentUser, billingService);
         when(currentUser.get()).thenReturn(user);
         when(user.getId()).thenReturn(7L);
     }

@@ -5,11 +5,12 @@ type Entry = { count: number; resetAt: number };
 export type RateLimitOptions = {
   limit: number;
   windowMs: number;
+  billingIpnLimit?: number;
   now?: () => number;
 };
 
 function routeGroup(path: string): string {
-  if (path.startsWith('/api/v1/game') || path.startsWith('/game')) return 'game';
+  if (path.endsWith('/billing/webhooks/sepay') || path.endsWith('/billing/webhooks/sepay-bankhub')) return 'billing-ipn';
   if (path.startsWith('/api/v1')) return 'core';
   if (path.startsWith('/matches') || path.startsWith('/standings')) return 'prediction';
   return 'other';
@@ -27,7 +28,9 @@ export function createRateLimitMiddleware(options: RateLimitOptions) {
 
     const timestamp = now();
     const address = req.ip || req.socket?.remoteAddress || 'unknown';
-    const key = `${address}:${routeGroup(req.path)}`;
+    const group = routeGroup(req.path);
+    const limit = group === 'billing-ipn' ? (options.billingIpnLimit ?? options.limit) : options.limit;
+    const key = `${address}:${group}`;
     let entry = entries.get(key);
     if (!entry || entry.resetAt <= timestamp) {
       entry = { count: 0, resetAt: timestamp + options.windowMs };
@@ -35,12 +38,12 @@ export function createRateLimitMiddleware(options: RateLimitOptions) {
     }
     entry.count += 1;
 
-    const remaining = Math.max(options.limit - entry.count, 0);
-    res.setHeader('X-RateLimit-Limit', options.limit);
+    const remaining = Math.max(limit - entry.count, 0);
+    res.setHeader('X-RateLimit-Limit', limit);
     res.setHeader('X-RateLimit-Remaining', remaining);
     res.setHeader('X-RateLimit-Reset', Math.ceil(entry.resetAt / 1000));
 
-    if (entry.count > options.limit) {
+    if (entry.count > limit) {
       const retryAfter = Math.max(Math.ceil((entry.resetAt - timestamp) / 1000), 1);
       res.setHeader('Retry-After', retryAfter);
       res.status(429).json({

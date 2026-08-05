@@ -14,11 +14,11 @@ If Python is not on `PATH`, pass its executable explicitly:
 ./scripts/verify.ps1 -Python C:\path\to\python.exe
 ```
 
-The aggregate command requires Docker and the services' Python dependencies. It
-creates isolated temporary PostgreSQL databases and a Match Engine process,
-redirects uploads to scratch space, and cleans them up. It never falls back to a
-development database. It then builds an isolated Compose project, runs the global
-web/auth/news/forum/prediction/Career smoke, and runs a headless Chromium check
+The aggregate command requires Docker and the Prediction Python dependencies. It
+creates an isolated temporary PostgreSQL database, redirects uploads to scratch
+space, and cleans them up. It never falls back to a development database. It
+then builds an isolated Compose project, runs the global
+web/auth/news/forum/prediction/Minigame smoke, and runs a headless Chromium check
 for memory-only auth, cookie reload, logout, and Back navigation. The generated
 test identities use `example.test`; their values and credentials are not logged.
 The command removes that project's volumes on success or failure.
@@ -43,26 +43,16 @@ For a quick service-suite rerun after the global smoke already passed:
 ./scripts/verify.ps1 -SkipIntegratedSmoke
 ```
 
-## Integrated Career smoke
+## Integrated Football Daily smoke
 
 Required services:
 
 ```powershell
-docker compose up -d postgres redis match-game-postgres match-engine core-service game-service gateway-service web-client
+docker compose up -d postgres redis prediction-service core-service gateway-service web-client
 ```
-
-Do not include `prediction-service` for Career smoke; Career uses `game-service`, `match_game_db`, and `match-engine`.
 
 Run the API smoke:
 
 ```powershell
-python scripts/career_smoke.py
+python scripts/smoke.py
 ```
-
-Run a small balance report:
-
-```powershell
-python scripts/career_smoke.py --seasons 5
-```
-
-The script logs in, creates an eight-club Career, plays only managed-club fixtures, lets each response complete its AI matchday, and reports world fixture count alongside match/transfer/manager balance. It deletes the smoke save unless `--keep-save` is passed.

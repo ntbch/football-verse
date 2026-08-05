@@ -1,5 +1,6 @@
 package com.footballverse.prediction.service;
 
+import com.footballverse.billing.service.BillingService;
 import com.footballverse.prediction.dto.JoinPrivateLeagueRequest;
 import com.footballverse.prediction.dto.PrivateLeagueRequest;
 import com.footballverse.prediction.model.PredictionLeagueCreateRequest;
@@ -36,6 +37,7 @@ class PrivateLeagueServiceTest {
     @Mock private PredictionStatsRepository stats;
     @Mock private UserProfileRepository profiles;
     @Mock private CurrentUser currentUser;
+    @Mock private BillingService billingService;
     @Mock private UserAccount user;
     @Mock private PredictionLeague league;
 
@@ -43,7 +45,7 @@ class PrivateLeagueServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PrivateLeagueService(leagues, members, createRequests, stats, profiles, currentUser);
+        service = new PrivateLeagueService(leagues, members, createRequests, stats, profiles, currentUser, billingService);
         when(currentUser.get()).thenReturn(user);
         when(user.getId()).thenReturn(12L);
         when(league.getId()).thenReturn(42L);

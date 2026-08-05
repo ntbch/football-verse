@@ -32,9 +32,9 @@ async function main() {
       clientErrors.push(`refresh request failed: ${request.failure()?.errorText || "unknown"}`);
     }
   });
-  const email = "admin@footballverse.local";
-  const username = "admin";
-  const password = "ChangeMe123!";
+  const email = process.env.SMOKE_EMAIL || "admin@footballverse.local";
+  const username = process.env.SMOKE_USERNAME || "admin";
+  const password = process.env.SMOKE_PASSWORD || "ChangeMe123!";
 
   try {
     const hydrationResponsePromise = page.waitForResponse(
@@ -70,6 +70,20 @@ async function main() {
     await page.getByRole("button", { name: "Open account menu" }).click();
     await page.getByText(username, { exact: true }).waitFor();
 
+    await page.setViewportSize({ width: 390, height: 844 });
+    const mobileMenu = page.getByRole("button", { name: "Toggle Side Drawer" });
+    await mobileMenu.click();
+    await page.getByRole("dialog", { name: "Navigation" }).waitFor();
+    await page.getByRole("link", { name: "Home" }).waitFor();
+    await page.getByRole("button", { name: "Close navigation" }).click();
+    await page.setViewportSize({ width: 1280, height: 900 });
+
+    const loginFormPage = await context.newPage();
+    await loginFormPage.goto(`${webBaseUrl}/login`, { waitUntil: "domcontentloaded" });
+    const formIsInvalid = await loginFormPage.locator("form").first().evaluate((form) => !form.checkValidity());
+    await loginFormPage.close();
+    if (!formIsInvalid) throw new Error("Login form does not expose native required-field validation");
+
     const storageBeforeReload = await page.evaluate(() => ({
       local: Object.values(localStorage),
       session: Object.values(sessionStorage),
@@ -98,10 +112,59 @@ async function main() {
     await page.getByRole("button", { name: "Open account menu" }).click();
     await page.getByText(username, { exact: true }).waitFor();
     console.log("browser-smoke: session restored");
+
+    const routeChecks = [];
+    await page.goto(`${webBaseUrl}/matchday`, { waitUntil: "domcontentloaded" });
+    await page.getByText("Upcoming", { exact: true }).first().waitFor();
+    routeChecks.push("matchday");
+    await page.goto(`${webBaseUrl}/games`, { waitUntil: "domcontentloaded" });
+    await page.getByText("Daily Intel Run", { exact: false }).waitFor();
+    routeChecks.push("games");
+    const newsResponse = await page.request.get(`${apiBaseUrl}/news?page=0&size=1`);
+    if (newsResponse.ok()) {
+      const envelope = await newsResponse.json();
+      const story = envelope?.data?.content?.[0];
+      if (story?.slug) {
+        const isAggregatedStory = story.contentKind === "AGGREGATED_STORY";
+        let storyLoaded = false;
+        for (let attempt = 0; attempt < 3 && !storyLoaded; attempt += 1) {
+          await page.goto(`${webBaseUrl}/news/${encodeURIComponent(story.slug)}`, { waitUntil: "domcontentloaded" });
+          try {
+            await page.locator("h1").first().waitFor({ timeout: 5_000 });
+            storyLoaded = true;
+          } catch {
+            if (attempt < 2) await page.waitForTimeout(2_000);
+          }
+        }
+        if (!storyLoaded) throw new Error("Story detail did not render a canonical heading");
+        if (isAggregatedStory) {
+          const storyUrl = page.url();
+          await page.getByRole("link", { name: "Open Matchday" }).click();
+          await page.waitForURL(/\/matchday(?:\/)?$/);
+          await page.goto(storyUrl, { waitUntil: "domcontentloaded" });
+          await page.getByRole("link", { name: "Play today's game" }).click();
+          await page.waitForURL(/\/games(?:\/)?$/);
+          await page.goto(storyUrl, { waitUntil: "domcontentloaded" });
+          await page.getByRole("link", { name: "Discuss this story" }).click();
+          await page.waitForURL(/\/news\/[^#]+#story-discussion$/);
+        }
+        await page.keyboard.press("Tab");
+        if (await page.evaluate(() => document.activeElement === document.body)) {
+          throw new Error("Story detail has no keyboard focus target");
+        }
+        const evidenceButton = page.locator('section[aria-labelledby="story-evidence-title"] button').first();
+        if (await evidenceButton.count()) {
+          await evidenceButton.click();
+          if (await evidenceButton.getAttribute("aria-expanded") !== "true") throw new Error("Evidence disclosure did not expand");
+        }
+        routeChecks.push("story-detail", ...(isAggregatedStory ? ["story-context-links"] : ["story-single-source"]), "a11y-dialog-navigation-form");
+      }
+    }
     if (page.url().includes(email) || page.url().includes(username)) {
       throw new Error("Private identity entered the URL");
     }
 
+    await page.getByRole("button", { name: "Open account menu" }).click();
     await page.getByRole("button", { name: "Logout" }).click();
     await page.waitForURL(/\/login$/, { timeout: 30_000 });
     await page.goBack({ waitUntil: "domcontentloaded" });
@@ -110,7 +173,7 @@ async function main() {
       throw new Error("Prior account remained visible after logout/back navigation");
     }
 
-    console.log(JSON.stringify({ status: "passed", checks: ["memory-only", "reload", "httponly", "logout", "back-navigation"] }));
+    console.log(JSON.stringify({ status: "passed", checks: ["memory-only", "reload", "httponly", "logout", "back-navigation", ...routeChecks] }));
   } finally {
     await Promise.race([
       (async () => {

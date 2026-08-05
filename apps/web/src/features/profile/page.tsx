@@ -112,6 +112,42 @@ export default function ProfilePage() {
     onError: (err) => toast({ body: apiErrorMessage(err, "Failed to update notification preferences."), type: "error" }),
   });
 
+  const revokeSessionsMutation = useMutation({
+    mutationFn: () => http.post("/auth/revoke-sessions", {}),
+    onSuccess: () => toast({ body: "All other sessions have been revoked.", type: "info" }),
+    onError: (err) => toast({ body: apiErrorMessage(err, "Could not revoke sessions."), type: "error" }),
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: () => http.delete("/users/me"),
+    onSuccess: () => {
+      useAuthStore.getState().logout();
+      router.replace("/");
+    },
+    onError: (err) => toast({ body: apiErrorMessage(err, "Could not delete your account."), type: "error" }),
+  });
+
+  const exportAccount = async () => {
+    try {
+      const exportData = await data<Record<string, unknown>>(http.get("/users/me/export"));
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "football-verse-account-export.json";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast({ body: apiErrorMessage(err, "Could not export your account."), type: "error" });
+    }
+  };
+
+  const deleteAccount = () => {
+    if (window.confirm("Delete your account? Your authored community content will remain anonymized.")) {
+      deleteAccountMutation.mutate();
+    }
+  };
+
   const handleUpdateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!displayNameInput.trim()) {
@@ -193,6 +229,15 @@ export default function ProfilePage() {
                   </label>
                 </fieldset>
               )}
+            </section>
+            <section className="editorial-panel p-4" aria-labelledby="account-controls-title">
+              <h2 className="m-0 text-sm font-black text-[var(--color-text-primary)]" id="account-controls-title">Account controls</h2>
+              <p className="m-0 mt-2 text-xs leading-relaxed text-[var(--color-text-secondary)]">Export your data, revoke other sessions, or permanently delete this account.</p>
+              <div className="mt-3 grid gap-2">
+                <button className="min-h-11 rounded-xl border border-[var(--color-border)] px-3 text-xs font-bold text-left" onClick={() => void exportAccount()} type="button">Download account export</button>
+                <button className="min-h-11 rounded-xl border border-[var(--color-border)] px-3 text-xs font-bold text-left" disabled={revokeSessionsMutation.isPending} onClick={() => revokeSessionsMutation.mutate()} type="button">{revokeSessionsMutation.isPending ? "Revoking…" : "Revoke other sessions"}</button>
+                <button className="min-h-11 rounded-xl border border-red-500/40 px-3 text-xs font-bold text-left text-red-600" disabled={deleteAccountMutation.isPending} onClick={deleteAccount} type="button">{deleteAccountMutation.isPending ? "Deleting…" : "Delete account"}</button>
+              </div>
             </section>
           </aside>
 

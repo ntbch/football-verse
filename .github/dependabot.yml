@@ -9,14 +9,8 @@ updates:
   - package-ecosystem: maven
     directory: /services/core-api
     schedule: { interval: weekly }
-  - package-ecosystem: maven
-    directory: /services/career
-    schedule: { interval: weekly }
   - package-ecosystem: pip
     directory: /services/prediction
-    schedule: { interval: weekly }
-  - package-ecosystem: pip
-    directory: /services/match-engine
     schedule: { interval: weekly }
   - package-ecosystem: github-actions
     directory: /
@@ -28,6 +22,4 @@ updates:
       - /services/core-api
       - /services/gateway
       - /services/prediction
-      - /services/career
-      - /services/match-engine
     schedule: { interval: weekly }

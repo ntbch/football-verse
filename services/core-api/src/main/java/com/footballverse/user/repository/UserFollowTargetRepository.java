@@ -11,4 +11,6 @@ public interface UserFollowTargetRepository extends JpaRepository<UserFollowTarg
     List<UserFollowTarget> findByUserIdOrderByCreatedAtDesc(Long userId);
 
     Optional<UserFollowTarget> findByUserIdAndTargetTypeAndTargetKey(Long userId, FollowTargetType targetType, String targetKey);
+
+    void deleteByUserId(Long userId);
 }

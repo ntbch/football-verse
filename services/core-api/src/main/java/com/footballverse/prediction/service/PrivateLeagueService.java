@@ -1,5 +1,7 @@
 package com.footballverse.prediction.service;
 
+import com.footballverse.billing.service.BillingService;
+import com.footballverse.common.exception.ForbiddenException;
 import com.footballverse.common.exception.ResourceNotFoundException;
 import com.footballverse.common.pagination.PageResponse;
 import com.footballverse.prediction.dto.JoinPrivateLeagueRequest;
@@ -39,6 +41,7 @@ public class PrivateLeagueService {
     private final PredictionStatsRepository stats;
     private final UserProfileRepository profiles;
     private final CurrentUser currentUser;
+    private final BillingService billingService;
 
     @Transactional(readOnly = true)
     public PageResponse<PrivateLeagueResponse> mine(int page, int size) {
@@ -54,6 +57,9 @@ public class PrivateLeagueService {
         var stored = createRequests.lockByRequestId(requestId).orElseThrow();
         if (!stored.getOwnerId().equals(user.getId())) throw new IllegalArgumentException("Request ID is already used");
         if (stored.getLeague() != null) return response(stored.getLeague(), user);
+        if (billingService.isFeatureGatesEnabled() && !billingService.isPremium(user.getId()) && leagues.countByOwnerId(user.getId()) >= 1) {
+            throw new ForbiddenException("Premium membership required for more than one private league");
+        }
         PredictionLeague league = leagues.save(new PredictionLeague(user, request.name().trim(), nextInviteCode()));
         members.save(new PredictionLeagueMember(league, user));
         stored.complete(league);

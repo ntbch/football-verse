@@ -219,7 +219,7 @@ function SearchContent() {
                       : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                   }`}
                 >
-                  News Articles ({newsList.length})
+                  Stories ({newsList.length})
                 </button>
                 <button
                   onClick={() => handleTabChange("forum")}
@@ -242,7 +242,7 @@ function SearchContent() {
                 filteredNewsList.length === 0 ? (
                   <div className="text-center py-16 bg-[var(--color-background-surface)] border border-[var(--color-border)] rounded-2xl p-8 flex flex-col items-center gap-3">
                     <h3 className="m-0 font-serif-title font-black text-lg text-[var(--color-text-primary)]">
-                      No News Articles Found
+                      No Stories Found
                     </h3>
                     <p className="text-xs text-[var(--color-text-secondary)]">
                       No articles found matching the active filters and keyword.
@@ -258,10 +258,11 @@ function SearchContent() {
                         {/* Image header */}
                         <div className="h-44 w-full relative overflow-hidden flex-shrink-0">
                           <img
-                            src={getArticleImage(art.id, art.content, art.imageUrl)}
+                            src={getArticleImage(art.id, undefined, art.imageUrl, 800)}
                             alt={art.title}
                             loading={idx < 6 ? "eager" : "lazy"}
                             fetchPriority={idx < 3 ? "high" : "auto"}
+                            decoding="async"
                             className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
                           />
                           <div className="absolute top-2 left-2 bg-[var(--color-accent)] text-[var(--color-text-inverse)] text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">

@@ -3,8 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { data, http } from "@/shared/lib/api-client";
 import type { CommunityPredictionDistribution, CurrentLeaderboard, Fixture, UserPrediction, StatsResponse, LeaderboardEntry, MatchCentreResponse, MatchDetailResponse, PredictionScoreLog, PrivateLeague } from "./types";
-import type { SearchResponse } from "@/features/search/types";
-import type { NewsArticleResponse } from "@/features/news/types";
+import type { SearchArticleSummary, SearchResponse } from "@/features/search/types";
 import type { ThreadResponse } from "@/features/forum/types";
 import type { PageResponse } from "@/shared/lib/api-types";
 
@@ -121,7 +120,7 @@ export const useMatchRelatedContent = (homeTeam: string, awayTeam: string, enabl
       if (resolved.length === 0) throw new Error("Related content is unavailable");
       const unique = <T extends { id: number }>(items: T[]) => [...new Map(items.map((item) => [item.id, item])).values()];
       return {
-        articles: unique<NewsArticleResponse>(resolved.flatMap((result) => result.news.content)).slice(0, 4),
+        articles: unique<SearchArticleSummary>(resolved.flatMap((result) => result.news.content)).slice(0, 4),
         threads: unique<ThreadResponse>(resolved.flatMap((result) => result.forum.content)).slice(0, 4),
       };
     },

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 
 interface YouTubeEmbedProps {
   videoUrl: string;
@@ -15,6 +15,7 @@ export const YouTubeEmbed: React.FC<YouTubeEmbedProps> = ({
   title,
   summary,
 }) => {
+  const [playing, setPlaying] = useState(false);
   // Extract YouTube Video ID from URL (e.g. watch?v=videoId or embed/videoId)
   const videoIdMatch = videoUrl.match(/(?:v=|embed\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   const videoId = videoIdMatch ? videoIdMatch[1] : null;
@@ -42,13 +43,33 @@ export const YouTubeEmbed: React.FC<YouTubeEmbedProps> = ({
       {/* Embedded YouTube iFrame Video Player with Fallback Cover */}
       {videoId ? (
         <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black shadow-inner group">
-          <iframe
-            src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&rel=0`}
-            title={title || "YouTube Highlight Video"}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            className="absolute top-0 left-0 w-full h-full border-0 z-10"
-          />
+          {playing ? (
+            <iframe
+              src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`}
+              title={title || "YouTube Highlight Video"}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="absolute top-0 left-0 w-full h-full border-0 z-10"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setPlaying(true)}
+              aria-label={`Play ${title || "YouTube Highlight Video"}`}
+              className="absolute inset-0 z-10 flex items-center justify-center bg-black"
+            >
+              <img
+                src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="h-full w-full object-cover opacity-80"
+              />
+              <span className="absolute flex h-14 w-14 items-center justify-center rounded-full bg-[#FF0000] text-white shadow-lg" aria-hidden="true">
+                <svg className="ml-0.5 h-6 w-6 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+              </span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="p-4 bg-red-50 text-red-700 text-xs rounded-xl">

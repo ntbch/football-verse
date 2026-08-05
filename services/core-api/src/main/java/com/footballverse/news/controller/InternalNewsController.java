@@ -7,15 +7,13 @@ import com.footballverse.news.dto.NewsSourceResponse;
 import com.footballverse.news.repository.NewsSourceRepository;
 import com.footballverse.news.service.CrawlService;
 import com.footballverse.news.service.RawItemImportService;
-import com.footballverse.security.InternalTokenVerifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,15 +30,9 @@ public class InternalNewsController {
     private final NewsSourceRepository sources;
     private final CrawlService crawlService;
     private final RawItemImportService rawItemImportService;
-    private final InternalTokenVerifier internalTokenVerifier;
 
     @GetMapping("/news-sources")
-    public ResponseEntity<?> getActiveSources(@RequestHeader(value = "X-Internal-Token", required = false) String token) {
-        if (!internalTokenVerifier.matches(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Unauthorized: Invalid internal token"));
-        }
-        
+    public ResponseEntity<?> getActiveSources() {
         List<NewsSourceResponse> activeSources = sources.findByActiveTrue().stream()
                 .map(source -> new NewsSourceResponse(
                         source.getId(),
@@ -51,7 +43,8 @@ public class InternalNewsController {
                         source.getSourceType(),
                         source.getCssSelector(),
                         source.getProvider(),
-                        source.getName()
+                        source.getName(),
+                        source.getFetchIntervalSeconds()
                 ))
                 .toList();
                 
@@ -60,27 +53,15 @@ public class InternalNewsController {
 
     @GetMapping("/news/check-status")
     public ResponseEntity<?> checkArticleStatus(
-            @RequestHeader(value = "X-Internal-Token", required = false) String token,
             @RequestParam("url") String url
     ) {
-        if (!internalTokenVerifier.matches(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Unauthorized: Invalid internal token"));
-        }
-        
         return ResponseEntity.ok(ApiResponse.ok(crawlService.checkStatus(url)));
     }
 
     @PostMapping("/news/import")
     public ResponseEntity<?> importArticle(
-            @RequestHeader(value = "X-Internal-Token", required = false) String token,
             @RequestBody InternalArticleImportRequest request
     ) {
-        if (!internalTokenVerifier.matches(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Unauthorized: Invalid internal token"));
-        }
-        
         try {
             var result = crawlService.importArticle(request);
             return ResponseEntity.ok(ApiResponse.ok(result));
@@ -96,14 +77,8 @@ public class InternalNewsController {
 
     @PostMapping("/news/raw-items")
     public ResponseEntity<?> importRawItem(
-            @RequestHeader(value = "X-Internal-Token", required = false) String token,
             @Valid @RequestBody NormalizedItemImportRequest request
     ) {
-        if (!internalTokenVerifier.matches(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Unauthorized: Invalid internal token"));
-        }
-
         try {
             return ResponseEntity.ok(ApiResponse.ok(rawItemImportService.importItem(request)));
         } catch (IllegalArgumentException exception) {

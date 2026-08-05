@@ -78,10 +78,11 @@ ports 55432/55433.
 
 The same command finishes with a production-shaped smoke covering web, auth,
 news, forum, Prediction, Career, refresh, logout, browser reload, and Back
-privacy in an isolated Compose project.
-Set `SMOKE_EMAIL` and `SMOKE_PASSWORD` to a verified, non-privileged test
-account before invoking the integrated smoke; credentials are never seeded or
-stored in this repository.
+privacy in an isolated Compose project. When both `SMOKE_EMAIL` and
+`SMOKE_PASSWORD` are omitted, the runner creates an ephemeral non-privileged
+account in the disposable smoke database and removes it during teardown. Set
+both variables only when you need to exercise a specific verified test
+account; credentials are never stored in this repository.
 
 ## Replay failed ingestion
 

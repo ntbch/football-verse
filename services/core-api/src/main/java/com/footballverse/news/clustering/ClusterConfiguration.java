@@ -11,11 +11,15 @@ import org.springframework.context.annotation.Configuration;
 @Setter
 public class ClusterConfiguration {
     private String mode = "vector-shadow";
-    private int windowHours = 48;
-    private int candidateLimit = 20;
-    private double semanticWeight = 0.60;
+    private int windowHours = 36;
+    private int candidateLimit = 40;
+    private double semanticWeight = 0.65;
     private double lexicalWeight = 0.10;
-    private double entityWeight = 0.25;
+    private double entityWeight = 0.20;
     private double timeWeight = 0.05;
-    private double autoMergeThreshold = 0.55;
+    private double autoMergeThreshold = 0.78;
+    private double reviewThreshold = 0.68;
+    private double minimumSemanticScore = 0.72;
+    private double minimumEntityScore = 0.15;
+    private boolean failClosedOnVectorError = true;
 }

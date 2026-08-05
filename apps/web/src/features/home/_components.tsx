@@ -5,7 +5,7 @@ import type { LeaderboardEntryResponse, MatchCentreFixture } from "@/features/pr
 import type { ThreadResponse } from "@/features/forum/types";
 import type { NewsArticleResponse } from "@/features/news/types";
 import { ErrorBlock } from "@/shared/components/state-blocks";
-import { handleImageError } from "@/shared/lib/images";
+import { getArticleImage, handleImageError } from "@/shared/lib/images";
 import { formatDateTime } from "@/shared/lib/format";
 
 function timeAgo(dateStr: string) {
@@ -40,7 +40,7 @@ export function LeaderboardWidget({ leaderboard, error, onRetry }: LeaderboardWi
           <span>Top Predictors</span>
         </h3>
         <Link
-          href="/predictions"
+          href="/matchday"
           className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-accent)] hover:underline underline-offset-4 active:scale-[0.98] transition-all"
         >
           Play →
@@ -81,7 +81,7 @@ export function LeaderboardWidget({ leaderboard, error, onRetry }: LeaderboardWi
         </div>
       )}
       <Link
-        href="/predictions"
+        href="/matchday"
         className="block text-center py-3 border-t border-[var(--color-border)] text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] active:bg-[var(--color-surface-muted)] transition-all active:scale-[0.98]"
       >
         Make Your Predictions
@@ -103,7 +103,7 @@ export function MatchdayPulseWidget({ fixtures, error, onRetry }: { fixtures: Ma
   return <section className="editorial-panel overflow-hidden">
     <div className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-4">
       <h3 className="m-0 font-serif-title text-sm font-black">Matchday pulse</h3>
-      <Link className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-accent)] hover:underline" href="/predictions">Matchday →</Link>
+      <Link className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-accent)] hover:underline" href="/matchday">Matchday →</Link>
     </div>
     {error ? <ErrorBlock message="Could not load fixtures." onRetry={onRetry} /> : fixtures.length ? <ol className="m-0 list-none divide-y divide-[var(--color-border)] p-0">
       {fixtures.slice(0, 3).map((fixture) => <li key={fixture.fixtureId}>
@@ -174,10 +174,9 @@ export function CommunityWidget({ threads, error, onRetry }: CommunityWidgetProp
 // ─────────────────────────────────────────────
 interface EditorsPickWidgetProps {
   articles: NewsArticleResponse[];
-  getImage: (id: number, content: string) => string;
 }
 
-export function EditorsPickWidget({ articles, getImage }: EditorsPickWidgetProps) {
+export function EditorsPickWidget({ articles }: EditorsPickWidgetProps) {
   return (
     <div className="editorial-panel overflow-hidden flex flex-col">
       <div className="px-5 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
@@ -204,9 +203,10 @@ export function EditorsPickWidget({ articles, getImage }: EditorsPickWidgetProps
             >
               <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-[var(--color-surface-muted)]">
                 <img
-                  src={getImage(art.id, art.content)}
+                  src={getArticleImage(art.id, undefined, art.imageUrl, 320)}
                   alt={art.title}
                   loading="lazy"
+                  decoding="async"
                   onError={handleImageError}
                   className="w-full h-full object-cover"
                 />

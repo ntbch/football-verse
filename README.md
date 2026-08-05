@@ -1,6 +1,8 @@
 # Football Verse
 
-Football Verse is a full-stack football community and career-management platform. The repository is organized by deployable so code ownership, data ownership, and verification boundaries stay explicit.
+Football Verse is a full-stack football intelligence, community, prediction, and
+daily-games platform. The repository is organized by deployable so code
+ownership, data ownership, and verification boundaries stay explicit.
 
 ## Local development
 
@@ -28,7 +30,17 @@ Run the isolated, data-safe verification matrix from the repository root:
 ./scripts/verify.ps1
 ```
 
-The verification runner uses temporary databases, uploads, Compose resources, and generated test identities. It does not read or mutate development data. See the [verification runbook](docs/runbooks/baseline-verification.md) for prerequisites and isolation guarantees.
+The verification runner uses temporary databases, uploads, Compose resources, and generated test identities. It does not read or mutate development data. `apps/web` also exposes separate `npm run typecheck` and `npm test` gates; the test script discovers every retained `*.test.ts` file. See the [verification runbook](docs/runbooks/baseline-verification.md) for prerequisites and isolation guarantees.
+
+The integrated smoke gate auto-seeds an ephemeral non-privileged account when
+both variables are omitted. To exercise a specific verified test account,
+provide it explicitly:
+
+```powershell
+$env:SMOKE_EMAIL = "verified-test@example.test"
+$env:SMOKE_PASSWORD = "<test-password>"
+./scripts/verify.ps1 -IntegratedSmokeOnly
+```
 
 ## Deployables
 
@@ -39,8 +51,6 @@ The verification runner uses temporary databases, uploads, Compose resources, an
 | Gateway | `services/gateway/` — public proxy, JWT edge checks, realtime | none; Redis is transient | `cd services/gateway; npm ci; npm test` |
 | Content Ingestion | `services/content-ingestion/` — RSS/API adapters, checkpoints, durable delivery | PostgreSQL `ingestion_db` for operational state; Core owns content | `cd services/content-ingestion; npm ci; npm test` |
 | Prediction | `services/prediction/` — provider fixtures, standings, calculations | none | `cd services/prediction; python -m pytest -q` |
-| Career | `services/career/` — saves, squads, tactics, transfers, persisted matches | PostgreSQL `match_game_db` | `cd services/career; mvn test` |
-| Match Engine | `services/match-engine/` — deterministic match simulation | none | `cd services/match-engine; python -m pytest -q` |
 
 Compose keeps the established runtime service names while source paths use the
 topology above. `content-ingestion` runs independently from Gateway and sends
@@ -53,10 +63,15 @@ The browser talks to the Gateway; services and databases are not public applicat
 
 | Gateway route | Owner/destination |
 |---|---|
-| `/api/v1/**` | Core API; `/api/v1/game/**` is a Career compatibility route |
-| `/game/**` | Career |
+| `/api/v1/**` | Core API |
 | `/matches/**`, `/standings/**` | Prediction |
 | Socket.IO connection | Gateway realtime with Redis fan-out |
+
+The primary browser journeys are `/` (Football Intelligence), `/news` and
+`/news/[slug]` (source-backed stories), `/matchday/[fixtureId]` (match context),
+`/predictions`, `/games`, and `/forum`. `/career` is retained only as a
+redirect to `/games` during the documented transition. Legal pages
+are `/terms`, `/privacy`, `/community-guidelines`, and `/contact`.
 
 The complete observed route, identity, and service-boundary contract is in [service contracts](docs/architecture/service-contracts.md). Current deployables, owners, verification results, and known risks are in [current state](docs/architecture/current-state.md).
 

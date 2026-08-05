@@ -24,7 +24,7 @@ public class SecurityUserDetailsService implements UserDetailsService {
 
         return User.withUsername(user.getEmail())
                 .password(user.getPasswordHash() != null ? user.getPasswordHash() : "")
-                .disabled(user.getStatus() == UserStatus.BANNED)
+                .disabled(user.getStatus() != UserStatus.ACTIVE)
                 .authorities(user.getRoles().stream()
                         .map(UserRole::name)
                         .map(role -> new SimpleGrantedAuthority("ROLE_" + role))

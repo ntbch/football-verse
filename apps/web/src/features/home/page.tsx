@@ -13,8 +13,16 @@ import type { ForumCategoryResponse, ThreadResponse } from "@/features/forum/typ
 import { getArticleImage, handleImageError } from "@/shared/lib/images";
 import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import { LeaderboardWidget, CommunityWidget, EditorsPickWidget, MatchdayPulseWidget } from "./_components";
-import { FollowTargetButton, followTopics, useFollowingFeed, useSetFollowTarget } from "@/features/following";
+import { FollowingOnboarding, useFollowingFeed } from "@/features/following";
 import { useAuthStore } from "@/shared/lib/auth-store";
+
+type HomeInitialData = {
+  newsPage?: PageResponse<NewsArticleResponse>;
+  leaderboard?: LeaderboardEntryResponse[];
+  matchday?: MatchCentreResponse;
+  categories?: ForumCategoryResponse[];
+  threadsPage?: PageResponse<ThreadResponse>;
+};
 
 function timeAgo(dateStr: string) {
   const now = Date.now();
@@ -28,10 +36,9 @@ function timeAgo(dateStr: string) {
   return `${days}d ago`;
 }
 
-export default function HomePage() {
+export default function HomePage({ initialData }: { initialData?: HomeInitialData }) {
   const auth = useAuthStore((state) => state.auth);
-  const [playerName, setPlayerName] = React.useState("");
-  const setFollowTarget = useSetFollowTarget();
+  const [initialDataUpdatedAt] = React.useState(() => Date.now());
   /* 1 — News */
   const { data: newsPage, isLoading: newsLoading, isError: newsError, refetch: refetchNews } = useQuery({
     queryKey: ["home-news"] as const,
@@ -39,15 +46,14 @@ export default function HomePage() {
       data<PageResponse<NewsArticleResponse>>(
         http.get("/news", { params: { page: 0, size: 15 } })
       ),
+    initialData: initialData?.newsPage,
+    initialDataUpdatedAt: initialData?.newsPage ? initialDataUpdatedAt : undefined,
+    staleTime: 60_000,
   });
   const rawArticles = newsPage?.content ?? [];
   const articles = [...rawArticles].sort(
     (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
   );
-  const hero = articles[0];
-  const secondary = articles.slice(1, 3);
-  const mainFeed = articles.slice(3, 11);
-  const sideArticles = articles.slice(11, 15);
 
   /* 2 — Leaderboard */
   const { data: leaderboard = [], isError: leaderboardError, refetch: refetchLeaderboard } = useQuery({
@@ -56,11 +62,16 @@ export default function HomePage() {
       data<LeaderboardEntryResponse[]>(
         http.get("/predictions/leaderboard", { params: { period: "weekly", limit: 5 } })
       ),
+    initialData: initialData?.leaderboard,
+    initialDataUpdatedAt: initialData?.leaderboard ? initialDataUpdatedAt : undefined,
+    staleTime: 60_000,
   });
 
   const { data: matchday, isError: matchdayError, refetch: refetchMatchday } = useQuery({
     queryKey: ["home-matchday-pulse"] as const,
     queryFn: () => data<MatchCentreResponse>(http.get("/predictions/match-centre", { params: { league: "premier-league" } })),
+    initialData: initialData?.matchday,
+    initialDataUpdatedAt: initialData?.matchday ? initialDataUpdatedAt : undefined,
     staleTime: 120_000,
   });
   const matchdayFixtures = (matchday?.fixtures ?? []).filter((fixture) => fixture.status === "upcoming" || fixture.status === "live");
@@ -69,6 +80,9 @@ export default function HomePage() {
   const { data: categories = [], isError: categoriesError, refetch: refetchCategories } = useQuery({
     queryKey: qk.forum.categories(),
     queryFn: () => data<ForumCategoryResponse[]>(http.get("/forum/categories")),
+    initialData: initialData?.categories,
+    initialDataUpdatedAt: initialData?.categories ? initialDataUpdatedAt : undefined,
+    staleTime: 5 * 60_000,
   });
   const firstCatSlug = categories[0]?.slug ?? "";
   const { data: threadsPage, isError: threadsError, refetch: refetchThreads } = useQuery({
@@ -78,9 +92,18 @@ export default function HomePage() {
         http.get(`/forum/categories/${firstCatSlug}/threads`, { params: { size: 4 } })
       ),
     enabled: !!firstCatSlug,
+    initialData: initialData?.threadsPage,
+    initialDataUpdatedAt: initialData?.threadsPage ? initialDataUpdatedAt : undefined,
+    staleTime: 60_000,
   });
   const threads = threadsPage?.content?.slice(0, 4) ?? [];
   const { data: followingFeed, isLoading: followingLoading, isError: followingError, refetch: refetchFollowing } = useFollowingFeed(Boolean(auth));
+  const personalizedStories = followingFeed?.items.map(({ article }) => article) ?? [];
+  const primaryArticles = followingFeed?.follows.length && personalizedStories.length ? personalizedStories : articles;
+  const hero = primaryArticles[0];
+  const secondary = primaryArticles.slice(1, 3);
+  const mainFeed = primaryArticles.slice(3, 11);
+  const sideArticles = primaryArticles.slice(11, 15);
 
   return (
     <PublicShell>
@@ -98,10 +121,11 @@ export default function HomePage() {
               className="xl:col-span-7 editorial-story relative min-h-[390px] md:min-h-[500px] group block bg-[var(--color-surface-muted)] transition-shadow duration-500"
             >
               <img
-                src={getArticleImage(hero.id, hero.content, hero.imageUrl)}
+                src={getArticleImage(hero.id, undefined, hero.imageUrl, 1600)}
                 alt={hero.title}
                 loading="eager"
                 fetchPriority="high"
+                decoding="async"
                 onError={handleImageError}
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
               />
@@ -132,9 +156,10 @@ export default function HomePage() {
                   className="editorial-story relative flex-1 min-h-[205px] group block bg-[var(--color-surface-muted)] transition-shadow duration-500"
                 >
                   <img
-                    src={getArticleImage(art.id, art.content, art.imageUrl)}
+                    src={getArticleImage(art.id, undefined, art.imageUrl, 800)}
                     alt={art.title}
-                    loading="eager"
+                    loading="lazy"
+                    decoding="async"
                     onError={handleImageError}
                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
                   />
@@ -195,9 +220,10 @@ export default function HomePage() {
                     >
                       <div className="relative h-48 overflow-hidden bg-[var(--color-surface-muted)]">
                         <img
-                          src={getArticleImage(art.id, art.content, art.imageUrl)}
+                          src={getArticleImage(art.id, undefined, art.imageUrl, 800)}
                           alt={art.title}
                           loading="lazy"
+                          decoding="async"
                           onError={handleImageError}
                           className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500 ease-out"
                         />
@@ -244,15 +270,10 @@ export default function HomePage() {
 
                 {followingLoading ? <LoadingBlock label="Loading following feed" /> : followingError ? <ErrorBlock message="Following feed could not be loaded." onRetry={() => void refetchFollowing()} /> : !followingFeed?.follows.length ? (
                   <div className="flex flex-col gap-3">
-                    <p className="m-0 text-sm text-[var(--color-text-secondary)]">Choose a topic now, or follow clubs and leagues from any Matchday.</p>
-                    <div className="flex flex-wrap gap-2">
-                      {followTopics.map((target) => <FollowTargetButton follows={[]} key={target.targetKey} target={target} />)}
-                    </div>
-                    <form className="flex gap-2" onSubmit={(event) => { event.preventDefault(); const name = playerName.trim(); if (name) setFollowTarget.mutate({ targetType: "PLAYER", targetKey: name, targetName: name, following: true }, { onSuccess: () => setPlayerName("") }); }}>
-                      <input aria-label="Player name" className="min-w-0 flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-background-surface)] px-3 text-sm" maxLength={120} onChange={(event) => setPlayerName(event.target.value)} placeholder="Follow a player" required value={playerName} />
-                      <button className="min-h-11 rounded-xl border border-[var(--color-border)] px-3 text-xs font-bold text-[var(--color-text-primary)] disabled:opacity-50" disabled={setFollowTarget.isPending} type="submit">Follow</button>
-                    </form>
+                    <FollowingOnboarding follows={[]} />
                   </div>
+                ) : followingFeed.follows.length < 3 ? (
+                  <FollowingOnboarding follows={followingFeed.follows} />
                 ) : followingFeed.items.length === 0 ? (
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="m-0 text-sm text-[var(--color-text-secondary)]">No recent stories match your follows yet.</p>
@@ -271,6 +292,10 @@ export default function HomePage() {
                 )}
               </section>
             ) : null}
+            {!auth ? <section className="editorial-panel flex flex-wrap items-center justify-between gap-3 p-5 sm:p-6">
+              <div><p className="editorial-kicker m-0">Personal intelligence</p><h3 className="editorial-section-title m-0 mt-1">Follow teams to tune Home</h3><p className="m-0 mt-1 text-sm text-[var(--color-text-secondary)]">Save your clubs, players and competitions in one feed.</p></div>
+              <Link className="min-h-11 inline-flex items-center rounded-full bg-[var(--color-accent)] px-4 text-xs font-bold text-[var(--color-text-inverse)]" href="/login?next=/">Start with a follow</Link>
+            </section> : null}
           </div>
 
           {/* Right Column — 1/3: Widgets Sidebar */}
@@ -285,7 +310,7 @@ export default function HomePage() {
                 void refetchThreads();
               }}
             />
-            <EditorsPickWidget articles={sideArticles} getImage={getArticleImage} />
+            <EditorsPickWidget articles={sideArticles} />
           </aside>
         </div>
       </div>

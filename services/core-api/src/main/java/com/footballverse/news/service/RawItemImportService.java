@@ -67,7 +67,9 @@ public class RawItemImportService {
     private final StoryKeyPointRepository keyPoints;
     private final KeyPointEvidenceRepository evidence;
     private final TelegramNotificationService telegramNotificationService;
+    private final NewsArticleService newsArticleService;
     private final AiSummaryService aiSummaryService;
+    private final NewsAiEnrichmentService aiEnrichment;
     private final NewsCategoryClassifierService categoryClassifier;
     private final com.footballverse.news.clustering.StoryClusteringService storyClusteringService;
     private final com.footballverse.news.clustering.ClusterConfiguration clusterConfig;
@@ -90,8 +92,7 @@ public class RawItemImportService {
         var existing = rawItems.findByIdentityKey(request.identityKey());
         if (existing.isPresent()) {
             RawItem rawItem = existing.get();
-            boolean hadNoEmbedding = rawItem.getEmbedding() == null;
-            if (rawItem.getRevisionFingerprint().equals(request.revisionFingerprint()) && !hadNoEmbedding) {
+            if (rawItem.getRevisionFingerprint().equals(request.revisionFingerprint())) {
                 return new ArticleImportResponse("EXISTS", "Raw item revision already exists");
             }
             apply(rawItem, source, request);
@@ -101,7 +102,7 @@ public class RawItemImportService {
                 return new ArticleImportResponse("UPDATED", "Raw item retained for review");
             }
             var existingMembership = storyItems.findFirstByRawItem(rawItem);
-            if (existingMembership.isPresent() && !hadNoEmbedding) {
+            if (existingMembership.isPresent()) {
                 updateStory(existingMembership.get().getStory(), rawItem);
                 return new ArticleImportResponse("UPDATED", "Raw item revision updated");
             }
@@ -274,7 +275,10 @@ public class RawItemImportService {
         refreshPrimarySource(story);
         story.setConfidenceScore(BigDecimal.valueOf(similarity).setScale(4, RoundingMode.HALF_UP));
         story.setLastMaterialChangeAt(Instant.now());
+        newsArticleService.calculateHotScore(story);
         stories.save(story);
+        aiEnrichment.enqueue(story, rawItem.getTitle(), rawItem.getDescription(),
+                storySummary(rawItem), rawItem.getRevisionFingerprint());
     }
 
     private void refreshPrimarySource(NewsArticle story) {
@@ -398,9 +402,8 @@ public class RawItemImportService {
         story.setTitle(limit(rawItem.getTitle(), 200));
         story.setSlug(SlugUtil.uniqueSlug(story.getTitle()));
 
-        AiSummaryService.SummaryResult aiRes = aiSummaryService.generateSummaryAndKeyPoints(
+        AiSummaryService.SummaryResult aiRes = aiSummaryService.fallbackSummaryAndKeyPoints(
                 rawItem.getTitle(),
-                rawItem.getDescription(),
                 storySummary(rawItem)
         );
         story.setSummary(aiRes.summary());
@@ -412,8 +415,7 @@ public class RawItemImportService {
 
         story.setCategory(categoryClassifier.classify(
                 rawItem.getTitle(),
-                rawItem.getDescription(),
-                aiRes.category()
+                rawItem.getDescription()
         ));
         story.setSourceUrl(rawItem.getOriginalUrl());
         story.setContentHash(sha256(rawItem.getIdentityKey()));
@@ -440,7 +442,7 @@ public class RawItemImportService {
                 kp.setStory(savedStory);
                 kp.setOrdinal(ordinal++);
                 kp.setText(pt.trim());
-                kp.setConfidence(BigDecimal.valueOf(0.95));
+                kp.setConfidence(BigDecimal.valueOf(aiRes.aiGenerated() ? 0.95 : 0.50));
                 keyPoints.save(kp);
             }
         } else {
@@ -451,6 +453,9 @@ public class RawItemImportService {
             kp.setConfidence(BigDecimal.valueOf(0.95));
             keyPoints.save(kp);
         }
+
+        aiEnrichment.enqueue(savedStory, rawItem.getTitle(), rawItem.getDescription(),
+                storySummary(rawItem), rawItem.getRevisionFingerprint());
 
         return savedStory;
     }

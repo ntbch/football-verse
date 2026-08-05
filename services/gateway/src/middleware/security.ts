@@ -35,7 +35,7 @@ export function corsMiddleware(req: Request, res: Response, next: NextFunction):
   if (origin === corsOrigin) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Headers', 'Authorization, Content-Type, Cache-Control, X-Request-Id');
+    res.header('Access-Control-Allow-Headers', 'Authorization, Content-Type, Cache-Control, X-Request-Id, X-Minigame-Guest');
     res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
     res.header('Vary', 'Origin');
   }

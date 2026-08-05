@@ -14,9 +14,9 @@ import { useToast } from "@/shared/components/toast";
 type StatusTab = "PUBLISHED" | "DRAFT" | "ARCHIVED";
 
 const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
-  PUBLISHED: { bg: "rgba(74,124,89,0.12)", color: "#4a7c59" },
-  DRAFT: { bg: "rgba(180,95,53,0.12)", color: "var(--color-accent)" },
-  ARCHIVED: { bg: "rgba(109,113,95,0.12)", color: "var(--color-text-secondary)" },
+  PUBLISHED: { bg: "rgba(74,124,89,0.15)", color: "#4a7c59" },
+  DRAFT: { bg: "rgba(180,95,53,0.15)", color: "var(--color-accent)" },
+  ARCHIVED: { bg: "rgba(255,255,255,0.05)", color: "var(--color-text-secondary)" },
 };
 
 export default function AdminNewsPage() {
@@ -27,7 +27,7 @@ export default function AdminNewsPage() {
   const [search, setSearch] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
-  const size = 15; // Set size back to standard table pagination size
+  const size = 15;
 
   // Fetch categories for filtering
   const { data: categories = [] } = useQuery({
@@ -54,7 +54,7 @@ export default function AdminNewsPage() {
     setPage(0);
   }, [search, selectedDate, selectedCategoryId]);
 
-  // 1. Fetch real status counts from database, passing search, date range, and categoryId
+  // Fetch real status counts
   const { data: dbCounts = { PUBLISHED: 0, DRAFT: 0, ARCHIVED: 0 } } = useQuery({
     queryKey: [qk.admin.news()[0], "counts", search, dateParams.startDate, dateParams.endDate, selectedCategoryId],
     queryFn: () => data<Record<StatusTab, number>>(http.get("/admin/news/meta/counts", { 
@@ -67,7 +67,7 @@ export default function AdminNewsPage() {
     })),
   });
 
-  // 2. Fetch page filtered by status, search, date range, and categoryId on backend
+  // Fetch page filtered by status
   const { data: pageData, isLoading, error, refetch } = useQuery({
     queryKey: [qk.admin.news()[0], page, size, tab, search, dateParams.startDate, dateParams.endDate, selectedCategoryId],
     queryFn: () => data<PageResponse<NewsArticleResponse>>(http.get("/admin/news", { 
@@ -92,7 +92,7 @@ export default function AdminNewsPage() {
       queryClient.invalidateQueries({ queryKey: qk.admin.news() });
       toast({ body: "Article deleted successfully.", type: "info" });
     },
-    onError: (err) => toast({ body: apiErrorMessage(err, "Failed to delete."), type: "error" }),
+    onError: (err) => toast({ body: apiErrorMessage(err, "Failed to delete article."), type: "error" }),
   });
 
   const statusMutation = useMutation({
@@ -100,7 +100,7 @@ export default function AdminNewsPage() {
       data<any>(http.patch(`/admin/news/${id}/status`, { status })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: qk.admin.news() });
-      toast({ body: "Status updated.", type: "info" });
+      toast({ body: "Article publication status updated.", type: "info" });
     },
     onError: (err) => toast({ body: apiErrorMessage(err, "Failed to update status."), type: "error" }),
   });
@@ -133,11 +133,16 @@ export default function AdminNewsPage() {
   return (
     <div className="flex flex-col gap-5 w-full">
       {error ? <ErrorBlock message="Article repository could not be refreshed. Showing the last available results." onRetry={() => refetch()} /> : null}
+
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 pb-4" style={{ borderBottom: "1px solid var(--color-border)" }}>
-        <div className="flex items-center gap-3 min-w-0">
-          <h1 className="text-lg font-black font-serif-title tracking-tight m-0 whitespace-nowrap" style={{ color: "var(--color-text-primary)" }}>News CMS</h1>
-          <span className="text-[11px] whitespace-nowrap" style={{ color: "var(--color-text-secondary)" }}>{pageData?.totalElements ?? 0} articles</span>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4" style={{ borderBottom: "1px solid var(--color-border)" }}>
+        <div>
+          <h1 className="text-xl font-black font-serif-title tracking-tight m-0" style={{ color: "var(--color-text-primary)" }}>
+            News CMS & Editorial Center
+          </h1>
+          <p className="text-[11px] font-medium text-[var(--color-text-secondary)] mt-0.5">
+            Manage stories, drafts, categories, and automated ingestion publishing
+          </p>
         </div>
         
         {/* Actions */}
@@ -148,31 +153,30 @@ export default function AdminNewsPage() {
               placeholder="Search title..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-4 py-2 pl-9 rounded-full text-xs font-semibold border border-[var(--color-border)] bg-[var(--color-background-body)]/50 text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)] transition-all duration-300"
+              className="w-full px-4 py-2 pl-9 rounded-full text-xs font-semibold border border-[var(--color-border)] bg-black/10 text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)]/50 focus:outline-none focus:border-[var(--color-accent)] transition-all"
             />
-            <svg className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--color-text-secondary)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            <svg className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
 
           <Link href="/admin/news/new" className="shrink-0">
-            <button className="btn btn-primary !rounded-full !px-4 !py-2 !text-xs whitespace-nowrap">Write Article</button>
+            <button className="py-2 px-4 rounded-full text-xs font-black uppercase tracking-wider bg-[var(--color-accent)] text-white hover:opacity-90 active:scale-[0.98] cursor-pointer shadow-md">
+              Write New Story
+            </button>
           </Link>
         </div>
       </div>
 
       {/* Status Tabs & Filters */}
-      <div className="flex items-center justify-between gap-4" style={{ borderBottom: "1px solid var(--color-border)" }}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--color-border)]">
         {/* Left: Status Tabs */}
         <div className="flex items-center gap-1">
           {(["PUBLISHED", "DRAFT", "ARCHIVED"] as StatusTab[]).map((t) => (
             <button key={t} onClick={() => { setTab(t); setPage(0); }}
-              className="px-4 py-2 text-xs font-bold transition-all relative"
-              style={{
-                color: tab === t ? "var(--color-accent)" : "var(--color-text-secondary)",
-                borderBottom: tab === t ? "2px solid var(--color-accent)" : "2px solid transparent",
-                marginBottom: "-1px",
-              }}
+              className={`px-4 py-2.5 text-xs font-bold transition-all relative cursor-pointer ${
+                tab === t ? "text-[var(--color-accent)] border-b-2 border-[var(--color-accent)]" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+              }`}
             >
               {t} ({dbCounts[t] ?? 0})
             </button>
@@ -180,17 +184,12 @@ export default function AdminNewsPage() {
         </div>
 
         {/* Right: Category filter & Date Picker */}
-        <div className="flex items-center gap-2 pb-1.5 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 pb-2 shrink-0">
           {/* Category Dropdown */}
           <select
             value={selectedCategoryId}
             onChange={(e) => setSelectedCategoryId(e.target.value)}
-            className="text-[10px] font-semibold border rounded-full px-3 py-1.5 focus:outline-none cursor-pointer"
-            style={{
-              borderColor: "var(--color-border)",
-              backgroundColor: "var(--color-background-body)",
-              color: "var(--color-text-primary)",
-            }}
+            className="text-xs font-semibold border border-[var(--color-border)] rounded-full px-3 py-1.5 bg-black/10 text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)] cursor-pointer"
           >
             <option value="">All Categories</option>
             {categories.map((cat) => (
@@ -206,18 +205,12 @@ export default function AdminNewsPage() {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="text-[10px] font-semibold border rounded-full px-3 py-1.5 focus:outline-none cursor-pointer"
-              style={{
-                borderColor: "var(--color-border)",
-                backgroundColor: "var(--color-background-body)",
-                color: "var(--color-text-primary)",
-              }}
+              className="text-xs font-semibold border border-[var(--color-border)] rounded-full px-3 py-1.5 bg-black/10 text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)] cursor-pointer"
             />
             {selectedDate && (
               <button
                 onClick={() => setSelectedDate("")}
-                className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 border rounded-full transition-all"
-                style={{ borderColor: "var(--color-border)", color: "var(--color-text-primary)" }}
+                className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1.5 bg-white/10 hover:bg-white/20 border border-[var(--color-border)] rounded-full transition-all text-[var(--color-text-primary)]"
               >
                 Clear
               </button>
@@ -231,7 +224,7 @@ export default function AdminNewsPage() {
         <div className="overflow-x-auto w-full">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-[var(--color-border)] bg-[var(--color-background-body)] text-[var(--color-text-secondary)] font-bold text-[10px] uppercase tracking-wider">
+              <tr className="border-b border-[var(--color-border)] bg-black/10 text-[var(--color-text-secondary)] font-bold text-[10px] uppercase tracking-wider">
                 <th className="py-3.5 px-4">Title</th>
                 <th className="py-3.5 px-4">Category</th>
                 <th className="py-3.5 px-4">Likes</th>
@@ -243,30 +236,31 @@ export default function AdminNewsPage() {
             <tbody className="divide-y divide-[var(--color-border)]">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 px-4 text-center text-[var(--color-text-secondary)] italic">
-                    No {tab.toLowerCase()} articles found {selectedDate ? "on this date" : ""}.
+                  <td colSpan={6} className="py-12 px-4 text-center text-[var(--color-text-secondary)] italic">
+                    No {tab.toLowerCase()} articles found matching your active filters.
                   </td>
                 </tr>
               ) : (
                 filtered.map((art) => (
-                  <tr key={art.id} className="hover:bg-black/[0.01] transition-colors">
-                    <td className="py-3 px-4 font-bold max-w-sm truncate" style={{ color: "var(--color-text-primary)" }}>{art.title}</td>
-                    <td className="py-3 px-4" style={{ color: "var(--color-text-secondary)" }}>{art.category || "General"}</td>
+                  <tr key={art.id} className="hover:bg-white/[0.02] transition-colors">
+                    <td className="py-3 px-4 font-bold max-w-sm truncate text-[var(--color-text-primary)]">
+                      {art.title}
+                    </td>
+                    <td className="py-3 px-4 text-[var(--color-text-secondary)]">
+                      {art.category || "General"}
+                    </td>
                     <td className="py-3 px-4">
-                      <div className="flex items-center gap-1">
-                        <svg className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
-                        </svg>
-                        <span style={{ color: "var(--color-text-primary)" }}>{art.likes}</span>
+                      <div className="flex items-center gap-1 text-[var(--color-text-primary)] font-mono">
+                        <span>{art.likes}</span>
                       </div>
                     </td>
                     <td className="py-3 px-4">
                       <select
                         value={art.status}
                         onChange={(e) => handleStatusChange(art.id, e.target.value)}
-                        className="text-[10px] font-black rounded px-2 py-1 border cursor-pointer focus:outline-none"
+                        className="text-[10px] font-black rounded px-2.5 py-1 border cursor-pointer focus:outline-none"
                         style={{
-                          background: STATUS_STYLES[art.status]?.bg || "rgba(0,0,0,0.05)",
+                          background: STATUS_STYLES[art.status]?.bg || "rgba(0,0,0,0.1)",
                           color: STATUS_STYLES[art.status]?.color || "var(--color-text-primary)",
                           borderColor: `${STATUS_STYLES[art.status]?.color || "var(--color-border)"}40`
                         }}
@@ -276,27 +270,24 @@ export default function AdminNewsPage() {
                         <option value="ARCHIVED">ARCHIVED</option>
                       </select>
                     </td>
-                    <td className="py-3 px-4 font-mono text-[10px]" style={{ color: "var(--color-text-secondary)" }}>
+                    <td className="py-3 px-4 font-mono text-[10px] text-[var(--color-text-secondary)]">
                       {formatDate(art.publishedAt)}
                     </td>
-                     <td className="py-2 px-4 text-right">
+                    <td className="py-3 px-4 text-right">
                       <div className="flex items-center gap-1.5 justify-end">
-                        {/* View Button */}
                         <Link href={`/news/${art.slug}`} target="_blank">
-                          <button className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded border transition-all bg-stone-50 hover:bg-stone-100 text-stone-600" style={{ borderColor: "var(--color-border)" }}>
+                          <button className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded border border-[var(--color-border)] transition-all bg-white/5 hover:bg-white/10 text-[var(--color-text-primary)] cursor-pointer">
                             View
                           </button>
                         </Link>
-                        {/* Edit Button */}
                         <Link href={`/admin/news/${art.id}`}>
-                          <button className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded border transition-all bg-[var(--color-accent)]/10 hover:bg-[var(--color-accent)]/20 text-[var(--color-accent)] border-[var(--color-accent)]/20">
+                          <button className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded border border-[var(--color-accent)]/30 transition-all bg-[var(--color-accent)]/15 hover:bg-[var(--color-accent)]/25 text-[var(--color-accent)] cursor-pointer">
                             Edit
                           </button>
                         </Link>
-                        {/* Delete Button */}
                         <button
                           onClick={() => handleDelete(art.id)}
-                          className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded border transition-all bg-red-500/5 hover:bg-red-500/10 text-red-600 border-red-500/10"
+                          className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded border border-red-500/20 transition-all bg-red-500/10 hover:bg-red-500/20 text-red-400 cursor-pointer"
                         >
                           Delete
                         </button>
@@ -317,18 +308,18 @@ export default function AdminNewsPage() {
             type="button"
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={page === 0}
-            className="btn btn-secondary !px-3 !py-1.5 !text-[10px]"
+            className="py-1.5 px-3 rounded text-xs font-bold border border-[var(--color-border)] bg-white/5 hover:bg-white/10 disabled:opacity-40 cursor-pointer"
           >
             ← Previous
           </button>
-          <span className="text-[10px] font-semibold px-3 py-1.5 card" style={{ color: "var(--color-text-secondary)" }}>
+          <span className="text-xs font-mono px-3 py-1.5 card" style={{ color: "var(--color-text-secondary)" }}>
             Page {page + 1} of {totalPages}
           </span>
           <button
             type="button"
             onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
             disabled={page >= totalPages - 1}
-            className="btn btn-secondary !px-3 !py-1.5 !text-[10px]"
+            className="py-1.5 px-3 rounded text-xs font-bold border border-[var(--color-border)] bg-white/5 hover:bg-white/10 disabled:opacity-40 cursor-pointer"
           >
             Next →
           </button>

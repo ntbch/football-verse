@@ -1,5 +1,6 @@
 package com.footballverse.prediction.controller;
 
+import com.footballverse.billing.service.BillingService;
 import com.footballverse.common.response.ApiResponse;
 import com.footballverse.common.pagination.PageResponse;
 import com.footballverse.prediction.dto.FixtureResponse;
@@ -32,9 +33,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 import java.util.UUID;
+import java.time.Duration;
 
 @RestController
 @RequestMapping("/predictions")
@@ -47,6 +51,7 @@ public class PredictionController {
     private final ScoringService scoringService;
     private final CurrentUser currentUser;
     private final PrivateLeagueService privateLeagueService;
+    private final BillingService billingService;
 
     @GetMapping("/fixtures")
     public ApiResponse<List<FixtureResponse>> fixtures(
@@ -84,6 +89,7 @@ public class PredictionController {
 
     @GetMapping("/score-logs")
     public ApiResponse<List<PredictionScoreLogResponse>> scoreLogs() {
+        requirePremiumInsight();
         return ApiResponse.ok(scoringService.getScoreLogs(currentUser.get().getId()));
     }
 
@@ -113,6 +119,7 @@ public class PredictionController {
 
     @GetMapping("/{fixtureId}/score-log")
     public ApiResponse<PredictionScoreLogResponse> scoreLog(@PathVariable Long fixtureId) {
+        requirePremiumInsight();
         return ApiResponse.ok(scoringService.getScoreLog(currentUser.get().getId(), fixtureId));
     }
 
@@ -122,11 +129,13 @@ public class PredictionController {
     }
 
     @GetMapping("/leaderboard")
-    public ApiResponse<List<LeaderboardEntryResponse>> leaderboard(
+    public ResponseEntity<ApiResponse<List<LeaderboardEntryResponse>>> leaderboard(
             @RequestParam(defaultValue = "weekly") String period,
             @RequestParam(defaultValue = "50") int limit
     ) {
-        return ApiResponse.ok(leaderboardService.leaderboard(period, Math.min(Math.max(limit, 1), 100)));
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(1)).sMaxAge(Duration.ofMinutes(1)).cachePublic().staleWhileRevalidate(Duration.ofMinutes(5)))
+                .body(ApiResponse.ok(leaderboardService.leaderboard(period, Math.min(Math.max(limit, 1), 100))));
     }
 
     @GetMapping("/leaderboard/page")
@@ -158,7 +167,12 @@ public class PredictionController {
             @RequestParam(defaultValue = "premier-league") String league,
             HttpServletResponse response
     ) {
+        requirePremiumInsight();
         response.setHeader("Cache-Control", "private, no-store");
         return ApiResponse.ok(matchCentreService.matchDetail(league, fixtureId, currentUser.getOrNull()));
+    }
+
+    private void requirePremiumInsight() {
+        if (billingService.isFeatureGatesEnabled()) billingService.requirePremium(currentUser.get().getId());
     }
 }

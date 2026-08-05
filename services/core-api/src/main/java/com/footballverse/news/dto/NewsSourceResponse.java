@@ -11,6 +11,7 @@ public record NewsSourceResponse(
         NewsSourceType sourceType,
         String cssSelector,
         String provider,
-        String publisherName
+        String publisherName,
+        int fetchIntervalSeconds
 ) {
 }

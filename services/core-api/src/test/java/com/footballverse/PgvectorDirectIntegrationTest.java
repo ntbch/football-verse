@@ -30,16 +30,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Integration test against a real PostgreSQL + pgvector instance.
- *
- * Requires:
- *   1. A running pgvector container:
- *      docker run -d --name pgvector-test -e POSTGRES_PASSWORD=test -e POSTGRES_DB=football_verse_test -p 15432:5432 pgvector/pgvector:pg16
- *   2. Environment variable PGVECTOR_TEST=true
- *
- * Run: $env:PGVECTOR_TEST='true'; mvn test -Dtest=PgvectorDirectIntegrationTest
- */
 @SpringBootTest
 @ActiveProfiles("pgvectortest")
 @Transactional
@@ -57,7 +47,6 @@ class PgvectorDirectIntegrationTest {
 
     @Test
     void flywayMigrationCreatesVectorColumn() {
-        // If we get here, Flyway V50 ran successfully (CREATE EXTENSION pgvector + vector(384) column)
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         Publisher publisher = publishers.save(new Publisher("PGV Publisher " + suffix));
         NewsSource source = new NewsSource("PGV Source " + suffix, "https://pgv.example.com/" + suffix);
@@ -66,7 +55,6 @@ class PgvectorDirectIntegrationTest {
         source.setAutoPublish(true);
         source = sources.save(source);
 
-        // Persist a raw item with a 384-dimensional embedding
         RawItem item = new RawItem();
         item.setConnector(source);
         item.setPublisher(publisher);
@@ -84,7 +72,7 @@ class PgvectorDirectIntegrationTest {
         item.setEmbeddedAt(Instant.now());
 
         float[] vector = new float[384];
-        for (int i = 0; i < 384; i++) vector[i] = 0.05f;
+        java.util.Arrays.fill(vector, 0.05f);
         item.setEmbedding(vector);
 
         RawItem saved = rawItems.save(item);
@@ -102,7 +90,6 @@ class PgvectorDirectIntegrationTest {
         source.setAutoPublish(true);
         source = sources.save(source);
 
-        // Create a story with a cluster profile
         NewsArticle story = new NewsArticle();
         story.setTitle("Cosine Story " + suffix);
         story.setSlug("cosine-story-" + suffix);
@@ -117,19 +104,19 @@ class PgvectorDirectIntegrationTest {
         NewsArticle savedStory = stories.save(story);
 
         float[] centroid = new float[384];
-        for (int i = 0; i < 384; i++) centroid[i] = 0.05f;
+        java.util.Arrays.fill(centroid, 0.05f);
 
         StoryClusterProfile profile = new StoryClusterProfile(
                 savedStory.getId(), centroid, "intfloat/multilingual-e5-small", "v1.0", 1);
         profileRepository.save(profile);
 
-        // Query with the same vector — should get cosine similarity ≈ 1.0
         String vectorStr = new VectorConverter().convertToDatabaseColumn(centroid);
         List<StoryClusterProfileRepository.CandidateVectorMatch> matches = profileRepository.findVectorCandidates(
                 vectorStr,
                 Instant.now().minusSeconds(86400),
                 Instant.now().plusSeconds(86400),
                 "intfloat/multilingual-e5-small",
+                "v1.0",
                 10
         );
 
@@ -140,8 +127,6 @@ class PgvectorDirectIntegrationTest {
 
     @Test
     void advisoryLockAcquiresWithoutError() {
-        // On real PostgreSQL, pg_advisory_xact_lock should work
         storyClusteringService.acquireAdvisoryLock();
-        // No exception = success
     }
 }

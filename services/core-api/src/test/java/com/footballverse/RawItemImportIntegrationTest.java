@@ -14,6 +14,7 @@ import com.footballverse.news.repository.RawItemRepository;
 import com.footballverse.news.repository.StoryItemRepository;
 import com.footballverse.news.repository.StoryKeyPointRepository;
 import com.footballverse.news.repository.KeyPointEvidenceRepository;
+import com.footballverse.news.repository.NewsAiEnrichmentOutboxRepository;
 import com.footballverse.news.service.RawItemImportService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +54,9 @@ class RawItemImportIntegrationTest {
     @Autowired
     private KeyPointEvidenceRepository evidence;
 
+    @Autowired
+    private NewsAiEnrichmentOutboxRepository aiOutbox;
+
     @Test
     void importsMetadataAndKeepsStableStoryIdentityAcrossRevision() {
         String suffix = UUID.randomUUID().toString();
@@ -81,6 +85,7 @@ class RawItemImportIntegrationTest {
         assertThat(firstMembership.getStory().getContentKind()).isEqualTo(NewsContentKind.AGGREGATED_STORY);
         assertThat(firstMembership.getStory().getContent()).isEmpty();
         assertThat(firstMembership.getStory().getSourceUrl()).contains("/story");
+        assertThat(aiOutbox.findByStoryIdAndSummaryBasisHash(storyId, "a".repeat(64))).isPresent();
         StoryKeyPoint keyPoint = keyPoints.findByStoryIdOrderByOrdinalAsc(storyId).getFirst();
         assertThat(evidence.findWithSourcesByKeyPointId(keyPoint.getId()))
                 .singleElement()

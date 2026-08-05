@@ -5,7 +5,6 @@ import com.footballverse.news.model.NewsArticle;
 import com.footballverse.news.model.NewsContentKind;
 import com.footballverse.news.model.RawContentType;
 import com.footballverse.news.model.RawItem;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,15 +12,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
 
 import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,9 +40,10 @@ class ClusteringEvaluationTest {
         RuleBasedEventClassifier classifier = new RuleBasedEventClassifier();
         EntityFingerprintExtractor extractor = new EntityFingerprintExtractor();
         ClusterConfiguration config = new ClusterConfiguration();
-        ClusterScorer scorer = new ClusterScorer(config);
         config.setMode("vector-shadow");
-        config.setAutoMergeThreshold(0.25);
+        config.setAutoMergeThreshold(0.70);
+        config.setReviewThreshold(0.60);
+        ClusterScorer scorer = new ClusterScorer(config);
 
         clusteringService = new StoryClusteringService(
                 stories,
@@ -71,6 +68,8 @@ class ClusteringEvaluationTest {
                 "Red Devils close in on Benfica midfielder after negotiations progress."
         );
         incoming.setEmbedding(vec);
+        incoming.setEmbeddingModel("intfloat/multilingual-e5-small");
+        incoming.setEmbeddingRevision("revision-1");
 
         NewsArticle candidate = createStory(
                 100L,
@@ -83,17 +82,19 @@ class ClusteringEvaluationTest {
                 any(),
                 any(),
                 org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyString(),
                 org.mockito.ArgumentMatchers.anyInt()
         )).thenReturn(List.of(new StoryClusterProfileRepository.CandidateVectorMatch() {
-                    @Override
-                    public Long getStoryId() {
-                        return 100L;
-                    }
-                    @Override
-                    public Double getSemanticScore() {
-                        return 0.92;
-                    }
-                }));
+            @Override
+            public Long getStoryId() {
+                return 100L;
+            }
+
+            @Override
+            public Double getSemanticScore() {
+                return 0.96;
+            }
+        }));
 
         when(stories.findAllById(any())).thenReturn(List.of(candidate));
 
@@ -118,8 +119,7 @@ class ClusteringEvaluationTest {
         when(stories.findClusterCandidates(any(), any(), any(), any(), any()))
                 .thenReturn(List.of(candidate));
 
-        var result = clusteringService.decide(incoming);
-        assertThat(result.matched()).isFalse();
+        assertThat(clusteringService.decide(incoming).matched()).isFalse();
     }
 
     @Test
@@ -138,8 +138,7 @@ class ClusteringEvaluationTest {
         when(stories.findClusterCandidates(any(), any(), any(), any(), any()))
                 .thenReturn(List.of(candidate));
 
-        var result = clusteringService.decide(incoming);
-        assertThat(result.matched()).isFalse();
+        assertThat(clusteringService.decide(incoming).matched()).isFalse();
     }
 
     @Test
@@ -158,13 +157,7 @@ class ClusteringEvaluationTest {
         when(stories.findClusterCandidates(any(), any(), any(), any(), any()))
                 .thenReturn(List.of(candidate));
 
-        var result = clusteringService.decide(incoming);
-        // Different players should either not reach auto-merge threshold or be separated
-        if (result.matched()) {
-            assertThat(result.decision().getFinalScore().doubleValue()).isLessThan(0.70);
-        } else {
-            assertThat(result.matched()).isFalse();
-        }
+        assertThat(clusteringService.decide(incoming).matched()).isFalse();
     }
 
     private RawItem createRawItem(String title, String description) {
