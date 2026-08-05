@@ -30,6 +30,12 @@ export const qk = {
     notificationPreferences: () => ["notification-preferences"] as const,
     followingThreads: () => ["following-threads"] as const,
   },
+  billing: {
+    plans: () => ["billing", "plans"] as const,
+    membership: () => ["billing", "membership"] as const,
+    history: () => ["billing", "history"] as const,
+    order: (invoice: string) => ["billing", "order", invoice] as const,
+  },
   moderator: {
     stats: () => ["moderator-stats"] as const,
     reports: () => ["moderator-reports"] as const,

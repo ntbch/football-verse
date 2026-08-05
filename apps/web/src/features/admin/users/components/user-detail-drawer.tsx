@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { formatDate } from "@/shared/lib/format";
-import { useToast } from "@/shared/components/toast";
 import type { AdminUser } from "../../types";
 
 type UserDetailDrawerProps = {
@@ -22,23 +21,11 @@ export function UserDetailDrawer({
   onUpdateStatus,
   isUpdating = false,
 }: UserDetailDrawerProps) {
-  const toast = useToast();
-  const [auditNote, setAuditNote] = useState("");
-
   if (!isOpen || !user) return null;
 
   const isAdmin = user.roles.includes("ADMIN");
   const isMod = user.roles.includes("MODERATOR");
   const currentHighestRole = isAdmin ? "ADMIN" : isMod ? "MODERATOR" : "USER";
-
-  const handleApplyNote = () => {
-    if (!auditNote.trim()) return;
-    toast({
-      body: `Audit note saved for @${user.username}: "${auditNote}"`,
-      type: "info",
-    });
-    setAuditNote("");
-  };
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden flex justify-end bg-black/60 backdrop-blur-xs transition-opacity animate-fade-in">
@@ -186,25 +173,6 @@ export function UserDetailDrawer({
           </div>
 
           {/* Audit Note Input */}
-          <div className="card p-4 flex flex-col gap-2.5">
-            <span className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-secondary)]">
-              Append Audit Note
-            </span>
-            <textarea
-              rows={2}
-              placeholder="Enter reason for role/status modification..."
-              value={auditNote}
-              onChange={(e) => setAuditNote(e.target.value)}
-              className="w-full p-2.5 rounded bg-black/10 border border-[var(--color-border)] text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
-            />
-            <button
-              onClick={handleApplyNote}
-              disabled={!auditNote.trim()}
-              className="py-1.5 px-3 rounded text-[10px] font-black uppercase tracking-wider bg-white/10 hover:bg-white/15 text-[var(--color-text-primary)] disabled:opacity-40 cursor-pointer"
-            >
-              Save Audit Log Entry
-            </button>
-          </div>
         </div>
       </div>
     </div>

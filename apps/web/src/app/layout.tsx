@@ -18,11 +18,7 @@ export const metadata: Metadata = {
   openGraph: { type: "website", siteName: "Football Verse", url: siteUrl, title: "Football Verse", description: "Verified football intelligence for stories, matchday context and community." },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>

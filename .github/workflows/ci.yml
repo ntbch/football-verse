@@ -50,7 +50,6 @@ jobs:
           cache: pip
           cache-dependency-path: |
             services/prediction/requirements*.txt
-            services/match-engine/requirements*.txt
 
       - name: Install locked Node dependencies
         shell: pwsh
@@ -63,7 +62,6 @@ jobs:
         shell: pwsh
         run: |
           python -m pip install -r services/prediction/requirements-dev.txt
-          python -m pip install -r services/match-engine/requirements.txt pytest
 
       - name: Run the repository verification gate
         shell: pwsh

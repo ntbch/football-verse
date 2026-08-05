@@ -39,9 +39,8 @@ function get(url) {
 
 test('proxy route inventory keeps every public upstream mount explicit', () => {
   assert.deepEqual(PROXY_ROUTE_INVENTORY.map(route => route.mount), [
-    '/api/v1/game', '/api/v1', '/matches', '/standings', '/game',
+    '/api/v1', '/matches', '/standings',
   ]);
-  assert.equal(PROXY_ROUTE_INVENTORY.filter(route => route.upstream === 'career').every(route => route.auth === 'required'), true);
 });
 
 test('rate limiter returns 429 and resets after its bounded window', () => {
@@ -66,6 +65,20 @@ test('rate limiter returns 429 and resets after its bounded window', () => {
   let continued = false;
   middleware(req, reset, () => { continued = true; });
   assert.equal(continued, true);
+});
+
+test('SePay IPN traffic uses its isolated tighter limit', () => {
+  let timestamp = 1_000;
+  const middleware = createRateLimitMiddleware({ limit: 10, billingIpnLimit: 1, windowMs: 1_000, now: () => timestamp });
+  const req = { method: 'POST', path: '/api/v1/billing/webhooks/sepay', ip: '127.0.0.3', headers: {}, socket: {} };
+  const first = responseStub();
+  let continued = false;
+  middleware(req, first, () => { continued = true; });
+  assert.equal(continued, true);
+  assert.equal(first.headers['x-ratelimit-limit'], 1);
+  const limited = responseStub();
+  middleware(req, limited, () => assert.fail('IPN request must be limited independently'));
+  assert.equal(limited.statusCode, 429);
 });
 
 test('read proxy retries one transient socket failure without retrying the client', async () => {

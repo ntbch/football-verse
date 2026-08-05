@@ -17,6 +17,16 @@ Request IDs are safe to correlate across Gateway and Core logs. Normal request
 logs must not include email addresses, access/refresh tokens, Redis payloads, or
 raw user content.
 
+## Premium billing guardrails
+
+Billing is deployed with `BILLING_ENABLED=false` and
+`BILLING_SALES_ENABLED=false` until product/legal approval, SePay credentials,
+public IPN reachability, and Sandbox evidence are attached to the release.
+Monitor webhook 401s, review-required mismatches, duplicate events, stuck
+pending orders, reconciliation outcomes, and payment-to-membership latency.
+Never enable sales by changing only the Web flag; Core owns the kill switch,
+price catalog, IPN verification, and membership grant.
+
 ## Backup and restore evidence
 
 The release owner records the encrypted backup object identifier, checksum,
@@ -32,4 +42,6 @@ database and must never use the production volume.
 - [ ] Rollback image digests, deployment manifest, and secret references pinned.
 - [ ] Public URL, HTTPS cookie, database, JWT, and internal-token validation
       passed in the production startup environment.
+- [ ] Web CSP report-only findings are clean; set `CSP_ENFORCE=true` only after
+      the approved third-party origins are confirmed.
 - [ ] Release notes link monitoring, rollback, and restore evidence.

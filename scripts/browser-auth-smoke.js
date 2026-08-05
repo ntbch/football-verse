@@ -70,6 +70,20 @@ async function main() {
     await page.getByRole("button", { name: "Open account menu" }).click();
     await page.getByText(username, { exact: true }).waitFor();
 
+    await page.setViewportSize({ width: 390, height: 844 });
+    const mobileMenu = page.getByRole("button", { name: "Toggle Side Drawer" });
+    await mobileMenu.click();
+    await page.getByRole("dialog", { name: "Navigation" }).waitFor();
+    await page.getByRole("link", { name: "Home" }).waitFor();
+    await page.getByRole("button", { name: "Close navigation" }).click();
+    await page.setViewportSize({ width: 1280, height: 900 });
+
+    const loginFormPage = await context.newPage();
+    await loginFormPage.goto(`${webBaseUrl}/login`, { waitUntil: "domcontentloaded" });
+    const formIsInvalid = await loginFormPage.locator("form").first().evaluate((form) => !form.checkValidity());
+    await loginFormPage.close();
+    if (!formIsInvalid) throw new Error("Login form does not expose native required-field validation");
+
     const storageBeforeReload = await page.evaluate(() => ({
       local: Object.values(localStorage),
       session: Object.values(sessionStorage),
@@ -100,10 +114,9 @@ async function main() {
     console.log("browser-smoke: session restored");
 
     const routeChecks = [];
-    await page.goto(`${webBaseUrl}/matches`, { waitUntil: "domcontentloaded" });
-    if (!new URL(page.url()).pathname.endsWith("/matchday")) throw new Error("Legacy matches route did not redirect to Matchday");
+    await page.goto(`${webBaseUrl}/matchday`, { waitUntil: "domcontentloaded" });
     await page.getByText("Upcoming", { exact: true }).first().waitFor();
-    routeChecks.push("matchday-redirect");
+    routeChecks.push("matchday");
     await page.goto(`${webBaseUrl}/games`, { waitUntil: "domcontentloaded" });
     await page.getByText("Daily Intel Run", { exact: false }).waitFor();
     routeChecks.push("games");
@@ -112,6 +125,7 @@ async function main() {
       const envelope = await newsResponse.json();
       const story = envelope?.data?.content?.[0];
       if (story?.slug) {
+        const isAggregatedStory = story.contentKind === "AGGREGATED_STORY";
         let storyLoaded = false;
         for (let attempt = 0; attempt < 3 && !storyLoaded; attempt += 1) {
           await page.goto(`${webBaseUrl}/news/${encodeURIComponent(story.slug)}`, { waitUntil: "domcontentloaded" });
@@ -123,6 +137,17 @@ async function main() {
           }
         }
         if (!storyLoaded) throw new Error("Story detail did not render a canonical heading");
+        if (isAggregatedStory) {
+          const storyUrl = page.url();
+          await page.getByRole("link", { name: "Open Matchday" }).click();
+          await page.waitForURL(/\/matchday(?:\/)?$/);
+          await page.goto(storyUrl, { waitUntil: "domcontentloaded" });
+          await page.getByRole("link", { name: "Play today's game" }).click();
+          await page.waitForURL(/\/games(?:\/)?$/);
+          await page.goto(storyUrl, { waitUntil: "domcontentloaded" });
+          await page.getByRole("link", { name: "Discuss this story" }).click();
+          await page.waitForURL(/\/news\/[^#]+#story-discussion$/);
+        }
         await page.keyboard.press("Tab");
         if (await page.evaluate(() => document.activeElement === document.body)) {
           throw new Error("Story detail has no keyboard focus target");
@@ -132,7 +157,7 @@ async function main() {
           await evidenceButton.click();
           if (await evidenceButton.getAttribute("aria-expanded") !== "true") throw new Error("Evidence disclosure did not expand");
         }
-        routeChecks.push("story-detail");
+        routeChecks.push("story-detail", ...(isAggregatedStory ? ["story-context-links"] : ["story-single-source"]), "a11y-dialog-navigation-form");
       }
     }
     if (page.url().includes(email) || page.url().includes(username)) {

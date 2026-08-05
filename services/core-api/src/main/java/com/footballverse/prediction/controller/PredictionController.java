@@ -1,5 +1,6 @@
 package com.footballverse.prediction.controller;
 
+import com.footballverse.billing.service.BillingService;
 import com.footballverse.common.response.ApiResponse;
 import com.footballverse.common.pagination.PageResponse;
 import com.footballverse.prediction.dto.FixtureResponse;
@@ -50,6 +51,7 @@ public class PredictionController {
     private final ScoringService scoringService;
     private final CurrentUser currentUser;
     private final PrivateLeagueService privateLeagueService;
+    private final BillingService billingService;
 
     @GetMapping("/fixtures")
     public ApiResponse<List<FixtureResponse>> fixtures(
@@ -87,6 +89,7 @@ public class PredictionController {
 
     @GetMapping("/score-logs")
     public ApiResponse<List<PredictionScoreLogResponse>> scoreLogs() {
+        requirePremiumInsight();
         return ApiResponse.ok(scoringService.getScoreLogs(currentUser.get().getId()));
     }
 
@@ -116,6 +119,7 @@ public class PredictionController {
 
     @GetMapping("/{fixtureId}/score-log")
     public ApiResponse<PredictionScoreLogResponse> scoreLog(@PathVariable Long fixtureId) {
+        requirePremiumInsight();
         return ApiResponse.ok(scoringService.getScoreLog(currentUser.get().getId(), fixtureId));
     }
 
@@ -163,7 +167,12 @@ public class PredictionController {
             @RequestParam(defaultValue = "premier-league") String league,
             HttpServletResponse response
     ) {
+        requirePremiumInsight();
         response.setHeader("Cache-Control", "private, no-store");
         return ApiResponse.ok(matchCentreService.matchDetail(league, fixtureId, currentUser.getOrNull()));
+    }
+
+    private void requirePremiumInsight() {
+        if (billingService.isFeatureGatesEnabled()) billingService.requirePremium(currentUser.get().getId());
     }
 }

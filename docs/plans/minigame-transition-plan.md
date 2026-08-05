@@ -5,8 +5,9 @@
 legacy Career game is retired and will not be replaced or migrated.
 
 **Implemented (2026-08-04):** Minigame moved to `features/minigames`, `/games`
-is live, and `/career` redirects there. Career runtime, legacy Web modules,
-and all Career data remain untouched pending the required gates.
+is live, and `/career` redirects there. Career source and active runtime mounts
+are retired from the development workspace. All Career data remains untouched
+pending the required gates; rollback must use the pinned release bundle.
 
 ## Target Naming
 
@@ -59,10 +60,11 @@ their commands and data contracts are unrelated.
 
 ## What Is Retired
 
-`services/career`, `services/match-engine`, `/game/**`, `/api/v1/game/**`,
-the separate Career PostgreSQL service/volume, the legacy `/matches` Web page,
-Career-only Web modules/styles/tests, Career smoke/balance scripts, and
-Career-only Gateway security/configuration.
+The `services/career` and `services/match-engine` source/runtime,
+`/game/**`, `/api/v1/game/**`, the separate Career PostgreSQL service/volume,
+the legacy `/matches` Web page, Career smoke/balance scripts, and Career-only
+Gateway security/configuration are retired from development. The separate
+Career database/volume remains outside the active Compose topology.
 
 ## Non-Negotiable Safety Rules
 
@@ -134,6 +136,11 @@ has an explicit signed-off result.
 
 Perform only after every gate above passes. Keep the Career database volume and
 backup untouched.
+
+**Development implementation note (2026-08-05):** The active Compose topology,
+Gateway Career mounts, legacy `/matches` page, and Career smoke/verification
+steps have been removed in the workspace, and the tracked Career/Match Engine
+source has been deleted. Production data and backups are not deleted.
 
 1. Remove only Gateway Career route inventory entries/mounts,
    `GatewayConfig.gameServiceUrl`, `GAME_SERVICE_URL`, `game-auth.ts`, and the

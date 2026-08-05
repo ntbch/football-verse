@@ -110,10 +110,6 @@ export default function ModeratorDashboardPage() {
           >
             Review Reports Queue
           </Link>
-          <div className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--color-accent)] px-2.5 py-1 rounded-full bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)] animate-pulse inline-block" />
-            LIVE
-          </div>
         </div>
       </div>
 

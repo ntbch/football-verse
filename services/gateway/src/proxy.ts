@@ -2,16 +2,13 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import { Express } from 'express';
 import type { IncomingMessage, ServerResponse } from 'http';
 import type { Socket } from 'net';
-import { authenticateGameRequest } from './game-auth';
 import { getConfig } from './config';
 import { createReadProxyMiddleware } from './read-proxy';
 
 export const PROXY_ROUTE_INVENTORY = [
-  { mount: '/api/v1/game', upstream: 'career', auth: 'required' },
   { mount: '/api/v1', upstream: 'core', auth: 'passthrough' },
   { mount: '/matches', upstream: 'prediction', auth: 'passthrough' },
   { mount: '/standings', upstream: 'prediction', auth: 'passthrough' },
-  { mount: '/game', upstream: 'career', auth: 'required' },
 ] as const;
 
 const protectPrivateResponse = (
@@ -55,35 +52,12 @@ const handleProxyError = (
 };
 
 export const setupProxy = (app: Express): void => {
-  const { backendUrl, predictionServiceUrl, gameServiceUrl } = getConfig();
+  const { backendUrl, predictionServiceUrl } = getConfig();
 
   // Block public external access to internal admin/ingestion routes at the Gateway boundary
   app.use('/api/v1/internal', (_req, res) => {
     res.status(404).json({ success: false, message: 'Not found' });
   });
-
-  // Route authenticated /api/v1/game/* requests to the Game Service
-  app.use(
-    '/api/v1/game',
-    authenticateGameRequest,
-    createReadProxyMiddleware({
-      target: gameServiceUrl,
-      rewrite: originalUrl => originalUrl.replace(/^\/api\/v1\/game/, '/game'),
-      timeoutMs: 30000,
-      retries: 3,
-    }),
-    createProxyMiddleware({
-      target: gameServiceUrl,
-      changeOrigin: true,
-      proxyTimeout: 60000,
-      timeout: 60000,
-      pathRewrite: (path) => `/game${path}`,
-      on: {
-        proxyRes: protectPrivateResponse,
-        error: handleProxyError
-      },
-    })
-  );
 
   // Route /api/v1/* to Spring Boot Core
   app.use(
@@ -149,26 +123,4 @@ export const setupProxy = (app: Express): void => {
     })
   );
 
-  // Route authenticated /game/* requests to the Game Service
-  app.use(
-    '/game',
-    authenticateGameRequest,
-    createReadProxyMiddleware({
-      target: gameServiceUrl,
-      rewrite: originalUrl => originalUrl,
-      timeoutMs: 30000,
-      retries: 3,
-    }),
-    createProxyMiddleware({
-      target: gameServiceUrl,
-      changeOrigin: true,
-      proxyTimeout: 60000,
-      timeout: 60000,
-      pathRewrite: (path) => `/game${path}`,
-      on: {
-        proxyRes: protectPrivateResponse,
-        error: handleProxyError
-      },
-    })
-  );
 };

@@ -51,8 +51,6 @@ $env:SMOKE_PASSWORD = "<test-password>"
 | Gateway | `services/gateway/` — public proxy, JWT edge checks, realtime | none; Redis is transient | `cd services/gateway; npm ci; npm test` |
 | Content Ingestion | `services/content-ingestion/` — RSS/API adapters, checkpoints, durable delivery | PostgreSQL `ingestion_db` for operational state; Core owns content | `cd services/content-ingestion; npm ci; npm test` |
 | Prediction | `services/prediction/` — provider fixtures, standings, calculations | none | `cd services/prediction; python -m pytest -q` |
-| Career | `services/career/` — saves, squads, tactics, transfers, persisted matches | PostgreSQL `match_game_db` | `cd services/career; mvn test` |
-| Match Engine | `services/match-engine/` — deterministic match simulation | none | `cd services/match-engine; python -m pytest -q` |
 
 Compose keeps the established runtime service names while source paths use the
 topology above. `content-ingestion` runs independently from Gateway and sends
@@ -65,15 +63,14 @@ The browser talks to the Gateway; services and databases are not public applicat
 
 | Gateway route | Owner/destination |
 |---|---|
-| `/api/v1/**` | Core API; `/api/v1/game/**` is a Career compatibility route |
-| `/game/**` | Career |
+| `/api/v1/**` | Core API |
 | `/matches/**`, `/standings/**` | Prediction |
 | Socket.IO connection | Gateway realtime with Redis fan-out |
 
 The primary browser journeys are `/` (Football Intelligence), `/news` and
-`/news/[slug]` (source-backed stories), `/matches` and `/matchday/[fixtureId]`
-(match context), `/predictions`, `/games`, and `/forum`. `/career` is retained
-only as a redirect to `/games` during the documented transition. Legal pages
+`/news/[slug]` (source-backed stories), `/matchday/[fixtureId]` (match context),
+`/predictions`, `/games`, and `/forum`. `/career` is retained only as a
+redirect to `/games` during the documented transition. Legal pages
 are `/terms`, `/privacy`, `/community-guidelines`, and `/contact`.
 
 The complete observed route, identity, and service-boundary contract is in [service contracts](docs/architecture/service-contracts.md). Current deployables, owners, verification results, and known risks are in [current state](docs/architecture/current-state.md).

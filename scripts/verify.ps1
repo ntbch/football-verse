@@ -12,15 +12,11 @@ $mavenCommand = if ($onWindows) { "mvn.cmd" } else { "mvn" }
 $fallbackPython = if ($Python) { $Python } elseif ($env:FOOTBALL_VERSE_PYTHON) { $env:FOOTBALL_VERSE_PYTHON } else { "python" }
 $venvPython = if ($onWindows) { ".venv/Scripts/python.exe" } else { ".venv/bin/python" }
 $predictionPython = Join-Path $repoRoot "services/prediction/$venvPython"
-$matchEnginePython = Join-Path $repoRoot "services/match-engine/$venvPython"
 if (-not (Test-Path -LiteralPath $predictionPython)) { $predictionPython = $fallbackPython }
-if (-not (Test-Path -LiteralPath $matchEnginePython)) { $matchEnginePython = $fallbackPython }
 
 $coreDbName = "football-verse-core-test-$PID"
-$careerDbName = "football-verse-career-test-$PID"
 $smokeProject = "football-verse-smoke-$PID"
 $testUploadDir = Join-Path $repoRoot "scratch/test-uploads-$PID"
-$matchEngineProcess = $null
 $failures = [System.Collections.Generic.List[string]]::new()
 
 function Wait-Postgres([string]$Name, [string]$User) {
@@ -33,7 +29,7 @@ function Wait-Postgres([string]$Name, [string]$User) {
 }
 
 function Start-TestInfrastructure {
-    foreach ($name in @($coreDbName, $careerDbName)) {
+    foreach ($name in @($coreDbName)) {
         if (docker ps -aq --filter "name=^$name$") {
             throw "Temporary test container already exists: $name"
         }
@@ -41,35 +37,11 @@ function Start-TestInfrastructure {
 
     docker run -d --rm --name $coreDbName -e POSTGRES_DB=football_verse_test -e POSTGRES_USER=football_verse_test -e POSTGRES_PASSWORD=football_verse_test -p 127.0.0.1:55634:5432 postgres:16-alpine | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Could not start $coreDbName" }
-    docker run -d --rm --name $careerDbName -e POSTGRES_DB=match_game_test -e POSTGRES_USER=match_game_test -e POSTGRES_PASSWORD=match_game_test -p 127.0.0.1:55635:5432 postgres:16-alpine | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "Could not start $careerDbName" }
     Wait-Postgres $coreDbName "football_verse_test"
-    Wait-Postgres $careerDbName "match_game_test"
-
-    $startArgs = @{
-        FilePath = $matchEnginePython
-        ArgumentList = @("-m", "uvicorn", "match_engine.main:app", "--host", "127.0.0.1", "--port", "18091")
-        WorkingDirectory = (Join-Path $repoRoot "services/match-engine")
-        PassThru = $true
-    }
-    if ($onWindows) { $startArgs.WindowStyle = "Hidden" }
-    $script:matchEngineProcess = Start-Process @startArgs
-
-    for ($attempt = 0; $attempt -lt 30; $attempt++) {
-        try {
-            $health = Invoke-RestMethod -Uri "http://127.0.0.1:18091/health" -TimeoutSec 2
-            if ($health.status -eq "ok") { return }
-        } catch { }
-        Start-Sleep -Seconds 1
-    }
-    throw "Temporary Match Engine did not become ready"
 }
 
 function Stop-TestInfrastructure {
-    if ($matchEngineProcess -and -not $matchEngineProcess.HasExited) {
-        Stop-Process -Id $matchEngineProcess.Id -Force
-    }
-    foreach ($name in @($coreDbName, $careerDbName)) {
+    foreach ($name in @($coreDbName)) {
         if (docker ps -aq --filter "name=^$name$") {
             docker stop $name 1>$null 2>$null
         }
@@ -132,15 +104,11 @@ function Invoke-IntegratedSmoke {
         throw "Integrated smoke requires SMOKE_EMAIL and SMOKE_PASSWORD for a verified non-privileged test account."
     }
     $env:POSTGRES_PORT = "15432"
-    $env:MATCH_GAME_DB_PORT = "15433"
     $env:GATEWAY_PORT = "18000"
     $env:WEB_PORT = "13000"
     $env:DB_NAME = "football_verse_smoke"
     $env:DB_USERNAME = "football_verse_smoke"
     $env:DB_PASSWORD = "smoke-db-password"
-    $env:MATCH_GAME_DB_NAME = "match_game_smoke"
-    $env:MATCH_GAME_DB_USER = "match_game_smoke"
-    $env:MATCH_GAME_DB_PASSWORD = "smoke-career-db-password"
     $env:INTERNAL_TOKEN = "smoke-internal-token-12345"
     $env:JWT_SECRET = "smoke-jwt-secret-key-for-verification-only-12345"
     $env:APP_SEED_ENABLED = "true"
@@ -159,7 +127,7 @@ function Invoke-IntegratedSmoke {
     }
 
     try {
-        docker compose -p $smokeProject up -d --build postgres redis match-game-postgres match-engine game-service prediction-service core-service gateway-service web-client
+        docker compose -p $smokeProject up -d --build postgres redis prediction-service core-service gateway-service web-client
         if ($LASTEXITCODE -ne 0) { throw "Could not start integrated smoke topology" }
         Seed-MinigameSmokeData
         Seed-SmokeUser
@@ -168,7 +136,7 @@ function Invoke-IntegratedSmoke {
         node (Join-Path $repoRoot "scripts/browser-auth-smoke.js")
         if ($LASTEXITCODE -ne 0) { throw "Browser auth smoke failed" }
     } catch {
-        docker compose -p $smokeProject logs --tail 80 gateway-service game-service match-engine
+        docker compose -p $smokeProject logs --tail 80 gateway-service core-service prediction-service
         throw
     } finally {
         docker compose -p $smokeProject down --volumes --remove-orphans 1>$null
@@ -189,9 +157,7 @@ $steps = @(
     @{ Name = "Gateway"; Path = "services/gateway"; Command = { & $npmCommand test } },
     @{ Name = "Content Ingestion"; Path = "services/content-ingestion"; Command = { & $npmCommand test } },
     @{ Name = "Core API"; Path = "services/core-api"; Command = { & $mavenCommand test } },
-    @{ Name = "Career API"; Path = "services/career"; Command = { & $mavenCommand "-DrunPostgresIntegrationTests=true" test } },
     @{ Name = "Prediction"; Path = "services/prediction"; Command = { & $predictionPython -m pytest -q -p no:cacheprovider } },
-    @{ Name = "Match engine"; Path = "services/match-engine"; Command = { & $matchEnginePython -m pytest -q -p no:cacheprovider } },
     @{ Name = "Compose config"; Path = "."; Command = { docker compose config --quiet } },
     @{ Name = "Recovery rehearsal"; Path = "."; Command = { & (Join-Path $PSScriptRoot "recovery_rehearsal.ps1") } }
 )
@@ -203,10 +169,6 @@ try {
     $env:DB_PASSWORD = "football_verse_test"
     $env:APP_SEED_ENABLED = "false"
     $env:APP_UPLOAD_DIR = $testUploadDir
-    $env:MATCH_GAME_DB_URL = "jdbc:postgresql://127.0.0.1:55635/match_game_test"
-    $env:MATCH_GAME_DB_USER = "match_game_test"
-    $env:MATCH_GAME_DB_PASSWORD = "match_game_test"
-    $env:MATCH_ENGINE_URL = "http://127.0.0.1:18091"
     $env:INTERNAL_TOKEN = "test-internal-token-12345"
     $env:JWT_SECRET = "test-jwt-secret-key-for-unit-testing-only-12345"
 

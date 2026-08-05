@@ -1,6 +1,8 @@
 package com.footballverse.user.service;
 
+import com.footballverse.billing.service.BillingService;
 import com.footballverse.common.exception.BadRequestException;
+import com.footballverse.common.exception.ForbiddenException;
 import com.footballverse.news.service.NewsArticleService;
 import com.footballverse.security.CurrentUser;
 import com.footballverse.user.dto.FollowTargetRequest;
@@ -22,10 +24,12 @@ import java.util.Locale;
 @Transactional
 public class UserFollowTargetService {
     private static final int MAX_FOLLOWS = 25;
+    private static final int PREMIUM_MAX_FOLLOWS = 100;
 
     private final UserFollowTargetRepository follows;
     private final NewsArticleService news;
     private final CurrentUser currentUser;
+    private final BillingService billingService;
 
     @Transactional(readOnly = true)
     public List<FollowTargetResponse> follows() {
@@ -42,8 +46,9 @@ public class UserFollowTargetService {
             return new FollowTargetResponse(request.targetType(), key, name, false, null);
         }
         if (existing.isPresent()) return response(existing.get());
-        if (follows.findByUserIdOrderByCreatedAtDesc(user.getId()).size() >= MAX_FOLLOWS) {
-            throw new BadRequestException("You can follow up to " + MAX_FOLLOWS + " targets");
+        int maxFollows = billingService.isFeatureGatesEnabled() && billingService.isPremium(user.getId()) ? PREMIUM_MAX_FOLLOWS : MAX_FOLLOWS;
+        if (follows.findByUserIdOrderByCreatedAtDesc(user.getId()).size() >= maxFollows) {
+            throw new ForbiddenException("You can follow up to " + maxFollows + " targets");
         }
         return response(follows.save(new UserFollowTarget(user, request.targetType(), key, name)));
     }

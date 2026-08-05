@@ -175,22 +175,6 @@ def main():
     )
     require(reply.get("id") is not None, "Forum reply was not created")
 
-    career, career_headers = request(
-        "POST",
-        f"{args.base}/game/saves",
-        token=token,
-        payload={"name": "Smoke Career"},
-        return_headers=True,
-    )
-    require(career_headers.get("X-Auth-Compatibility") is None, "Career used legacy header authentication")
-    save_id = career["id"]
-    try:
-        details = request("GET", f"{args.base}/game/saves/{save_id}", token=token)
-        require(details["save"]["id"] == save_id, "Career owner-scoped lookup changed")
-        request("GET", f"{args.base}/game/saves/{save_id}/tactics", token=token)
-    finally:
-        request("DELETE", f"{args.base}/game/saves/{save_id}", token=token)
-
     refreshed, refresh_headers = request(
         "POST",
         f"{args.base}/api/v1/auth/refresh",
@@ -210,7 +194,7 @@ def main():
 
     print(json.dumps({
         "status": "passed",
-        "checks": ["web", "career-redirect", "auth", "news", "minigames", "forum", "prediction", "career", "refresh", "logout"],
+        "checks": ["web", "career-redirect", "auth", "news", "minigames", "forum", "prediction", "refresh", "logout"],
     }))
 
 

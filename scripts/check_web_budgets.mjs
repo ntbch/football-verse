@@ -7,9 +7,13 @@ const routes = {
   "/page": { js: 170_000, css: 20_000 },
   "/news/page": { js: 170_000, css: 20_000 },
   "/news/[slug]/page": { js: 170_000, css: 20_000 },
+  "/matchday/page": { js: 170_000, css: 20_000 },
+  "/predictions/page": { js: 170_000, css: 20_000 },
   "/forum/page": { js: 170_000, css: 20_000 },
+  "/search/page": { js: 170_000, css: 20_000 },
   "/games/page": { js: 170_000, css: 21_000 },
   "/admin/page": { js: 160_000, css: 20_000 },
+  "/moderator/page": { js: 160_000, css: 20_000 },
 };
 
 const bytesFor = (files, extension) => [...new Set(files.filter((file) => file.endsWith(extension)))].reduce(

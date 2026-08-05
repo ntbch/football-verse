@@ -76,7 +76,8 @@ http.interceptors.response.use(
       if (typeof window !== "undefined") {
         const isAuthZone = window.location.pathname.startsWith("/admin") ||
                            window.location.pathname.startsWith("/moderator") ||
-                           window.location.pathname.startsWith("/profile");
+                           window.location.pathname.startsWith("/profile") ||
+                           window.location.pathname.startsWith("/premium");
 
         // ponytail: degrade to guest gracefully instead of forcing redirect on public pages
         if (currentAuth || isAuthZone) {

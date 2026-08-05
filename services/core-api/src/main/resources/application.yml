@@ -116,6 +116,27 @@ app:
     gemini-model: ${GEMINI_MODEL:gemini-3.5-flash}
     daily-limit: ${AI_DAILY_LIMIT:20}
     outbox-poll-ms: ${AI_OUTBOX_POLL_MS:5000}
+  billing:
+    enabled: ${BILLING_ENABLED:false}
+    sales-enabled: ${BILLING_SALES_ENABLED:false}
+    expiry-poll-ms: ${BILLING_EXPIRY_POLL_MS:300000}
+    premium-1-month-price-vnd: ${PREMIUM_1_MONTH_PRICE_VND:49000}
+    premium-3-month-price-vnd: ${PREMIUM_3_MONTH_PRICE_VND:129000}
+    premium-6-month-price-vnd: ${PREMIUM_6_MONTH_PRICE_VND:219000}
+    premium-12-month-price-vnd: ${PREMIUM_12_MONTH_PRICE_VND:349000}
+    sepay:
+      environment: ${SEPAY_ENV:sandbox}
+      merchant-id: ${SEPAY_MERCHANT_ID:}
+      secret-key: ${SEPAY_SECRET_KEY:}
+      ipn-secret: ${SEPAY_IPN_SECRET:}
+      checkout-url: ${SEPAY_CHECKOUT_URL:https://pay-sandbox.sepay.vn/v1/checkout/init}
+      api-url: ${SEPAY_API_URL:https://pgapi-sandbox.sepay.vn}
+      bankhub-api-key: ${SEPAY_BANKHUB_API_KEY:}
+      qr:
+        bank-code: ${SEPAY_QR_BANK_CODE:}
+        account-number: ${SEPAY_QR_ACCOUNT_NUMBER:}
+        account-name: ${SEPAY_QR_ACCOUNT_NAME:}
+        template: ${SEPAY_QR_TEMPLATE:compact}
 
 server:
   compression:

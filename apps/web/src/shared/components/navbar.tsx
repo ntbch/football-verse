@@ -293,6 +293,16 @@ export function Navbar() {
                       </svg>
                       Profile
                     </Link>
+                    <Link
+                      href="/premium"
+                      onClick={() => setUserOpen(false)}
+                      className="min-h-11 px-3.5 py-2 text-xs font-semibold text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded-xl transition-colors flex items-center gap-2.5"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l2.5 5.1 5.6.8-4 4 1 5.6-5.1-2.6-5.1 2.6 1-5.6-4-4 5.6-.8L12 3z" />
+                      </svg>
+                      Premium
+                    </Link>
                     <button
                       onClick={() => {
                         setUserOpen(false);
@@ -379,6 +389,9 @@ export function Navbar() {
                   <span className="text-xs font-bold text-[var(--color-text-primary)] truncate">{auth.username}</span>
                   <span className="text-[9px] font-bold text-[var(--color-text-secondary)] uppercase">Online</span>
                 </div>
+                <Link href="/premium" onClick={() => setDrawerOpen(false)} className="min-h-11 w-full py-2.5 rounded-xl text-center text-xs font-bold text-[var(--color-accent)] bg-[var(--color-accent)]/10 hover:bg-[var(--color-accent)]/20 transition-colors cursor-pointer block">
+                  Premium
+                </Link>
                 <button
                   onClick={() => {
                     setDrawerOpen(false);

@@ -1,6 +1,6 @@
 # Football Intelligence Implementation Plan
 
-**Status:** P0/P1 implementation complete; P2 executable work complete; release owner gates pending  
+**Status:** P0/P1 implementation largely complete; acceptance evidence and P2 release gates pending
 **Created:** 2026-08-04  
 **Product decision:** Football Verse becomes a multi-source Football
 Intelligence product. Predictions, Games, and Community support the core
@@ -246,13 +246,15 @@ Acceptance:
 ### Phase 0 exit checklist
 
 - [x] Core test suite has zero failures.
-- [x] Web typecheck, discovered tests, build, and budgets pass.
+- [x] Web typecheck, discovered tests, build, and budgets pass twice from a
+      clean workspace; expanded route budgets are covered.
 - [x] Gateway, ingestion, prediction, Career, and Match Engine required tests
       pass while those services remain in scope.
 - [x] Admin/Moderator placeholder controls are unreachable or removed.
-- [x] Legal links and footer are real.
-- [x] Deterministic Minigame smoke passes with an isolated non-privileged
-      account auto-seeded for the disposable smoke database.
+- [ ] Legal links and footer are real, with product/legal owner approval recorded.
+- [x] Deterministic Minigame smoke passes with an isolated non-privileged account
+      auto-seeded for the disposable smoke database; Release A transition gates
+      remain owner-controlled.
 - [x] Working tree and release notes identify all intentional Career transition
       changes.
 
@@ -544,6 +546,12 @@ Acceptance:
 
 Data deletion is a later, separately approved operational change.
 
+**Development status (2026-08-05):** The active Compose topology, Gateway
+Career mounts, legacy Web `/matches` route, and Career smoke/verification steps
+are retired in the workspace, including tracked Career/Match Engine source.
+Durable Career data remains outside the active topology until the transition
+gates are approved.
+
 ## 9. Phase 3 — Expand Only With Evidence
 
 Start no Phase 3 item until at least four weeks of reliable product and
@@ -637,19 +645,23 @@ as authority to restore placeholder Admin controls or to mutate Career data.
 Update this table in the implementation branch or release ticket. Do not mark
 an item complete from code review alone; attach verification evidence.
 
+**Tracker note (2026-08-05):** The original P2 rows below are retained as the
+pre-execution baseline. Use the current P2 execution tracker below for the
+development status and remaining production gates.
+
 | ID | Status | Owner | PR/commit | Verification evidence | Notes |
 |---|---|---|---|---|---|
-| P0-01 | Complete | Current working tree | — | Core: 104 tests, 0 failures; classifier regression cases pass | Title/summary precedence fixed |
-| P0-02 | Complete | Current working tree | — | Web build + stale-route search pass | Placeholder privileged controls removed |
-| P0-03 | Complete | Current working tree | — | Web typecheck + 16 discovered tests pass | Package scripts now own discovery |
-| P0-04 | Complete | Current working tree | — | Web build + performance budgets pass | Empty root lockfile removed |
+| P0-01 | Complete | Current working tree | — | Core: 108 tests, 0 failures, 4 skipped; classifier regression cases pass | Title/summary precedence fixed |
+| P0-02 | Implemented; acceptance evidence pending | Current working tree | — | Hard-coded health/audit success UI removed; role-navigation test still pending | Real Admin/Moderator workflows retained |
+| P0-03 | Complete | Current working tree | — | Web typecheck + 7 discovered tests pass | Package scripts now own discovery; Career-only tests retired with Career source |
+| P0-04 | Complete | Current working tree | — | Two consecutive clean Web production builds (`31/31` pages) and expanded Home/Stories/Story Detail/Matchday/Predictions/Games/Search/Forum/privileged budgets pass | Empty root lockfile removed |
 | P0-05 | Copy ready; owner/legal sign-off required | Current working tree | — | Terms/privacy/guidelines/contact routes built and linked | Explicit legal approval remains a non-code gate |
-| P0-06 | Complete | Current working tree | — | Integrated API + browser smoke passed; fixture applied to migrated PostgreSQL: 10 players + 2 challenges; Career redirect and versioned checks wired | Smoke account is isolated, auto-seeded, and removed with disposable volumes |
-| P1-01 | Complete | Current working tree | — | Web typecheck + performance budget pass | Stories/Matchday IA; `/matches` is a documented legacy redirect; `/predictions` remains direct-compatible |
-| P1-02 | Complete | Current working tree | — | Web typecheck + story timeline/evidence implementation | Story cards expose status/source count/update/entity metadata; detail adds current state, timeline, evidence, follow and discussion actions |
-| P1-03 | Complete | Current working tree | — | Web typecheck + onboarding implementation | Home uses follow feed when available; new accounts select three club/league targets; anonymous Home retains curated feed and login CTA |
-| P1-04 | Complete | Current working tree | — | Web typecheck + performance budget pass | Story actions connect Matchday, Games and one canonical story comment destination; Matchday fixture detail links back to coverage/discussion |
-| P1-05 | Complete | Current working tree | — | Web typecheck + `docs/analytics-events.md` | Provider-neutral development event bus emits only the four approved events and safe identifiers |
+| P0-06 | Integrated smoke passed; Release A gates pending | Current working tree | — | Deterministic API/Minigame smoke and browser auth smoke pass with Docker; route-usage and backup/restore evidence remain external | Durable Career data remains untouched |
+| P1-01 | Implemented; navigation evidence pending | Current working tree | — | Stories/Matchday IA and expanded route budgets pass; Web `/matches` retired, `/career` redirects | Desktop/mobile/keyboard/role navigation coverage remains |
+| P1-02 | Implemented; state fixtures/tests pending | Current working tree | — | Story cards/detail expose status, source count, timeline, evidence and contextual actions | Full state matrix still needs fixtures/tests |
+| P1-03 | Implemented; onboarding acceptance tests pending | Current working tree | — | Home follow feed and three-target onboarding are wired | Reload-race/final-unfollow/fallback tests remain |
+| P1-04 | Implemented; aggregated-story fixture pending | Current working tree | — | Browser smoke passes Story detail and single-source degradation; context-link assertions run when an aggregated story is available | Idempotency and Matchday-to-Story evidence remain |
+| P1-05 | Implemented; provider/baseline pending | Current working tree | — | Provider-neutral event bus and approved field contract documented | Seven-day production baseline requires provider selection |
 | P2-01 | Blocked by Phase 1 | — | — | — | — |
 | P2-02 | Blocked by Phase 1 | — | — | — | — |
 | P2-03 | Blocked by Phase 1 | — | — | — | — |
@@ -657,9 +669,9 @@ an item complete from code review alone; attach verification evidence.
 | P2-05 | Blocked by deployment decision | — | — | — | — |
 | P2-06 | Blocked by transition gates | — | — | — | Follow the separate plan |
 
-**P2 implementation note:** P2-01 through P2-04 are implemented in the
-working tree and P2-05 configuration/runbook work is complete. Release
-verification is green locally. P2-06 remains blocked by the signed transition gates
+**P2 implementation note:** P2 code work is tracked below with explicit
+acceptance gaps. Package verification and Docker integrated smoke are green;
+the host root verifier still has a Windows `.next` EBUSY issue. P2-06 remains blocked by the signed transition gates
 in minigame-transition-plan.md: production route-usage evidence, encrypted
 backup/restore owner, rollback bundle, and retirement approval are external
 release requirements.
@@ -668,16 +680,26 @@ release requirements.
 
 | ID | Current status | Evidence / remaining gate |
 | --- | --- | --- |
-| P2-01 | Implemented | Privileged pagination, audit trail, reason capture, self/last-admin guards; Core API suite: 106 tests, 0 failures. |
-| P2-02 | Implemented | Account export/delete, session revocation, deleted-user state, internal-token filter, privacy-safe gateway logs; lifecycle tests: 2 pass. |
-| P2-03 | Implemented | Search summary payloads omit article body; Redis repository scanning disabled; bounded existing gateway retries retained. |
-| P2-04 | Implemented | Sitemap/robots, canonical metadata, noindex private surfaces, thread metadata, keyboard/evidence smoke checks; Web build is green. |
+| P2-01 | Implemented; concurrency evidence pending | Privileged pagination, audit trail, reason capture, self/last-admin guards; Core API suite: 108 tests, 0 failures, 4 skipped. |
+| P2-02 | Partial; CSP report-only added | Account export/delete, session revocation, deleted-user state, internal-token filter, privacy-safe gateway logs and Web CSP report-only header; enforcement/report evidence pending. |
+| P2-03 | Implemented | Search summary payloads omit article body; Redis repository scanning disabled; request-path blocking retry sleep removed in FixtureService. |
+| P2-04 | Partial; manual accessibility evidence pending | Sitemap/robots, canonical metadata, noindex private surfaces, thread metadata, and Docker browser smoke checks for keyboard, focus, dialog, navigation and form validation; 200% zoom/reduced-motion/contrast/small-screen and aggregated evidence-disclosure evidence remains. |
 | P2-05 | Implemented in code | Production fail-closed config, strict Flyway, pinned pgvector digest, operations runbook; owner alerting and backup evidence remain deployment tasks. |
-| P2-06 | Blocked by safety gate | Do not retire Career until `minigame-transition-plan.md` has route-usage evidence, named backup/restore owner, rollback bundle, and explicit approvals. |
+| P2-06 | Development implementation complete; production gate pending | Career/Match Engine source, active topology, legacy Web `/matches`, and Career smoke paths are retired; durable data remains until `minigame-transition-plan.md` gates pass. |
 
-**P1 verification note:** Web production build passed (32/32 static pages);
-typecheck, 17 tests, performance budgets, full verification, and integrated API
-plus browser smoke all pass.
+**Current status override (2026-08-05):** P2-06 development cleanup is now
+implemented in the workspace: active Career/Match Engine Compose services,
+Gateway mounts, the legacy Web `/matches` route, and Career smoke/verification
+steps are retired. Production transition gates still govern deployment and
+data retention; the current tracker below supersedes the legacy status rows.
+
+**Verification note (2026-08-05):** Web production build passed (31/31 static
+pages), typecheck, 7 discovered tests and expanded performance budgets pass.
+Gateway has 13 tests, Content Ingestion 27 tests, Prediction has 9 tests, and
+Core has 108 tests with 0 failures and 4 skipped. Docker integrated smoke and
+browser auth smoke pass. One full root verification attempt was stopped by a
+transient Windows `EBUSY` copy of `.next` during host Web build; the Docker Web
+build completed successfully.
 
 ## 15. First Execution Slice
 

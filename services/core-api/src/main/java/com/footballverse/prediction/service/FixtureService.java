@@ -95,31 +95,25 @@ public class FixtureService {
         return status.asText();
     }
 
-    /* ponytail: simple 2-retry loop with sleep. Ok for dev; use resilience4j when this becomes critical. */
+    /* ponytail: one bounded attempt keeps request paths free of blocking retry sleeps; the scheduler retries on its next tick. */
     private boolean tryFetch(String url, java.util.function.Consumer<JsonNode> handler) {
-        for (int attempt = 1; attempt <= 2; attempt++) {
-            try {
-                HttpRequest req = HttpRequest.newBuilder(URI.create(url))
-                        .GET()
-                        .timeout(Duration.ofSeconds(15))
-                        .build();
-                String body = httpClient.send(req, HttpResponse.BodyHandlers.ofString()).body();
-                JsonNode root = objectMapper.readTree(body);
-                JsonNode fixtures = root.get("fixtures");
-                if (fixtures != null && fixtures.isArray() && fixtures.size() > 0) {
-                    handler.accept(fixtures);
-                    return true;
-                }
-                return false;
-            } catch (Exception e) {
-                if (attempt == 2) {
-                    log.warn("prediction-service fetch failed after 2 attempts: {}", url, e);
-                } else {
-                    try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
-                }
+        try {
+            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
+                    .GET()
+                    .timeout(Duration.ofSeconds(15))
+                    .build();
+            String body = httpClient.send(req, HttpResponse.BodyHandlers.ofString()).body();
+            JsonNode root = objectMapper.readTree(body);
+            JsonNode fixtures = root.get("fixtures");
+            if (fixtures != null && fixtures.isArray() && fixtures.size() > 0) {
+                handler.accept(fixtures);
+                return true;
             }
+            return false;
+        } catch (Exception e) {
+            log.warn("prediction-service fetch failed within bounded timeout: {}", url, e);
+            return false;
         }
-        return false;
     }
 
     private void syncFromFootballDataOrg(String leagueSlug, List<Fixture> synced) {

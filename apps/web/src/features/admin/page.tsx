@@ -9,6 +9,7 @@ import type { AdminUser } from "./types";
 import { ErrorBlock } from "@/shared/components/state-blocks";
 import { formatDate } from "@/shared/lib/format";
 import { CommandPaletteModal } from "@/shared/components/command-palette-modal";
+import type { PageResponse } from "@/shared/lib/api-types";
 
 type DashboardStats = {
   totalUsers: number;
@@ -69,12 +70,12 @@ export default function AdminDashboardPage() {
     queryFn: () => data<UserGrowthEntry[]>(http.get("/admin/dashboard/user-growth")),
   });
 
-  const { data: userList, error: usersError, refetch: refetchUsers } = useQuery({
+  const { data: userPage, error: usersError, refetch: refetchUsers } = useQuery({
     queryKey: qk.admin.users(),
-    queryFn: () => data<AdminUser[]>(http.get("/admin/users")),
+    queryFn: () => data<PageResponse<AdminUser>>(http.get("/admin/users")),
   });
 
-  const recentUsers = (userList ?? []).slice(0, 6);
+  const recentUsers = userPage?.content.slice(0, 6) ?? [];
   const totalArticles = (stats?.publishedArticles ?? 0) + (stats?.draftArticles ?? 0) + (stats?.archivedArticles ?? 0);
   const pubPct = totalArticles > 0 ? Math.round(((stats?.publishedArticles ?? 0) / totalArticles) * 100) : 0;
   const signupTotal = growth.reduce((acc, g) => acc + g.count, 0);
@@ -92,13 +93,6 @@ export default function AdminDashboardPage() {
     tooltip_border: "var(--color-border)",
     area_stroke: "var(--color-accent)",
   };
-
-  const systemServices = [
-    { name: "Core API", status: "HEALTHY", latency: "14ms", color: "#4a7c59" },
-    { name: "Ingestion Engine", status: "ONLINE", latency: "38ms", color: "#4a7c59" },
-    { name: "PostgreSQL DB", status: "OPTIMAL", latency: "4ms", color: "#4a7c59" },
-    { name: "Redis Cache", status: "CONNECTED", latency: "2ms", color: "#4a7c59" },
-  ];
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -128,29 +122,10 @@ export default function AdminDashboardPage() {
             </kbd>
           </button>
 
-          <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
-            SYSTEM LIVE
-          </div>
         </div>
       </div>
 
       {/* ── System Status Health Bar ── */}
-      <div className="card p-3 px-5 flex flex-wrap items-center justify-between gap-4 bg-black/20">
-        <span className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-secondary)] font-mono">
-          Microservices Health:
-        </span>
-        <div className="flex flex-wrap items-center gap-6 text-xs">
-          {systemServices.map((srv) => (
-            <div key={srv.name} className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: srv.color }} />
-              <span className="font-bold text-[var(--color-text-primary)]">{srv.name}:</span>
-              <span className="font-mono text-[10px] text-[var(--color-text-secondary)]">{srv.latency}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {statsError ? <ErrorBlock message="Dashboard statistics could not be loaded." onRetry={() => refetchStats()} /> : null}
 
       {/* ── KPI tiles ── */}
@@ -199,7 +174,7 @@ export default function AdminDashboardPage() {
                       <stop offset="95%" stopColor="var(--color-accent)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <charts.XAxis dataKey="date" stroke={CHART_COLORS.axis} fontSize={9} tickLine={false} tick={{ fill: CHART_COLORS.axis }} tickFormatter={(v) => v.slice(5)} />
+                  <charts.XAxis dataKey="date" stroke={CHART_COLORS.axis} fontSize={9} tickLine={false} tick={{ fill: CHART_COLORS.axis }} tickFormatter={(v) => String(v).slice(5)} />
                   <charts.YAxis stroke={CHART_COLORS.axis} fontSize={9} tickLine={false} tick={{ fill: CHART_COLORS.axis }} allowDecimals={false} />
                   <charts.Tooltip contentStyle={{ background: CHART_COLORS.tooltip_bg, border: `1px solid ${CHART_COLORS.tooltip_border}`, borderRadius: 8, fontSize: 11, color: "var(--color-text-primary)" }} labelStyle={{ color: "var(--color-text-secondary)", fontWeight: 700 }} itemStyle={{ color: "var(--color-accent)" }} />
                   <charts.Area type="monotone" dataKey="count" stroke={CHART_COLORS.area_stroke} strokeWidth={2} fill="url(#growthGrad)" dot={false} />

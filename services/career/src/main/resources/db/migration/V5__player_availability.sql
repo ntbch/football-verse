@@ -1,2 +1,0 @@
-ALTER TABLE players ADD COLUMN availability VARCHAR(30) NOT NULL DEFAULT 'AVAILABLE';
-ALTER TABLE players ADD COLUMN unavailable_until DATE;
