@@ -12,7 +12,7 @@ import { DesktopNavLinks, DrawerNavLinks } from "./navbar-links";
 import { ThemeToggle } from "./theme-provider";
 import { useAccessibleDialog } from "@/shared/hooks/use-accessible-dialog";
 
-export function Navbar() {
+export function Navbar({ editorial = false }: { editorial?: boolean }) {
   const auth = useAuthStore((state) => state.auth);
   const logout = useAuthStore((state) => state.logout);
   const router = useRouter();
@@ -81,8 +81,8 @@ export function Navbar() {
   };
 
   return (
-    <header className="w-full sticky top-3 z-50 px-3 md:px-6 transition-all duration-300">
-      <div className="max-w-[1440px] mx-auto flex items-center justify-between h-16 gap-4 px-3 md:px-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background-surface)]/90 backdrop-blur-xl shadow-[0_14px_34px_rgb(16_20_15_/_8%)]">
+    <header className={`w-full sticky z-50 transition-all duration-300 ${editorial ? "top-0 px-0" : "top-3 px-3 md:px-6"}`}>
+      <div className={`max-w-[1440px] mx-auto flex items-center justify-between h-16 gap-4 px-3 md:px-5 border border-[var(--color-border)] bg-[var(--color-background-surface)]/90 backdrop-blur-xl ${editorial ? "border-x-0 border-t-0 shadow-none" : "rounded-2xl shadow-[0_14px_34px_rgb(16_20_15_/_8%)]"}`}>
         {/* LEFT SECTION: Hamburger Toggle (Mobile Only) + Split Brand Logo */}
         <div className="flex items-center gap-3 shrink-0">
           <button
@@ -100,6 +100,7 @@ export function Navbar() {
           </button>
 
           <Link href="/" className="flex items-center gap-2 group">
+            {editorial && <img src="/logo.png" alt="" className="hidden h-9 w-9 object-contain sm:block" />}
             <span className="font-sans text-lg md:text-xl font-black tracking-wider uppercase select-none">
               <span className="text-[var(--color-text-primary)] group-hover:opacity-90">FOOTBALL</span>{" "}
               <span className="text-[var(--color-accent)] font-black group-hover:opacity-90">VERSE</span>
@@ -109,7 +110,7 @@ export function Navbar() {
 
         {/* CENTER SECTION: Icon-Only Navigation Bar */}
         <div className="hidden md:flex items-center justify-center flex-1 max-w-xl">
-          <DesktopNavLinks />
+          <DesktopNavLinks editorial={editorial} />
         </div>
 
         {/* RIGHT SECTION: Search, Control Hub, Notification Bell, User Avatar */}

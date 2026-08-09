@@ -12,10 +12,27 @@ Alert owners must receive alerts for:
 - Core API or Gateway availability failures;
 - backup job failure, checksum mismatch, or restore rehearsal failure.
 
-Gateway route metrics are available through the protected /metrics route.
+Gateway route metrics are available through `/metrics` with `X-Internal-Token`.
+Use `/health` for liveness and `/ready` for readiness; `/ready` returns 503 when
+the production Redis-backed rate limiter cannot be reached.
 Request IDs are safe to correlate across Gateway and Core logs. Normal request
 logs must not include email addresses, access/refresh tokens, Redis payloads, or
 raw user content.
+
+The Compose ngrok service is development-only (`--profile dev`) and its
+inspector binds to loopback. It must not be used as the production ingress.
+When a reverse proxy fronts Gateway, set `TRUST_PROXY_HOPS` to its exact depth;
+production rate limiting requires Redis (`RATE_LIMIT_STORE=redis`).
+
+## Refresh-token hash rollout
+
+`V67` is deliberately an expand migration. It revokes legacy sessions and
+replaces their stored plaintext with non-secret sentinels, but retains the old
+column temporarily so an older Core instance cannot fail during a rolling
+deployment. Deploy the application version that writes hashes to both columns,
+wait until every old Core instance has stopped, then schedule a separate
+contract migration to drop the legacy column. Do not combine that contract step
+with a rolling deployment.
 
 ## Premium billing guardrails
 

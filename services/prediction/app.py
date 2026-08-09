@@ -1,7 +1,9 @@
-from fastapi import FastAPI, Query, HTTPException
+import hmac
+
+from fastapi import Depends, FastAPI, Query, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 
-from config import CORS_ORIGIN
+from config import CORS_ORIGIN, INTERNAL_TOKEN
 from football_api import (
     leagues_payload,
     fixture_detail_payload,
@@ -32,6 +34,11 @@ def get_league_payload(payload):
     if availability and availability.get("state") == "PROVIDER_UNAVAILABLE":
         raise HTTPException(status_code=503, detail={"code": "PROVIDER_UNAVAILABLE"})
     return payload
+
+
+def require_internal_token(x_internal_token: str | None = Header(default=None)):
+    if not INTERNAL_TOKEN or not x_internal_token or not hmac.compare_digest(x_internal_token, INTERNAL_TOKEN):
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
 @app.get("/health")
 def health():
@@ -70,5 +77,5 @@ def get_standings(league_slug: str):
     return get_league_payload(standings_payload(league_slug))
 
 @app.get("/debug/{league_slug}")
-def get_debug(league_slug: str):
+def get_debug(league_slug: str, _: None = Depends(require_internal_token)):
     return get_league_payload(provider_debug_payload(league_slug))

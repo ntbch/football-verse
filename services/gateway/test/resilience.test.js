@@ -81,6 +81,20 @@ test('SePay IPN traffic uses its isolated tighter limit', () => {
   assert.equal(limited.statusCode, 429);
 });
 
+test('readiness bypasses the limiter so it can report a Redis outage', () => {
+  const middleware = createRateLimitMiddleware({
+    limit: 10,
+    windowMs: 1_000,
+    store: { increment: () => assert.fail('readiness must not call the rate-limit store') },
+  });
+  const req = { method: 'GET', path: '/ready', ip: '127.0.0.4', headers: {}, socket: {} };
+  let continued = false;
+
+  middleware(req, responseStub(), () => { continued = true; });
+
+  assert.equal(continued, true);
+});
+
 test('read proxy retries one transient socket failure without retrying the client', async () => {
   let attempts = 0;
   const upstream = http.createServer((req, res) => {

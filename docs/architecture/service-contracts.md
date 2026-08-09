@@ -1,127 +1,54 @@
-# Service Contracts Baseline
+# Service Contracts
 
-Date: 2026-07-22  
-Scope: observed contracts before repository and service refactoring. This is a
-characterization document, not a promise that disputed behavior is correct.
+Date: 2026-08-09
+Scope: active public and internal contracts.
 
-## Edge Routing
+## Edge routing
 
-| Public prefix | Gateway owner | Destination | Authentication | Identity forwarded |
-|---|---|---|---|---|
-| `/api/v1/game/**` | Gateway | Career `http://game-service:8081/game/**` | Bearer checked by Gateway and Career; Gateway service credential required | bearer retained plus `X-Internal-Token`; Career derives user from JWT |
-| `/api/v1/**` | Gateway | Core API `http://core-service:8080/api/v1/**` | Core API security chain | Original bearer token |
-| `/game/**` | Gateway | Career `http://game-service:8081/game/**` | Bearer checked by Gateway and Career; Gateway service credential required | bearer retained plus `X-Internal-Token`; Career derives user from JWT |
-| `/matches/**` | Gateway | Prediction `http://prediction-service:8090/matches/**` | Public | none |
-| `/standings/**` | Gateway | Prediction `http://prediction-service:8090/standings/**` | Public | none |
-| Socket connection | Gateway | Gateway/Redis realtime | JWT supplied by client | JWT `uid`, `sub`, and optional roles |
+| Public prefix | Owner | Destination | Access |
+|---|---|---|---|
+| `/api/v1/**` | Gateway | Core API | Core security chain; bearer retained |
+| `/matches/**` | Gateway | Prediction | public read |
+| `/standings/**` | Gateway | Prediction | public read |
+| Socket connection | Gateway | Gateway/Redis realtime | client JWT; validated by Gateway |
+| `/health` | Gateway | Gateway | public liveness only |
+| `/ready` | Gateway | Gateway/Redis limiter | public readiness; 503 when the required limiter store is unavailable |
+| `/metrics` | Gateway | Gateway | `X-Internal-Token` required |
+| `/crawl` | Gateway | Content Ingestion | `X-Internal-Token` required |
 
-The web currently uses `/api/v1/**` for Core and constructs `/game/**` by
-removing `/api/v1` from its configured base URL. Both Career prefixes therefore
-remain observed compatibility routes until consumers are migrated.
+There are no Career, Match Engine, `/game/**`, or `/api/v1/game/**` contracts.
 
-## Ownership and Internal Calls
+## Ownership
 
-| Capability | Owning deployable | System of record | Direct consumers | Internal dependencies |
-|---|---|---|---|---|
-| Accounts, roles, refresh tokens | Core API | Core PostgreSQL | Web, Gateway | Google token verification for Google login |
-| News, comments, uploads | Core API | Core PostgreSQL plus upload directory | Web, crawler | Redis and crawler import requests |
-| Forum and moderation | Core API | Core PostgreSQL | Web | notifications in Core |
-| User prediction picks, scores, and private leagues | Core API | Core PostgreSQL | Web | Prediction provider API |
-| Provider fixtures, standings, calculations | Prediction | upstream provider/cache | Core, Gateway, Web | external football provider; Redis through deployment |
-| Career saves, squads, tactics, transfers, matches | Career | Career PostgreSQL | Web through Gateway | Match Engine |
-| Match simulation/session transition | Match Engine | request/session payload only | Career | none |
-| Edge proxy, realtime fan-out | Gateway | no durable records; Redis transient data | Web | Core, Prediction, Career, Redis |
-| Metadata ingestion | Content Ingestion | Core owns RawItems/Stories; Ingestion owns spool/checkpoints | operator/scheduler | approved RSS/APIs and Core internal API |
+| Capability | Owner | System of record | Main dependencies |
+|---|---|---|---|
+| Accounts, roles and refresh sessions | Core API | Core PostgreSQL | Google token verification |
+| News, forum, moderation and uploads | Core API | Core PostgreSQL and upload volume | Content Ingestion, Redis notifications |
+| Daily minigames and user predictions | Core API | Core PostgreSQL | sports providers, Prediction |
+| Premium billing | Core API | Core PostgreSQL | SePay, gated by Core configuration |
+| Fixtures, standings and calculations | Prediction | provider/cache | football provider |
+| Ingestion spool and checkpoints | Content Ingestion | Ingestion PostgreSQL | approved sources, Core internal API |
+| Edge routing, realtime and limits | Gateway | no durable records | Redis, Core, Prediction, Content Ingestion |
 
-No deployable may write another deployable's database. Uploaded files belong to
-Core even though their metadata is in PostgreSQL and bytes are in a filesystem
-directory.
+No deployable may write another deployable's database.
 
-## Public Route Families
+## Browser and session contract
 
-| Route family | Owner | Read/write shape | Current access | Primary consumer |
-|---|---|---|---|---|
-| `/auth/{register,login,google,refresh,logout,me}` | Core | account/session commands and current-user query | mixed public/bearer | Web |
-| `/news/**` | Core | article/category/tag queries; comment/like/bookmark commands | public reads, bearer writes | Web |
-| `/forum/**` | Core | category/thread queries; create/reply/follow/report/like commands | public reads, bearer writes | Web |
-| `/predictions/**`, `/matches/centre` | Core | fixtures, user picks, score/stat/leaderboard queries, private leagues | mixed public/bearer | Web |
-| `/users/me/**` | Core | profile and personal collections | bearer | Web |
-| `/notifications/**` | Core | personal list/read commands | bearer | Web/navbar |
-| `/search` | Core | cross-content query | public | Web |
-| `/admin/**` | Core | users, news, fixtures, forum moderation, dashboards | admin role | Web/admin |
-| `/moderator/**` | Core | reports, forum moderation, dashboard | moderator/admin role | Web/moderator |
-| `/uploads` and `/uploads/{filename}` | Core | public article-media create/read | admin create; public read | Web/admin, article readers, Telegram previews |
-| `/game/saves/**` | Career | save lifecycle and all Career subresources | trusted Gateway identity | Web/Career |
-| `/health`, `/game/status` | Career | liveness/status | public by filter only for `/health`; status requires Gateway | deployment/operator |
-| Prediction `/health`, `/leagues`, `/matches/**`, `/predictions/**`, `/standings/**` | Prediction | provider and calculation queries | public | Core/Gateway |
-| Match Engine `/health`, `/simulate`, `/session/**` | Match Engine | deterministic simulation commands | internal network | Career |
+- Access tokens remain in browser memory; they are not persisted in local or
+  session storage.
+- Core rotates an HttpOnly refresh cookie. Production requires `Secure` cookies.
+- Core persists only a SHA-256 refresh-token hash. Refresh rotates and revokes
+  the prior session. Migration `V67` is the expand phase: it invalidates legacy
+  sessions and keeps the old column temporarily with hash-only compatibility data.
+- Gateway sets `private, no-store` for auth and bearer-authenticated responses.
+- Web canonicalizes `/minigame` to `/games` to avoid duplicate content.
 
-All normal Core responses use `ApiResponse<T>` with `success`, optional
-`message`, and `data`. Career and Python services do not consistently share that
-envelope; consumers must not assume one global shape before contract unification.
+## Mutation and recovery expectations
 
-## Mutable Command Boundaries
-
-| Command group | Idempotency/unknown-outcome risk | Recovery expectation |
-|---|---|---|
-| Register/login/refresh/logout | refresh rotates server state; retry outcome can be unclear | client may retry login; refresh/logout need characterized retry semantics |
-| Likes, bookmarks, follows, notification read | toggle-style endpoints may double-apply after timeout | refactor to desired-state or idempotency keys before changing transport |
-| Create/update/delete news/forum content | duplicate create and lost update possible | surface request ID; operator restores from DB backup/audit data |
-| Prediction submit/score/rescore | scoring is user-visible and may be repeated | transaction plus deterministic rescore; retain score log |
-| Private league create/join | duplicate create/join after a timeout | create requires a persisted, owner-scoped `X-Request-ID` UUID; membership uniqueness makes join idempotent; owner-only invite-code disclosure |
-| Career advance day/season | high fan-out world mutation | one transaction per accepted command; resume from unchanged save after rollback |
-| Transfer offer/terms/complete | multi-step financial mutation | server state is authoritative; repeat must not double-transfer |
-| Match session continue/command/finish | retries can advance simulation twice | session revision/command identity required before transport redesign |
-| Upload create/delete | DB/file partial failure possible | checksum inventory and orphan reconciliation required |
-| Crawl/import | retries can duplicate content | durable ingestion state and source identity required before extraction |
-
-## Critical Journey Baseline
-
-| Journey | Owner(s) | Current acceptance check | State continuity | Recovery expectation |
-|---|---|---|---|---|
-| Login, reload, logout | Core, Gateway, Web | Core login integration tests; focused privacy test; browser smoke | access token is memory-only; reload rotates an HttpOnly refresh cookie | login can be repeated; logout revokes refresh state, clears the cookie, and clears client caches |
-| Read news and comment | Core, Web | Core news tests and web build | article is public; comment requires bearer identity | failed comment stays unapplied and UI reports mutation failure |
-| Create thread and reply | Core, Web | Core forum tests and web build | public read, authenticated mutation | reload authoritative thread after ambiguous failure |
-| Submit and score prediction | Core, Prediction, Web | Core prediction tests plus Prediction contract tests | user pick in Core PostgreSQL | deterministic rescore and score log |
-| Create Career and edit tactics | Career, Web | Career tests and focused web navigation tests | save/tactics in Career PostgreSQL | transaction rollback leaves prior save usable |
-| Scout, negotiate, complete transfer | Career, Web | Career transfer integration tests | offer state in Career PostgreSQL | reload offer/save; completion must be single-application |
-| Resume and finish interactive match | Career, Match Engine, Web | Career session tests, Match Engine tests, web playback tests | persisted Career session plus deterministic engine state | resume active session; finish commits match once |
-
-## Browser and Privacy Contract
-
-- The browser stores no bearer credential in `localStorage` or
-  `sessionStorage`. The access token exists only in the in-memory auth store.
-- Core sets and rotates the refresh token as an HttpOnly, path-scoped,
-  SameSite cookie. Production configuration requires `Secure`; the legacy
-  refresh-token body remains temporarily available for old clients.
-- Axios sends credentials only to the configured Gateway origin. Gateway
-  applies `private, no-store` to auth and bearer-authenticated responses.
-- Logout revokes refresh state, clears the cookie and in-memory auth, and clears
-  TanStack Query. A persisted back/forward-cache restore clears queries and
-  rehydrates from the cookie before private state can be reused.
-- Career URLs include `saveId`, `matchId`, and `sessionId`. These are identifiers,
-  not authorization; every server lookup must remain scoped to the authenticated
-  owner.
-- Representative fixtures and docs must use generated IDs and `example.test`
-  addresses. Never copy real tokens, upload contents, emails, user IDs, or DB
-  rows into tests, logs, screenshots, or documentation.
-
-## Known Contract Disputes
-
-These are decision candidates. Refactoring must not silently choose behavior.
-
-1. Career supports both `/api/v1/game/**` and `/game/**`; only the latter is
-   generated by the current web helper.
-2. The legacy Career trusted-header path remains available only through an
-   explicit private-network compatibility flag; it must be removed after a
-   measured zero-use soak period.
-3. Uploads are public article-media only: administrators may create image assets;
-   reads are public; bytes remain in Core backups until a supported deletion and
-   reference-counting workflow exists. They must not hold private user files.
-4. Web transport does not retry mutable commands after a network failure or
-   timeout. It may replay a request once only after receiving a definitive `401`
-   and successfully refreshing the access token.
-5. Match/session commands have important retry semantics but no documented
-   client idempotency key or optimistic revision contract.
-6. Refresh tokens remain present in auth response bodies only for the measured
-   old-client compatibility window; new browser code discards that field.
+| Command group | Recovery expectation |
+|---|---|
+| Register, login, refresh, logout | login may be repeated; refresh rotates state; logout revokes when a cookie is present |
+| News/forum creation and moderation | reload authoritative state after an ambiguous failure; audit/backup supports operator recovery |
+| Prediction/minigame attempts | Core is authoritative; versioned attempts reject stale state |
+| Payment orders and webhooks | Core verifies, deduplicates and owns membership transitions; sales remain disabled until release gates pass |
+| Crawl/import | ingestion spool and source identity support replay without direct Core database writes |

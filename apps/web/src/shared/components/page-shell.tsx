@@ -10,14 +10,15 @@ import { RoleShell } from "./role-shell";
 type StandardShellProps = {
   children: ReactNode;
   game?: boolean;
+  editorial?: boolean;
 };
 
-function StandardShell({ children, game = false }: StandardShellProps) {
+function StandardShell({ children, game = false, editorial = false }: StandardShellProps) {
   useRealtimeNotifications();
 
   return (
     <div className="theme-magazine min-h-screen flex flex-col bg-[var(--color-background-body)] text-[var(--color-text-primary)] transition-all">
-      {!game && <Navbar />}
+      {!game && <Navbar editorial={editorial} />}
       <main className={game ? "flex-1 w-full animate-fade-in" : "flex-1 max-w-[1440px] w-full mx-auto px-4 py-7 md:px-8 md:py-10 animate-fade-in"}>
         {children}
       </main>
@@ -26,12 +27,12 @@ function StandardShell({ children, game = false }: StandardShellProps) {
   );
 }
 
-export function PublicShell({ children }: { children: ReactNode }) {
-  return <StandardShell>{children}</StandardShell>;
+export function PublicShell({ children, editorial = false }: { children: ReactNode; editorial?: boolean }) {
+  return <StandardShell editorial={editorial}>{children}</StandardShell>;
 }
 
-export function SportsShell({ children, game = false }: StandardShellProps) {
-  return <StandardShell game={game}>{children}</StandardShell>;
+export function SportsShell({ children, game = false, editorial = false }: StandardShellProps) {
+  return <StandardShell game={game} editorial={editorial}>{children}</StandardShell>;
 }
 
 export function CommunityShell({ children }: { children: ReactNode }) {

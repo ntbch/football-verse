@@ -28,13 +28,20 @@ import com.footballverse.user.model.UserAccount;
 import com.footballverse.user.model.UserRole;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -90,16 +97,19 @@ public class ForumThreadService {
             case "hot" -> threads.hotThreads(categorySlug, pageable);
             default -> threads.findByCategorySlugAndHiddenFalseOrderByPinnedDescLastActivityAtDesc(categorySlug, pageable);
         };
-        return PageResponse.from(result.map(this::toThread));
+        List<ThreadResponse> responses = toThreads(result.getContent());
+        return PageResponse.from(new PageImpl<>(responses, result.getPageable(), result.getTotalElements()));
     }
 
     @Transactional(readOnly = true)
     public ThreadDetailResponse thread(String slug) {
         ForumThread thread = threads.findBySlugAndHiddenFalse(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Thread not found"));
+        List<ForumPost> visiblePosts = posts.findByThreadIdAndHiddenFalseOrderByCreatedAtAsc(thread.getId());
+        PostInteractionSummary interactions = postInteractions(visiblePosts);
         return new ThreadDetailResponse(
                 toThread(thread),
-                posts.findByThreadIdAndHiddenFalseOrderByCreatedAtAsc(thread.getId()).stream().map(this::toPost).toList()
+                visiblePosts.stream().map(post -> toPost(post, interactions)).toList()
         );
     }
 
@@ -173,8 +183,7 @@ public class ForumThreadService {
         return userFollows.stream()
                 .map(ForumThreadFollow::getThread)
                 .filter(thread -> !thread.isHidden())
-                .map(this::toThread)
-                .toList();
+                .collect(Collectors.collectingAndThen(Collectors.toList(), this::toThreads));
     }
 
     @Transactional
@@ -211,6 +220,50 @@ public class ForumThreadService {
     }
 
     public ThreadResponse toThread(ForumThread thread) {
+        return toThread(
+                thread,
+                followed(thread),
+                posts.countByThreadIdAndHiddenFalse(thread.getId()),
+                forumPostLikeRepository.countByThreadId(thread.getId())
+        );
+    }
+
+    private List<ThreadResponse> toThreads(List<ForumThread> pageThreads) {
+        if (pageThreads.isEmpty()) return List.of();
+
+        List<Long> threadIds = pageThreads.stream().map(ForumThread::getId).toList();
+        Map<Long, ForumThread> detailedThreads = threads.findResponseDetailsByIdIn(threadIds).stream()
+                .collect(Collectors.toMap(ForumThread::getId, thread -> thread));
+        Map<Long, Long> replyCounts = countByThreadId(posts.countVisibleByThreadIds(threadIds));
+        Map<Long, Long> likeCounts = countByThreadId(forumPostLikeRepository.countByThreadIds(threadIds));
+
+        UserAccount current = currentUser.getOrNull();
+        Set<Long> followedThreadIds = current == null
+                ? Set.of()
+                : new HashSet<>(follows.findFollowedThreadIds(current.getId(), threadIds));
+
+        return pageThreads.stream()
+                .map(thread -> {
+                    ForumThread detailed = detailedThreads.getOrDefault(thread.getId(), thread);
+                    return toThread(
+                            detailed,
+                            followedThreadIds.contains(thread.getId()),
+                            replyCounts.getOrDefault(thread.getId(), 0L),
+                            likeCounts.getOrDefault(thread.getId(), 0L)
+                    );
+                })
+                .toList();
+    }
+
+    private Map<Long, Long> countByThreadId(List<Object[]> rows) {
+        Map<Long, Long> counts = new HashMap<>();
+        for (Object[] row : rows) {
+            counts.put((Long) row[0], ((Number) row[1]).longValue());
+        }
+        return counts;
+    }
+
+    private ThreadResponse toThread(ForumThread thread, boolean followed, long replyCount, long likeCount) {
         return new ThreadResponse(
                 thread.getId(),
                 thread.getTitle(),
@@ -223,9 +276,9 @@ public class ForumThreadService {
                 thread.getCreatedAt(),
                 thread.isSolved(),
                 thread.getBestAnswer() == null ? null : thread.getBestAnswer().getId(),
-                followed(thread),
-                posts.countByThreadIdAndHiddenFalse(thread.getId()),
-                forumPostLikeRepository.countByThreadId(thread.getId()),
+                followed,
+                replyCount,
+                likeCount,
                 thread.getLastActivityAt()
         );
     }
@@ -245,10 +298,21 @@ public class ForumThreadService {
         return new ForumCategoryResponse(category.getId(), category.getName(), category.getSlug());
     }
 
-    private PostResponse toPost(ForumPost post) {
-        long likeCount = forumPostLikeRepository.countByPostId(post.getId());
+    private PostInteractionSummary postInteractions(Collection<ForumPost> posts) {
+        List<Long> postIds = posts.stream().map(ForumPost::getId).toList();
+        if (postIds.isEmpty()) return new PostInteractionSummary(Map.of(), Set.of());
+        Map<Long, Long> likeCounts = forumPostLikeRepository.countByPostIds(postIds).stream()
+                .collect(Collectors.toMap(row -> (Long) row[0], row -> ((Number) row[1]).longValue()));
         UserAccount current = currentUser.getOrNull();
-        boolean liked = current != null && forumPostLikeRepository.existsByPostIdAndUserId(post.getId(), current.getId());
+        Set<Long> likedPostIds = current == null
+                ? Set.of()
+                : Set.copyOf(forumPostLikeRepository.findLikedPostIds(postIds, current.getId()));
+        return new PostInteractionSummary(likeCounts, likedPostIds);
+    }
+
+    private PostResponse toPost(ForumPost post, PostInteractionSummary interactions) {
+        long likeCount = interactions.likeCounts().getOrDefault(post.getId(), 0L);
+        boolean liked = interactions.likedPostIds().contains(post.getId());
 
         return new PostResponse(
                 post.getId(),
@@ -258,5 +322,8 @@ public class ForumThreadService {
                 likeCount,
                 liked
         );
+    }
+
+    private record PostInteractionSummary(Map<Long, Long> likeCounts, Set<Long> likedPostIds) {
     }
 }

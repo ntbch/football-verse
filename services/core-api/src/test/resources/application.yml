@@ -21,6 +21,8 @@ spring:
         enabled: false
 
 app:
+  scheduling:
+    enabled: false
   environment: test
   internal:
     token: ${INTERNAL_TOKEN:test-internal-token-12345}

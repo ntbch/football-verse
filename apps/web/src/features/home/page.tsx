@@ -50,10 +50,9 @@ export default function HomePage({ initialData }: { initialData?: HomeInitialDat
     initialDataUpdatedAt: initialData?.newsPage ? initialDataUpdatedAt : undefined,
     staleTime: 60_000,
   });
-  const rawArticles = newsPage?.content ?? [];
-  const articles = [...rawArticles].sort(
-    (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-  );
+  // The public API already sorts the news feed by publication time. Preserve
+  // that order instead of allocating and sorting a new array on every render.
+  const articles = newsPage?.content ?? [];
 
   /* 2 — Leaderboard */
   const { data: leaderboard = [], isError: leaderboardError, refetch: refetchLeaderboard } = useQuery({

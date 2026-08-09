@@ -16,6 +16,13 @@ public interface ForumPostLikeRepository extends JpaRepository<ForumPostLike, Lo
 
     @Query("select l.post.thread.id, count(l) from ForumPostLike l where l.post.thread.id in :threadIds and l.post.hidden = false group by l.post.thread.id")
     List<Object[]> countByThreadIds(@Param("threadIds") Collection<Long> threadIds);
+
+    @Query("select l.post.id, count(l) from ForumPostLike l where l.post.id in :postIds group by l.post.id")
+    List<Object[]> countByPostIds(@Param("postIds") Collection<Long> postIds);
+
+    @Query("select l.post.id from ForumPostLike l where l.post.id in :postIds and l.user.id = :userId")
+    List<Long> findLikedPostIds(@Param("postIds") Collection<Long> postIds, @Param("userId") Long userId);
+
     void deleteByPostIdAndUserId(Long postId, Long userId);
     Optional<ForumPostLike> findByPostIdAndUserId(Long postId, Long userId);
 }

@@ -26,5 +26,17 @@ test("valid production security configuration passes", () => {
     JWT_ISSUER: "football-verse-core",
     JWT_AUDIENCE: "football-verse-api",
     CORS_ORIGIN: "https://football.example.test",
+    RATE_LIMIT_STORE: "redis",
+    REDIS_URL: "redis://redis:6379",
+  }));
+});
+
+test("production rejects the process-local rate limit store", () => {
+  assert.throws(() => validateSecurityEnvironment({
+    APP_ENV: "production",
+    JWT_SECRET: "production-jwt-secret-with-at-least-32-characters",
+    INTERNAL_TOKEN: "production-internal-token-long-enough",
+    CORS_ORIGIN: "https://football.example.test",
+    RATE_LIMIT_STORE: "memory",
   }));
 });

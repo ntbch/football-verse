@@ -1,6 +1,8 @@
 package com.footballverse;
 
 import com.footballverse.auth.service.AuthService;
+import com.footballverse.auth.dto.AuthResponse;
+import com.footballverse.auth.repository.RefreshTokenRepository;
 import com.footballverse.auth.dto.LoginRequest;
 import com.footballverse.common.exception.BadRequestException;
 import com.footballverse.user.model.UserAccount;
@@ -13,6 +15,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
@@ -27,6 +31,9 @@ public class LoginTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private RefreshTokenRepository refreshTokens;
+
     @Test
     @Transactional
     public void testLogin() {
@@ -36,7 +43,15 @@ public class LoginTest {
         user.setEmailVerified(true);
         users.save(user);
         try {
-            authService.login(new LoginRequest(email, password));
+            AuthResponse response = authService.login(new LoginRequest(email, password));
+            var stored = refreshTokens.findAll().stream()
+                    .filter(token -> token.getUser().getId().equals(user.getId()))
+                    .findFirst()
+                    .orElseThrow();
+            assertNotEquals(response.refreshToken(), stored.getTokenHash());
+            assertNotEquals(response.refreshToken(), stored.getLegacyToken());
+            assertNotNull(stored.getLegacyToken());
+            assertNotNull(authService.refresh(response.refreshToken()).refreshToken());
         } catch (Exception e) {
             e.printStackTrace();
             throw e;

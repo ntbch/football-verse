@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { io, type Socket } from "socket.io-client";
+import type { Socket } from "socket.io-client";
 import { PublicShell } from "@/shared/components/page-shell";
 import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import { useToast } from "@/shared/components/toast";
@@ -32,6 +32,8 @@ export default function ThreadDetailPage() {
 
   useEffect(() => {
     if (!auth?.accessToken) return;
+    let disposed = false;
+    let socket: Socket | undefined;
     let socketUrl = "http://localhost:8000";
     try {
       socketUrl = new URL(apiBaseUrl).origin;
@@ -39,25 +41,31 @@ export default function ThreadDetailPage() {
       console.error("Failed to parse apiBaseUrl for socket connection", error);
     }
 
-    const socket: Socket = io(socketUrl, {
-      auth: { token: auth.accessToken },
-      transports: ["websocket", "polling"],
-    });
-    socket.on("connect", () => socket.emit("join_thread", { slug }));
-    socket.on("new_reply", (newPost: RealtimeReply) => {
-      queryClient.invalidateQueries({ queryKey: qk.forum.thread(slug) });
-      if (newPost.author && newPost.author !== auth.username) {
-        toast({
-          body: `${newPost.author} posted a new reply!`,
-          type: "info",
-          autoHideDuration: 3000,
-        });
-      }
+    void import("socket.io-client").then(({ io }) => {
+      if (disposed) return;
+      socket = io(socketUrl, {
+        auth: { token: auth.accessToken },
+        transports: ["websocket", "polling"],
+      });
+      socket.on("connect", () => socket?.emit("join_thread", { slug }));
+      socket.on("new_reply", (newPost: RealtimeReply) => {
+        queryClient.invalidateQueries({ queryKey: qk.forum.thread(slug) });
+        if (newPost.author && newPost.author !== auth.username) {
+          toast({
+            body: `${newPost.author} posted a new reply!`,
+            type: "info",
+            autoHideDuration: 3000,
+          });
+        }
+      });
+    }).catch(() => {
+      if (!disposed) console.warn("Realtime discussion updates are unavailable");
     });
 
     return () => {
-      socket.emit("leave_thread", { slug });
-      socket.disconnect();
+      disposed = true;
+      socket?.emit("leave_thread", { slug });
+      socket?.disconnect();
     };
   }, [slug, auth?.accessToken, auth?.username, queryClient, toast]);
 

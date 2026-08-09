@@ -30,8 +30,13 @@ public class RefreshToken {
     @JoinColumn(name = "user_id", nullable = false)
     private UserAccount user;
 
-    @Column(nullable = false, unique = true, length = 80)
-    private String token;
+    @Column(name = "token_hash", nullable = false, unique = true, length = 64)
+    private String tokenHash;
+
+    // Kept only during the expand/contract schema rollout. It stores the hash,
+    // never the raw refresh token, so older application instances can still write.
+    @Column(name = "token", nullable = false, unique = true, length = 80)
+    private String legacyToken;
 
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
@@ -39,9 +44,10 @@ public class RefreshToken {
     @Column(name = "revoked_at")
     private Instant revokedAt;
 
-    public RefreshToken(UserAccount user, String token, Instant expiresAt) {
+    public RefreshToken(UserAccount user, String tokenHash, Instant expiresAt) {
         this.user = user;
-        this.token = token;
+        this.tokenHash = tokenHash;
+        this.legacyToken = tokenHash;
         this.expiresAt = expiresAt;
     }
 

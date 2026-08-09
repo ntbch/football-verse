@@ -4,9 +4,9 @@ import type { LeaderboardEntryResponse, MatchCentreResponse } from "@/features/p
 import type { ForumCategoryResponse, ThreadResponse } from "@/features/forum/types";
 import type { PageResponse } from "@/shared/lib/api-types";
 import { apiBaseUrl } from "@/shared/lib/api-config";
+import { headers } from "next/headers";
 
 export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 async function publicData<T>(path: string): Promise<T | undefined> {
   try {
@@ -18,6 +18,9 @@ async function publicData<T>(path: string): Promise<T | undefined> {
 }
 
 export default async function HomeRoute() {
+  // Render at request time so the Docker image build never captures an unavailable gateway.
+  // Individual public API calls retain their 60-second Data Cache entries below.
+  await headers();
   const [newsPage, leaderboard, matchday, categories] = await Promise.all([
     publicData<PageResponse<NewsArticleResponse>>("/news?page=0&size=15"),
     publicData<LeaderboardEntryResponse[]>("/predictions/leaderboard?period=weekly&limit=5"),

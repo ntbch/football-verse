@@ -3,7 +3,8 @@ from fastapi import HTTPException
 from urllib.error import HTTPError
 import json
 
-from app import get_league_payload, health
+import app as prediction_app
+from app import get_league_payload, health, require_internal_token
 import football_api
 from providers import client
 from providers.normalizers import map_football_data_match, normalize_fixtures
@@ -26,6 +27,22 @@ def test_health_and_unknown_league():
     with pytest.raises(HTTPException) as error:
         get_league_payload(None)
     assert error.value.status_code == 404
+
+
+def test_debug_endpoint_requires_the_internal_token(monkeypatch):
+    monkeypatch.setattr(prediction_app, "INTERNAL_TOKEN", "internal-test-token")
+    debug_route = next(route for route in prediction_app.app.routes if getattr(route, "path", None) == "/debug/{league_slug}")
+    assert any(dependency.call is require_internal_token for dependency in debug_route.dependant.dependencies)
+
+    with pytest.raises(HTTPException) as missing:
+        require_internal_token(None)
+    assert missing.value.status_code == 401
+
+    with pytest.raises(HTTPException) as wrong:
+        require_internal_token("wrong-token")
+    assert wrong.value.status_code == 401
+
+    assert require_internal_token("internal-test-token") is None
 
 
 def test_prediction_requires_completed_provider_history():

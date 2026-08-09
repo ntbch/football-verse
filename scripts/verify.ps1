@@ -151,6 +151,7 @@ if ($IntegratedSmokeOnly) {
 }
 
 $steps = @(
+    @{ Name = "Web lint"; Path = "apps/web"; Command = { & $npmCommand run lint } },
     @{ Name = "Web build"; Path = "apps/web"; Command = { & $npmCommand run build } },
     @{ Name = "Web typecheck"; Path = "apps/web"; Command = { & $npmCommand run typecheck } },
     @{ Name = "Web tests"; Path = "apps/web"; Command = { & $npmCommand test } },

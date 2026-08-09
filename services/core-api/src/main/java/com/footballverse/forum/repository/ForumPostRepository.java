@@ -2,6 +2,7 @@ package com.footballverse.forum.repository;
 import com.footballverse.forum.model.ForumPost;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -9,6 +10,7 @@ import java.util.Collection;
 import java.util.List;
 
 public interface ForumPostRepository extends JpaRepository<ForumPost, Long> {
+    @EntityGraph(attributePaths = "author")
     List<ForumPost> findByThreadIdAndHiddenFalseOrderByCreatedAtAsc(Long threadId);
 
     long countByThreadIdAndHiddenFalse(Long threadId);

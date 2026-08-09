@@ -34,6 +34,9 @@ import java.net.http.HttpResponse;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -180,7 +183,7 @@ public class AuthService {
 
     @Transactional
     public AuthResponse refresh(String token) {
-        RefreshToken refreshToken = refreshTokens.findByToken(token)
+        RefreshToken refreshToken = refreshTokens.findByTokenHash(tokenHash(token))
                 .orElseThrow(() -> new BadRequestException("Invalid refresh token"));
         if (!refreshToken.isActive()) {
             throw new BadRequestException("Invalid refresh token");
@@ -191,7 +194,7 @@ public class AuthService {
 
     @Transactional
     public void logout(String token) {
-        refreshTokens.findByToken(token).ifPresent(refreshToken -> refreshToken.setRevokedAt(Instant.now()));
+        refreshTokens.findByTokenHash(tokenHash(token)).ifPresent(refreshToken -> refreshToken.setRevokedAt(Instant.now()));
     }
 
     @Transactional
@@ -209,18 +212,29 @@ public class AuthService {
         if (user.getStatus() != UserStatus.ACTIVE) {
             throw new BadRequestException("Invalid credentials");
         }
+        String rawRefreshToken = UUID.randomUUID().toString();
         RefreshToken refreshToken = refreshTokens.save(new RefreshToken(
                 user,
-                UUID.randomUUID().toString(),
+                tokenHash(rawRefreshToken),
                 Instant.now().plus(refreshTokenDays, ChronoUnit.DAYS)
         ));
         return new AuthResponse(
                 jwtService.createAccessToken(user),
-                refreshToken.getToken(),
+                rawRefreshToken,
                 user.getId(),
                 user.getEmail(),
                 user.getUsername(),
                 user.getRoles()
         );
+    }
+
+    private String tokenHash(String token) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(token.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 is unavailable", exception);
+        }
     }
 }

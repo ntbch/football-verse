@@ -131,11 +131,11 @@ function activePath(pathname: string, href: string) {
   return href === "/" ? pathname === href : pathname.startsWith(href);
 }
 
-export function DesktopNavLinks() {
+export function DesktopNavLinks({ editorial = false }: { editorial?: boolean }) {
   const pathname = usePathname();
 
   return (
-    <nav className="flex items-center justify-center gap-1 h-14">
+    <nav className={`flex items-center justify-center h-14 ${editorial ? "gap-5" : "gap-1"}`}>
       {publicNavItems.map(({ href, label, tooltip, icon }) => {
         const active = activePath(pathname, href);
         return (
@@ -143,12 +143,9 @@ export function DesktopNavLinks() {
             key={href}
             href={href}
             aria-label={label}
-            className={`group relative grid min-h-11 min-w-11 place-items-center rounded-xl transition-colors duration-200 active:scale-95 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${active ? "bg-[var(--color-accent-muted)]" : "hover:bg-[var(--color-surface-hover)]"}`}
+            className={`group relative grid min-h-11 place-items-center transition-colors duration-200 active:scale-95 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${editorial ? `min-w-0 px-1 text-xs font-bold ${active ? "text-[var(--color-accent)] border-b-2 border-[var(--color-accent)]" : "hover:text-[var(--color-accent)]"}` : `min-w-11 rounded-xl ${active ? "bg-[var(--color-accent-muted)]" : "hover:bg-[var(--color-surface-hover)]"}`}`}
           >
-            {icon(active)}
-            <span className="pointer-events-none absolute top-full mt-2 rounded-lg bg-[var(--color-text-primary)] px-2.5 py-1 text-[10px] font-bold whitespace-nowrap text-[var(--color-text-inverse)] shadow-lg opacity-0 translate-y-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-y-0 group-focus-visible:opacity-100 group-focus-visible:translate-y-0">
-              {tooltip}
-            </span>
+            {editorial ? <span>{label}</span> : <><>{icon(active)}</><span className="pointer-events-none absolute top-full mt-2 rounded-lg bg-[var(--color-text-primary)] px-2.5 py-1 text-[10px] font-bold whitespace-nowrap text-[var(--color-text-inverse)] shadow-lg opacity-0 translate-y-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-y-0 group-focus-visible:opacity-100 group-focus-visible:translate-y-0">{tooltip}</span></>}
           </Link>
         );
       })}

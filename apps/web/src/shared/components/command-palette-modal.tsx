@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useToast } from "@/shared/components/toast";
 
 type CommandItem = {
   id: string;
@@ -20,7 +19,6 @@ type CommandPaletteModalProps = {
 
 export function CommandPaletteModal({ isOpen, onClose }: CommandPaletteModalProps) {
   const router = useRouter();
-  const toast = useToast();
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -76,27 +74,6 @@ export function CommandPaletteModal({ isOpen, onClose }: CommandPaletteModalProp
       subtitle: "Gemini model embeddings, vector scores & story decisions",
       shortcut: "G A",
       action: () => { router.push("/admin/ai-engine"); onClose(); },
-    },
-    {
-      id: "cmd-sync",
-      category: "System Commands",
-      title: "Trigger Feed Synchronization",
-      subtitle: "Run instant RSS & API ingestion crawler pipeline",
-      shortcut: "Ctrl + S",
-      action: () => {
-        toast({ body: "Ingestion crawler synchronization started in background.", type: "info" });
-        onClose();
-      },
-    },
-    {
-      id: "cmd-cache",
-      category: "System Commands",
-      title: "Flush System Cache (Redis)",
-      subtitle: "Purge cached API responses and temporary query keys",
-      action: () => {
-        toast({ body: "Redis system cache successfully flushed.", type: "info" });
-        onClose();
-      },
     },
   ];
 

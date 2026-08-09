@@ -197,18 +197,19 @@ function PlanCard({ plan, disabled, onChoose }: { plan: BillingPlan; disabled: b
   const months = planMonths(plan.durationDays);
   const isBestValue = plan.durationDays === 365;
   return (
-    <article className={`editorial-panel flex min-h-[17rem] flex-col p-5 md:p-6 ${isBestValue ? "border-[var(--color-accent)]" : ""}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="editorial-kicker m-0">{isBestValue ? "Best value" : "Premium access"}</p>
-          <h3 className="m-0 mt-2 text-xl font-black">{planLabel(plan.durationDays)}</h3>
-        </div>
-        {isBestValue && <span className="rounded-full bg-[var(--color-accent-muted)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.1em] text-[var(--color-accent)]">Popular</span>}
-      </div>
-      <p className="m-0 mt-7 font-serif-title text-3xl font-black text-[var(--color-accent)]">{money(plan.amountVnd)}</p>
-      <p className="m-0 mt-1 text-sm text-[var(--color-text-secondary)]">About {money(Math.round(plan.amountVnd / months))} per month</p>
-      <button className="btn btn-primary mt-auto w-full disabled:cursor-not-allowed disabled:opacity-50" disabled={disabled || !plan.purchasable} onClick={onChoose} type="button">
-        {!plan.purchasable ? "Sales paused" : disabled ? "Pay or cancel current order" : "Choose this plan"}
+    <article className={`relative overflow-hidden border-b border-[var(--color-border)] first:border-t ${isBestValue ? "bg-[#121b27] text-[#f7f5ef]" : "bg-transparent"}`}>
+      {isBestValue && <span className="absolute right-5 top-5 rounded-full bg-[var(--color-accent)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-[var(--color-text-inverse)]">Best value</span>}
+      <button
+        className="grid w-full cursor-pointer gap-4 px-5 py-6 text-left transition-colors duration-200 hover:bg-[var(--color-surface-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50 sm:grid-cols-[4rem_minmax(0,1fr)_auto_auto] sm:items-center sm:gap-6 sm:px-7"
+        disabled={disabled || !plan.purchasable}
+        onClick={onChoose}
+        type="button"
+        aria-label={`Choose ${planLabel(plan.durationDays)}`}
+      >
+        <span className={`text-4xl font-black tracking-[-0.08em] ${isBestValue ? "text-[var(--color-accent)]" : "text-[var(--color-border)]"}`}>{String(months).padStart(2, "0")}</span>
+        <span><span className={`block text-xl font-black tracking-[-0.04em] ${isBestValue ? "text-[#f7f5ef]" : "text-[var(--color-text-primary)]"}`}>{months} {months === 1 ? "month" : "months"}</span><span className={`mt-1 block text-sm ${isBestValue ? "text-[#d1d5db]" : "text-[var(--color-text-secondary)]"}`}>{plan.durationDays} days of access</span></span>
+        <span className="sm:text-right"><span className={`block text-2xl font-black tracking-[-0.06em] ${isBestValue ? "text-[#f7f5ef]" : "text-[var(--color-text-primary)]"}`}>{money(plan.amountVnd)}</span><span className={`mt-1 block text-xs ${isBestValue ? "text-[#d1d5db]" : "text-[var(--color-text-secondary)]"}`}>{money(Math.round(plan.amountVnd / months))} / month</span></span>
+        <span className={`grid h-10 w-10 place-items-center rounded-full border transition-transform duration-200 ${isBestValue ? "border-white/25 text-[#f7f5ef]" : "border-[var(--color-border)] text-[var(--color-text-primary)]"}`} aria-hidden="true"><svg className="h-5 w-5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.75"><path strokeLinecap="round" strokeLinejoin="round" d="M3 8h10m-4-4 4 4-4 4" /></svg></span>
       </button>
     </article>
   );
@@ -258,28 +259,27 @@ export default function PremiumPage() {
     });
   };
 
-  const startingPrice = Math.min(...(plans ?? []).map((plan) => plan.amountVnd), 0);
+  const annualPlan = plans?.find((plan) => plan.durationDays === 365);
   const showCheckout = activeOrder?.status === "PENDING";
 
   return (
     <PublicShell>
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
-        <section className="grid gap-5 lg:grid-cols-[1.35fr_.65fr]">
-          <header className="editorial-panel relative overflow-hidden p-6 md:p-9">
-            <div className="absolute right-[-4rem] top-[-5rem] h-48 w-48 rounded-full border-[22px] border-[var(--color-editorial-glow)]" aria-hidden="true" />
-            <div className="relative">
-              <p className="editorial-kicker m-0">Football Verse / Premium</p>
-              <h1 className="mt-4 max-w-xl font-serif-title text-4xl font-black leading-[1.02] tracking-[-0.04em] md:text-5xl">More signal for every match you follow.</h1>
-              <p className="mt-4 max-w-xl text-sm leading-relaxed text-[var(--color-text-secondary)] md:text-base">Detailed prediction context, higher follow limits and a clearer way to read the game.</p>
-            </div>
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-14 pb-6">
+        <section className="relative isolate grid gap-10 overflow-hidden rounded-[2rem] bg-[#121b27] px-6 py-10 text-[#f7f5ef] md:px-10 md:py-14 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,.62fr)] lg:items-end">
+          <svg aria-hidden="true" className="absolute inset-y-0 right-0 h-full w-[58%] text-white/10" viewBox="0 0 640 440" fill="none"><circle cx="464" cy="220" r="146" stroke="currentColor" strokeWidth="1" /><circle cx="464" cy="220" r="62" stroke="currentColor" strokeWidth="1" /><path d="M315 0v440M640 0v440M315 145h325M315 295h325" stroke="currentColor" strokeWidth="1" /></svg>
+          <div className="pointer-events-none absolute -right-5 -top-16 select-none text-[15rem] font-black leading-none tracking-[-.12em] text-white/[.035] md:text-[22rem]" aria-hidden="true">90</div>
+          <header className="relative max-w-2xl">
+            <p className="m-0 text-[11px] font-black uppercase tracking-[0.2em] text-[var(--color-accent)]">Football Verse / Premium</p>
+            <h1 className="m-0 mt-5 text-5xl font-black leading-[.9] tracking-[-0.075em] md:text-7xl">Make matchday yours.</h1>
+            <p className="m-0 mt-6 max-w-xl text-base leading-relaxed text-[#c9d0db]">A quieter place to follow the signals, clubs and competitions that matter to you.</p>
           </header>
-          <aside className="editorial-panel flex flex-col justify-between bg-[var(--color-editorial-wash)] p-6 md:p-8">
-            <div>
-              <p className="editorial-kicker m-0">Starting at</p>
-              <p className="m-0 mt-3 font-serif-title text-5xl font-black tracking-[-0.04em] text-[var(--color-accent)]">{startingPrice ? money(startingPrice) : "-"}</p>
-              <p className="m-0 mt-2 text-sm text-[var(--color-text-secondary)]">One-time payment, no auto-renewal</p>
-            </div>
-            {membership?.premium && <p className="m-0 mt-8 border-t border-[var(--color-border)] pt-4 text-sm font-bold text-[var(--color-success)]">Active until {dateTime(membership.validUntil)}</p>}
+          <aside className="relative border-l border-white/15 pl-6 md:pl-8">
+            <p className="m-0 text-[10px] font-black uppercase tracking-[0.16em] text-[#c9d0db]">The full season</p>
+            <p className="m-0 mt-3 text-4xl font-black tracking-[-0.07em] md:text-5xl">{annualPlan ? money(annualPlan.amountVnd) : "-"}</p>
+            <p className="m-0 mt-2 text-sm text-[#c9d0db]">{annualPlan ? `${money(Math.round(annualPlan.amountVnd / 12))} per month` : "Annual access"}</p>
+            {!showCheckout && annualPlan && <button className="mt-7 min-h-12 w-full cursor-pointer rounded-full bg-[var(--color-accent)] px-5 text-sm font-black text-[var(--color-text-inverse)] transition-transform duration-200 hover:brightness-110 active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-50" disabled={createOrder.isPending || hasUnpaidOrder || !annualPlan.purchasable} onClick={() => createOrder.mutate(annualPlan.code)} type="button">{!annualPlan.purchasable ? "Sales paused" : hasUnpaidOrder ? "Pay or cancel current order" : "Start with annual"}</button>}
+            <p className="m-0 mt-4 text-xs font-bold text-[#c9d0db]">One payment. No auto-renewal.</p>
+            {membership?.premium && <p className="m-0 mt-5 border-t border-white/15 pt-4 text-xs font-bold text-[var(--color-accent)]">Active until {dateTime(membership.validUntil)}</p>}
           </aside>
         </section>
 
@@ -289,33 +289,31 @@ export default function PremiumPage() {
         {!showCheckout && (
           <>
             <section aria-labelledby="premium-plans-title">
-              <div className="mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-[var(--color-border)] pb-4">
-                <div><p className="editorial-kicker m-0">Choose access</p><h2 id="premium-plans-title" className="editorial-section-title m-0 mt-1">Premium plans</h2></div>
-                <span className="text-xs text-[var(--color-text-secondary)]">Prices shown in VND</span>
+              <div className="mb-7 flex flex-wrap items-end justify-between gap-3">
+                <div><p className="m-0 text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-accent)]">Choose your pass</p><h2 id="premium-plans-title" className="m-0 mt-3 text-4xl font-black tracking-[-0.06em]">Time on your side.</h2></div>
+                <span className="text-xs text-[var(--color-text-secondary)]">All prices are one-time payments in VND</span>
               </div>
               {createOrder.isError && <p className="mb-4 text-sm text-[var(--color-danger)]">{apiErrorMessage(createOrder.error, "Could not create the payment order.")}</p>}
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="overflow-hidden rounded-2xl border border-[var(--color-border)]">
                 {(plans ?? []).map((plan) => <PlanCard key={plan.code} plan={plan} disabled={createOrder.isPending || hasUnpaidOrder} onChoose={() => createOrder.mutate(plan.code)} />)}
               </div>
             </section>
 
-            <section aria-labelledby="premium-benefits-title" className="border-y border-[var(--color-border)] py-7">
-              <div className="grid gap-5 md:grid-cols-[.7fr_1.3fr] md:gap-10">
-                <div><p className="editorial-kicker m-0">Included with Premium</p><h2 id="premium-benefits-title" className="editorial-section-title m-0 mt-1">Fewer limits.</h2></div>
-                <ul className="m-0 grid list-none gap-0 p-0 text-sm text-[var(--color-text-secondary)] sm:grid-cols-2">
-                  <li className="border-b border-[var(--color-border)] py-3 sm:pr-5">More private prediction leagues.</li>
-                  <li className="border-b border-[var(--color-border)] py-3 sm:pl-5">Follow more teams, leagues and players.</li>
-                  <li className="border-b border-[var(--color-border)] py-3 sm:pr-5">Detailed model signals and score history.</li>
-                  <li className="py-3 sm:pl-5">Priority access to new match intelligence.</li>
-                </ul>
-              </div>
+            <section aria-labelledby="premium-benefits-title" className="grid gap-8 border-y border-[var(--color-border)] py-10 lg:grid-cols-[minmax(0,.75fr)_minmax(0,1.25fr)]">
+              <div><p className="m-0 text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-accent)]">What changes</p><h2 id="premium-benefits-title" className="m-0 mt-3 text-3xl font-black tracking-[-0.04em]">More of the signal you came for.</h2></div>
+              <ul className="m-0 grid list-none gap-x-8 divide-y divide-[var(--color-border)] p-0 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+                <li className="py-4 sm:pr-6"><strong className="block text-base">Detailed model signals</strong><small className="mt-1 block text-sm leading-relaxed text-[var(--color-text-secondary)]">Read deeper match context and score history.</small></li>
+                <li className="py-4 sm:pl-6"><strong className="block text-base">More follows</strong><small className="mt-1 block text-sm leading-relaxed text-[var(--color-text-secondary)]">Keep closer tabs on more teams, leagues and players.</small></li>
+                <li className="py-4 sm:pr-6"><strong className="block text-base">Private leagues</strong><small className="mt-1 block text-sm leading-relaxed text-[var(--color-text-secondary)]">Create more spaces for your prediction groups.</small></li>
+                <li className="py-4 sm:pl-6"><strong className="block text-base">Early access</strong><small className="mt-1 block text-sm leading-relaxed text-[var(--color-text-secondary)]">Try new match intelligence as it lands.</small></li>
+              </ul>
             </section>
           </>
         )}
 
-        <section className="editorial-panel p-5 md:p-6" aria-labelledby="payment-history-title">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] pb-4"><div><p className="editorial-kicker m-0">Account</p><h2 id="payment-history-title" className="editorial-section-title m-0 mt-1">Payment history</h2></div><Link href="/profile" className="text-xs font-bold text-[var(--color-accent)] hover:underline">Back to profile</Link></div>
-          <div className="divide-y divide-[var(--color-border)]">
+        <details className="border-y border-[var(--color-border)] py-4" aria-labelledby="payment-history-title">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-bold text-[var(--color-accent)] marker:hidden"><span id="payment-history-title">View payment history</span><span aria-hidden="true">→</span></summary>
+          <div className="mt-4 divide-y divide-[var(--color-border)] border-t border-[var(--color-border)]">
             {(history?.content ?? []).map((order) => {
               const cancellable = order.status === "PENDING";
               const removable = order.status === "CANCELLED" || order.status === "EXPIRED";
@@ -333,7 +331,7 @@ export default function PremiumPage() {
             })}
             {!history?.content?.length && <p className="m-0 py-5 text-sm text-[var(--color-text-secondary)]">No payment orders yet.</p>}
           </div>
-        </section>
+        </details>
       </div>
     </PublicShell>
   );

@@ -16,6 +16,7 @@ export function validateSecurityEnvironment(environment: NodeJS.ProcessEnv = pro
   const issuer = environment.JWT_ISSUER || "football-verse-core";
   const audience = environment.JWT_AUDIENCE || "football-verse-api";
   const corsOrigin = environment.CORS_ORIGIN || "http://localhost:3000";
+  const rateLimitStore = environment.RATE_LIMIT_STORE || "memory";
 
   if (jwtSecret.length < 32) {
     throw new Error("JWT_SECRET must contain at least 32 characters");
@@ -32,6 +33,9 @@ export function validateSecurityEnvironment(environment: NodeJS.ProcessEnv = pro
     }
     if (!corsOrigin.startsWith("https://")) {
       throw new Error("Production CORS_ORIGIN must use HTTPS");
+    }
+    if (rateLimitStore !== "redis" || !environment.REDIS_URL?.trim()) {
+      throw new Error("Production rate limiting requires RATE_LIMIT_STORE=redis and REDIS_URL");
     }
   }
 }

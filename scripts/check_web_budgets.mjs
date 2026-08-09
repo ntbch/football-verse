@@ -10,8 +10,12 @@ const routes = {
   "/matchday/page": { js: 170_000, css: 20_000 },
   "/predictions/page": { js: 170_000, css: 20_000 },
   "/forum/page": { js: 170_000, css: 20_000 },
+  "/forum/categories/[slug]/page": { js: 170_000, css: 20_000 },
+  "/forum/threads/[slug]/page": { js: 175_000, css: 20_000 },
   "/search/page": { js: 170_000, css: 20_000 },
   "/games/page": { js: 170_000, css: 21_000 },
+  "/matchday/[fixtureId]/page": { js: 170_000, css: 20_000 },
+  "/predictions/[fixtureId]/page": { js: 170_000, css: 20_000 },
   "/admin/page": { js: 160_000, css: 20_000 },
   "/moderator/page": { js: 160_000, css: 20_000 },
 };
@@ -23,6 +27,10 @@ const bytesFor = (files, extension) => [...new Set(files.filter((file) => file.e
 
 const failures = [];
 for (const [route, budget] of Object.entries(routes)) {
+  if (!manifest.pages[route]) {
+    failures.push(`${route} is missing from app-build-manifest.json`);
+    continue;
+  }
   const files = [
     ...(manifest.pages["/layout"] ?? []),
     ...((budget.layouts ?? []).flatMap((layout) => manifest.pages[layout] ?? [])),

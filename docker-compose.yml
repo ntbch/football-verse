@@ -23,6 +23,7 @@ services:
     build: ./services/prediction
     environment:
       FOOTBALL_API_KEY: ${FOOTBALL_API_KEY:-}
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN}
       FOOTBALL_PROVIDER: ${FOOTBALL_PROVIDER:-football-data}
       FOOTBALL_SEASON: ${FOOTBALL_SEASON:-2026}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
@@ -65,6 +66,7 @@ services:
       - APP_SEED_ENABLED=${APP_SEED_ENABLED:-false}
       - APP_CLUSTERING_MODE=${APP_CLUSTERING_MODE:-vector}
       - APP_ENV=${APP_ENV:-development}
+      - APP_SCHEDULING_ENABLED=${APP_SCHEDULING_ENABLED:-true}
       - BILLING_ENABLED=${BILLING_ENABLED:-false}
       - BILLING_SALES_ENABLED=${BILLING_SALES_ENABLED:-false}
       - BILLING_EXPIRY_POLL_MS=${BILLING_EXPIRY_POLL_MS:-300000}
@@ -121,6 +123,8 @@ services:
       - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-300}
       - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
       - BILLING_IPN_RATE_LIMIT_MAX=${BILLING_IPN_RATE_LIMIT_MAX:-60}
+      - RATE_LIMIT_STORE=${RATE_LIMIT_STORE:-redis}
+      - TRUST_PROXY_HOPS=${TRUST_PROXY_HOPS:-0}
     depends_on:
       - redis
       - prediction-service
@@ -166,6 +170,7 @@ services:
 
   ngrok:
     image: ngrok/ngrok:latest
+    profiles: ["dev"]
     restart: unless-stopped
     command: ["http", "gateway-service:8000"]
     environment:
@@ -173,7 +178,7 @@ services:
     depends_on:
       - gateway-service
     ports:
-      - "${NGROK_INSPECTOR_PORT:-4040}:4040"
+      - "127.0.0.1:${NGROK_INSPECTOR_PORT:-4040}:4040"
 
 volumes:
   postgres_data:

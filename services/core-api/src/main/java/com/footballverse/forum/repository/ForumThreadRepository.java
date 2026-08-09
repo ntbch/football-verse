@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
+import java.util.Collection;
+import java.util.List;
 
 public interface ForumThreadRepository extends JpaRepository<ForumThread, Long> {
     Page<ForumThread> findByCategorySlugAndHiddenFalseOrderByPinnedDescCreatedAtDesc(String slug, Pageable pageable);
@@ -78,6 +80,15 @@ public interface ForumThreadRepository extends JpaRepository<ForumThread, Long> 
     Page<ForumThread> searchThreads(String query, Pageable pageable);
 
     Optional<ForumThread> findBySlugAndHiddenFalse(String slug);
+
+    @Query("""
+            select distinct t from ForumThread t
+            join fetch t.category
+            join fetch t.author
+            left join fetch t.bestAnswer
+            where t.id in :threadIds
+            """)
+    List<ForumThread> findResponseDetailsByIdIn(@Param("threadIds") Collection<Long> threadIds);
 
     long countByHiddenTrue();
 }

@@ -4,8 +4,8 @@ import { getConfig, validateSecurityEnvironment } from './config';
 import { requestIdMiddleware, cachePrivacyMiddleware, browserSecurityHeaders, corsMiddleware } from './middleware/security';
 import { metricsMiddleware } from './middleware/metrics';
 import { safeErrorHandler } from './middleware/error-handler';
-import { createRateLimitMiddleware } from './middleware/rate-limit';
-import { healthRouter } from './routes/health-routes';
+import { createRateLimitMiddleware, RedisRateLimitStore } from './middleware/rate-limit';
+import { createHealthRouter } from './routes/health-routes';
 import { setupProxy } from './proxy';
 import { setupSocket } from './socket';
 
@@ -15,16 +15,21 @@ const config = getConfig();
 const app = express();
 const server = createServer(app);
 
+app.set('trust proxy', config.trustProxyHops);
+const rateLimitStore = config.rateLimitStore === 'redis'
+  ? new RedisRateLimitStore(config.redisUrl)
+  : undefined;
+
 // 1. Request ID, Metrics, CORS, Cache Privacy
 app.use(requestIdMiddleware);
 app.use(metricsMiddleware);
 app.use(cachePrivacyMiddleware);
 app.use(browserSecurityHeaders);
 app.use(corsMiddleware);
-app.use(createRateLimitMiddleware({ limit: config.rateLimit, windowMs: config.rateLimitWindowMs, billingIpnLimit: config.billingIpnRateLimit }));
+app.use(createRateLimitMiddleware({ limit: config.rateLimit, windowMs: config.rateLimitWindowMs, billingIpnLimit: config.billingIpnRateLimit, store: rateLimitStore }));
 
 // 2. Health & Control Routes
-app.use(healthRouter);
+app.use(createHealthRouter(async () => rateLimitStore ? rateLimitStore.isReady() : true));
 
 // 3. API Gateway Proxy Routing
 setupProxy(app);
@@ -38,3 +43,11 @@ app.use(safeErrorHandler);
 server.listen(config.port, () => {
   console.log(`Realtime Gateway listening on port ${config.port} (${config.appEnv})`);
 });
+
+const shutdown = (): void => {
+  void (rateLimitStore ? rateLimitStore.close() : Promise.resolve())
+    .finally(() => server.close(() => process.exit(0)));
+};
+
+process.once('SIGTERM', shutdown);
+process.once('SIGINT', shutdown);
