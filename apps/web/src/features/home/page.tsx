@@ -15,6 +15,7 @@ import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import { LeaderboardWidget, CommunityWidget, EditorsPickWidget, MatchdayPulseWidget } from "./_components";
 import { FollowingOnboarding, useFollowingFeed } from "@/features/following";
 import { useAuthStore } from "@/shared/lib/auth-store";
+import { trackEvent } from "@/shared/lib/analytics";
 
 type HomeInitialData = {
   newsPage?: PageResponse<NewsArticleResponse>;
@@ -39,6 +40,7 @@ function timeAgo(dateStr: string) {
 export default function HomePage({ initialData }: { initialData?: HomeInitialData }) {
   const auth = useAuthStore((state) => state.auth);
   const [initialDataUpdatedAt] = React.useState(() => Date.now());
+  React.useEffect(() => { trackEvent("daily_hub_opened"); }, []);
   /* 1 — News */
   const { data: newsPage, isLoading: newsLoading, isError: newsError, refetch: refetchNews } = useQuery({
     queryKey: ["home-news"] as const,

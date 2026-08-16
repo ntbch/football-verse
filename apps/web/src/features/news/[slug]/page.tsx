@@ -8,6 +8,7 @@ import { PublicShell } from "@/shared/components/page-shell";
 import { qk } from "@/shared/lib/query-keys";
 import { http, data, apiErrorMessage } from "@/shared/lib/api-client";
 import { useAuthStore } from "@/shared/lib/auth-store";
+import { trackEvent } from "@/shared/lib/analytics";
 import { useToast } from "@/shared/components/toast";
 import type { NewsArticleResponse, CommentResponse } from "../types";
 import type { SearchResponse } from "@/features/search/types";
@@ -76,6 +77,11 @@ export default function NewsDetailPage({ initialArticle, initialSlug }: NewsDeta
     initialData: initialArticle?.slug === slug ? initialArticle : undefined,
     initialDataUpdatedAt: 0,
   });
+  const storyId = article?.id;
+  const sourceCount = article?.sources?.length ?? 0;
+  React.useEffect(() => {
+    if (storyId) trackEvent("story_opened", { storyId, sourceCount });
+  }, [sourceCount, storyId]);
 
   // 2. Fetch Article Comments
   const { data: flatComments = [] } = useQuery({

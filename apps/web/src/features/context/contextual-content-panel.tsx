@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
+import { trackEvent } from "@/shared/lib/analytics";
 import { contextualContentState, type ContextualContentStatus } from "./contextual-content";
 import type { FixtureContextResponse } from "./types";
 
@@ -13,6 +15,10 @@ type ContextualContentPanelProps = {
 
 export function ContextualContentPanel({ status, content, onRetry }: ContextualContentPanelProps) {
   const state = contextualContentState({ status, news: content?.news ?? [], threads: content?.threads ?? [] });
+  const contextId = content?.context.id;
+  useEffect(() => {
+    if (contextId) trackEvent("context_opened", { contextId });
+  }, [contextId]);
 
   if (state === "loading") return <section aria-label="Match coverage"><LoadingBlock label="Loading match coverage" /></section>;
   if (state === "unavailable") return <section aria-label="Match coverage"><ErrorBlock message="Match coverage is unavailable." onRetry={onRetry} /></section>;
@@ -30,7 +36,7 @@ export function ContextualContentPanel({ status, content, onRetry }: ContextualC
       <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background-surface)] p-4">
         <div className="mb-3 flex items-center justify-between gap-3">
           <h2 className="m-0 font-serif-title text-lg font-black text-[var(--color-text-primary)]">Community discussion</h2>
-          <Link className="min-h-11 inline-flex items-center text-xs font-bold text-[var(--color-accent)] hover:underline" href={`/forum?contextId=${content!.context.id}&create=1`}>Start discussion</Link>
+          <Link className="min-h-11 inline-flex items-center text-xs font-bold text-[var(--color-accent)] hover:underline" href={`/forum?contextId=${content!.context.id}&create=1`} onClick={() => trackEvent("context_thread_started", { contextId: content!.context.id })}>Start discussion</Link>
         </div>
         {content?.threads.length ? <div className="grid gap-3">{content.threads.map((thread) => <Link className="rounded-xl border border-[var(--color-border)] p-3 transition-colors hover:border-[var(--color-accent)]" href={`/forum/threads/${thread.slug}`} key={thread.slug}>
           <p className="m-0 text-[10px] font-bold uppercase tracking-wide text-[var(--color-text-secondary)]">{thread.category}</p>

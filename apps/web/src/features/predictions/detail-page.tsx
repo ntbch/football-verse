@@ -13,6 +13,7 @@ import type { LineupTeam, MatchCentreFixture } from "./types";
 import { FollowTargetButton, useFollowTargets } from "@/features/following";
 import { useFixtureContext } from "@/features/context/api";
 import { ContextualContentPanel } from "@/features/context/contextual-content-panel";
+import { trackEvent } from "@/shared/lib/analytics";
 
 type DetailTab = "overview" | "lineups" | "analysis";
 
@@ -116,6 +117,10 @@ export default function PredictionDetailPage() {
   const returnHref = `/predictions?${returnParams.toString()}`;
   const loginHref = `/login?next=${encodeURIComponent(`${pathname}?${searchParams.toString()}`)}`;
   const fixture = data?.fixture;
+  const fixtureRecordId = fixture?.id;
+  useEffect(() => {
+    if (fixtureRecordId) trackEvent("matchday_opened", { fixtureId: fixtureRecordId });
+  }, [fixtureRecordId]);
   const { data: contextContent, isLoading: contextLoading, isError: contextError, refetch: refetchContext } = useFixtureContext(fixture?.fixtureId, Boolean(fixture));
   const { data: communityDistribution, isError: communityDistributionError, refetch: refetchCommunityDistribution } = useCommunityPredictionDistribution(
     fixture?.id ?? 0,
