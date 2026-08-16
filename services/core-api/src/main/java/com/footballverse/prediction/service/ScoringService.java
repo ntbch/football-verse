@@ -22,7 +22,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.UriUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -110,7 +112,7 @@ public class ScoringService {
                     NotificationType.PREDICTION_SCORED,
                     "Your prediction for " + fixture.getHomeTeam() + " vs " + fixture.getAwayTeam()
                             + " has been scored. You earned " + points + " points.",
-                    "/predictions"
+                    matchdayLink(fixture)
             );
 
             PredictionStats stats = getOrCreateStats(pred.getUser());
@@ -134,6 +136,11 @@ public class ScoringService {
         else if (awayScore > homeScore) actual = "away";
         else actual = "draw";
         return pick.equals(actual);
+    }
+
+    private String matchdayLink(Fixture fixture) {
+        return "/matchday/" + UriUtils.encodePathSegment(fixture.getFixtureId(), StandardCharsets.UTF_8)
+                + "?league=" + UriUtils.encodeQueryParam(fixture.getLeagueSlug(), StandardCharsets.UTF_8);
     }
 
     private boolean isOu25Correct(String pickOu25, int homeScore, int awayScore) {

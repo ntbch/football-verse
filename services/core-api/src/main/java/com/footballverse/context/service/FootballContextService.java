@@ -34,7 +34,7 @@ public class FootballContextService {
         FootballContext context = contexts.findByFixtureId(fixture.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Football context not found"));
         return new FixtureContextResponse(
-                new FootballContextResponse(context.getType(), context.getContextKey(), context.getDisplayName()),
+                new FootballContextResponse(context.getId(), context.getType(), context.getContextKey(), context.getDisplayName()),
                 articles.findByContextsIdAndStatusOrderByPublishedAtDesc(context.getId(), ArticleStatus.PUBLISHED).stream()
                         .map(article -> new com.footballverse.context.dto.ContextualNewsResponse(
                                 article.getTitle(), article.getSlug(), article.getSummary(), article.getImageUrl(), article.getPublishedAt()))

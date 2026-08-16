@@ -5,6 +5,7 @@ import com.footballverse.common.exception.ResourceNotFoundException;
 import com.footballverse.common.pagination.PageResponse;
 import com.footballverse.common.text.RichTextSanitizer;
 import com.footballverse.common.text.SlugUtil;
+import com.footballverse.context.repository.FootballContextRepository;
 import com.footballverse.forum.dto.ForumCategoryRequest;
 import com.footballverse.forum.dto.ForumCategoryResponse;
 import com.footballverse.forum.dto.PostResponse;
@@ -57,6 +58,7 @@ public class ForumThreadService {
     private final CurrentUser currentUser;
     private final NotificationService notifications;
     private final MentionService mentionService;
+    private final FootballContextRepository contexts;
 
     @Transactional(readOnly = true)
     public List<ForumCategoryResponse> categories() {
@@ -123,6 +125,10 @@ public class ForumThreadService {
         thread.setSlug(SlugUtil.uniqueSlug(request.title()));
         thread.setCategory(category);
         thread.setAuthor(user);
+        if (request.contextId() != null) {
+            thread.setContext(contexts.findById(request.contextId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Football context not found")));
+        }
         thread.setLastActivityAt(Instant.now());
         ForumThread saved = threads.save(thread);
 
@@ -279,7 +285,8 @@ public class ForumThreadService {
                 followed,
                 replyCount,
                 likeCount,
-                thread.getLastActivityAt()
+                thread.getLastActivityAt(),
+                thread.getContext() == null ? null : thread.getContext().getId()
         );
     }
 

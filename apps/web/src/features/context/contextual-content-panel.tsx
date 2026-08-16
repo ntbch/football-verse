@@ -28,7 +28,10 @@ export function ContextualContentPanel({ status, content, onRetry }: ContextualC
         </Link>)}</div> : <p className="m-0 text-sm text-[var(--color-text-secondary)]">No published coverage yet.</p>}
       </div>
       <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background-surface)] p-4">
-        <h2 className="m-0 mb-3 font-serif-title text-lg font-black text-[var(--color-text-primary)]">Community discussion</h2>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="m-0 font-serif-title text-lg font-black text-[var(--color-text-primary)]">Community discussion</h2>
+          <Link className="min-h-11 inline-flex items-center text-xs font-bold text-[var(--color-accent)] hover:underline" href={`/forum?contextId=${content!.context.id}&create=1`}>Start discussion</Link>
+        </div>
         {content?.threads.length ? <div className="grid gap-3">{content.threads.map((thread) => <Link className="rounded-xl border border-[var(--color-border)] p-3 transition-colors hover:border-[var(--color-accent)]" href={`/forum/threads/${thread.slug}`} key={thread.slug}>
           <p className="m-0 text-[10px] font-bold uppercase tracking-wide text-[var(--color-text-secondary)]">{thread.category}</p>
           <h3 className="m-0 mt-1 text-sm font-black text-[var(--color-text-primary)]">{thread.title}</h3>

@@ -101,7 +101,8 @@ public class SearchService {
                 false,
                 interactions.postCounts().getOrDefault(thread.getId(), 0L),
                 interactions.likeCounts().getOrDefault(thread.getId(), 0L),
-                thread.getLastActivityAt()
+                thread.getLastActivityAt(),
+                thread.getContext() == null ? null : thread.getContext().getId()
         );
     }
 

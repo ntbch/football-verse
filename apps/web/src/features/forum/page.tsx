@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PublicShell } from "@/shared/components/page-shell";
 import { qk } from "@/shared/lib/query-keys";
@@ -27,6 +28,7 @@ type ForumInitialData = {
 };
 
 export default function ForumPage({ initialData }: { initialData?: ForumInitialData }) {
+  const searchParams = useSearchParams();
   const auth = useAuthStore((state) => state.auth);
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -39,7 +41,9 @@ export default function ForumPage({ initialData }: { initialData?: ForumInitialD
   const followingOnly = threadView === "following";
 
   // Create thread form states
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const contextId = Number(searchParams.get("contextId"));
+  const contextualThreadId = Number.isSafeInteger(contextId) && contextId > 0 ? contextId : null;
+  const [showCreateModal, setShowCreateModal] = useState(() => searchParams.get("create") === "1");
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
   const [newTags, setNewTags] = useState("");
@@ -99,14 +103,16 @@ export default function ForumPage({ initialData }: { initialData?: ForumInitialD
       title,
       content,
       tags,
+      contextId,
     }: {
       catSlug: string;
       title: string;
       content: string;
       tags: string[];
+      contextId: number | null;
     }) =>
       data<ThreadResponse>(
-        http.post(`/forum/categories/${catSlug}/threads`, { title, content, tags })
+        http.post(`/forum/categories/${catSlug}/threads`, { title, content, tags, contextId })
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["threads", activeCategorySlug || ""] });
@@ -143,6 +149,7 @@ export default function ForumPage({ initialData }: { initialData?: ForumInitialD
       title: newTitle.trim(),
       content: newContent.trim(),
       tags: parsedTags,
+      contextId: contextualThreadId,
     });
   };
 

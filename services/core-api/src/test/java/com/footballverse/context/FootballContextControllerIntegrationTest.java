@@ -29,6 +29,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -75,6 +76,7 @@ class FootballContextControllerIntegrationTest {
 
         mockMvc.perform(get("/contexts/fixtures/{fixtureId}", fixture.getFixtureId()))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.context.id").value(contexts.findByFixtureId(fixture.getId()).orElseThrow().getId()))
                 .andExpect(jsonPath("$.data.context.type").value("FIXTURE"))
                 .andExpect(jsonPath("$.data.context.key").value("provider-fixture-context-456"))
                 .andExpect(jsonPath("$.data.context.displayName").value("Manchester City vs Arsenal"))
@@ -134,6 +136,22 @@ class FootballContextControllerIntegrationTest {
                 .extracting(FootballContext::getId)
                 .containsExactly(context.getId());
         assertThat(threads.findById(thread.getId()).orElseThrow().getContext().getId()).isEqualTo(context.getId());
+    }
+
+    @Test
+    void authenticatedUserCanCreateAThreadForTheCurrentFixtureContext() throws Exception {
+        Fixture fixture = fixture("provider-fixture-context-create-thread");
+        FootballContext context = contexts.saveAndFlush(FootballContext.fixture(fixture, "Brighton vs Everton"));
+        UserAccount author = users.saveAndFlush(new UserAccount(UUID.randomUUID() + "@user.local", "contextThreadAuthor", "pass"));
+        ForumCategory category = categories.saveAndFlush(new ForumCategory("Match chat", "match-chat-create"));
+        String authorToken = jwtService.createAccessToken(author);
+
+        mockMvc.perform(post("/forum/categories/{categorySlug}/threads", category.getSlug())
+                        .header("Authorization", "Bearer " + authorToken)
+                        .contentType("application/json")
+                        .content("{\"title\":\"Brighton vs Everton\",\"content\":\"Discuss the match\",\"contextId\":" + context.getId() + "}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.contextId").value(context.getId()));
     }
 
     private Fixture fixture(String providerFixtureId) {

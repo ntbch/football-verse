@@ -17,6 +17,7 @@ public record ThreadResponse(
         boolean followed,
         long replyCount,
         long likes,
-        Instant lastActivityAt
+        Instant lastActivityAt,
+        Long contextId
 ) {
 }

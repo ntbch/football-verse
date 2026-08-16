@@ -27,6 +27,7 @@ export type ThreadResponse = {
   createdAt: string;
   lastPostAt: string;
   tags?: string[];
+  contextId?: number | null;
 };
 
 export type PostResponse = {

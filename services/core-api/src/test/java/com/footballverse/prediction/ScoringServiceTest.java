@@ -8,6 +8,8 @@ import com.footballverse.prediction.repository.PredictionStatsRepository;
 import com.footballverse.prediction.repository.UserBadgeRepository;
 import com.footballverse.prediction.repository.UserPredictionRepository;
 import com.footballverse.prediction.service.ScoringService;
+import com.footballverse.notification.model.Notification;
+import com.footballverse.notification.repository.NotificationRepository;
 
 import com.footballverse.prediction.dto.LeaderboardEntryResponse;
 import com.footballverse.user.model.UserAccount;
@@ -38,6 +40,7 @@ class ScoringServiceTest {
     @Autowired private PredictionStatsRepository statsRepo;
     @Autowired private UserBadgeRepository badgeRepo;
     @Autowired private UserAccountRepository userRepo;
+    @Autowired private NotificationRepository notifications;
 
     private UserAccount user;
     private Fixture fixture;
@@ -158,6 +161,21 @@ class ScoringServiceTest {
 
         assertEquals(pointsAfterFirst, pointsAfterSecond, "no double points");
         assertEquals(picksFirst, picksSecond, "no double totalPicks");
+    }
+
+    @Test
+    void scoredPredictionNotificationReturnsTheUserToItsExactMatchday() {
+        fixture.setFixtureId("fixture-scored-return");
+        fixture.setLeagueSlug("premier-league");
+        fixture.setHomeScore(1);
+        fixture.setAwayScore(0);
+        fixture = fixtureRepo.save(fixture);
+        predictionRepo.save(newPrediction("home", 1, 0));
+
+        scoringService.scoreFixture(fixture.getId());
+
+        Notification notification = notifications.findByUserOrderByCreatedAtDesc(user).getFirst();
+        assertEquals("/matchday/fixture-scored-return?league=premier-league", notification.getLinkUrl());
     }
 
     @Test

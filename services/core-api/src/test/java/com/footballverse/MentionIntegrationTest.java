@@ -87,7 +87,7 @@ public class MentionIntegrationTest {
 
     @Test
     void testForumThreadCreationMentions() {
-        ThreadRequest request = new ThreadRequest("Hot Topic", "Hey @alice and @bob, what do you think? Also check @authorUser self-mention.");
+        ThreadRequest request = new ThreadRequest("Hot Topic", "Hey @alice and @bob, what do you think? Also check @authorUser self-mention.", null);
         forumService.createThread("general", request);
 
         // Verify notifications for alice

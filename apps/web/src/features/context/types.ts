@@ -1,4 +1,5 @@
 export type FootballContext = {
+  id: number;
   type: "FIXTURE" | "COMPETITION" | "CLUB" | "PLAYER" | "TOPIC";
   key: string;
   displayName: string;
