@@ -1,6 +1,6 @@
 # Current State
 
-Date: 2026-08-09
+Date: 2026-08-16
 Scope: active deployables and repository-owned release controls.
 
 ## Active deployables
@@ -38,14 +38,15 @@ route families.
 | Web lint | pass with warnings; no lint errors |
 | Web typecheck | pass |
 | Web tests | 7/7 pass |
-| Gateway tests | 16/16 pass |
-| Content ingestion tests | 27/27 pass |
-| Prediction tests | 9/9 pass |
+| Gateway tests | 19/19 pass in a loopback-capable environment |
+| Content ingestion tests | 8/8 pass |
+| Prediction tests | requires the service Python test dependency |
 | Core Maven tests | pass; scheduling is now disabled for the test profile |
 | Compose syntax | `docker compose config --quiet` pass |
 
-The Web production build must be run in the target release environment; a local
-Next build was not completed in the review environment.
+The Web production build and complete Core/Prediction verification require the
+documented local Node, Maven, and Python dependencies. A missing prerequisite is
+not a green verification result.
 
 ## Release gates outside this repository
 
