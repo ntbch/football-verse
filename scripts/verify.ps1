@@ -9,6 +9,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $onWindows = [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT
 $npmCommand = if ($onWindows) { "npm.cmd" } else { "npm" }
 $mavenCommand = if ($onWindows) { "mvn.cmd" } else { "mvn" }
+$nodeCommand = if ($onWindows) { "node.exe" } else { "node" }
 $fallbackPython = if ($Python) { $Python } elseif ($env:FOOTBALL_VERSE_PYTHON) { $env:FOOTBALL_VERSE_PYTHON } else { "python" }
 $venvPython = if ($onWindows) { ".venv/Scripts/python.exe" } else { ".venv/bin/python" }
 $predictionPython = Join-Path $repoRoot "services/prediction/$venvPython"
@@ -117,6 +118,9 @@ function Invoke-IntegratedSmoke {
     $env:SMOKE_WEB_URL = "http://127.0.0.1:13000"
     $env:SMOKE_API_URL = "http://127.0.0.1:18000/api/v1"
     $env:PLAYWRIGHT_MODULE_PATH = Join-Path $repoRoot "services/gateway/node_modules/playwright"
+    if (-not (Test-Path -LiteralPath $env:PLAYWRIGHT_MODULE_PATH)) {
+        throw "Daily Matchday browser prerequisite is missing: install the Gateway Playwright dependency before running integrated smoke."
+    }
     if (-not $env:PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH -and $onWindows) {
         $chromeCandidates = @(
             (Join-Path $env:ProgramFiles "Google/Chrome/Application/chrome.exe"),
@@ -135,6 +139,8 @@ function Invoke-IntegratedSmoke {
         if ($LASTEXITCODE -ne 0) { throw "Integrated smoke failed" }
         node (Join-Path $repoRoot "scripts/browser-auth-smoke.js")
         if ($LASTEXITCODE -ne 0) { throw "Browser auth smoke failed" }
+        & $predictionPython (Join-Path $repoRoot "scripts/daily_loop_smoke.py") --base "http://127.0.0.1:18000/api/v1" --web "http://127.0.0.1:13000" --compose-project $smokeProject --node $nodeCommand
+        if ($LASTEXITCODE -ne 0) { throw "Daily Matchday browser smoke failed" }
     } catch {
         docker compose -p $smokeProject logs --tail 80 gateway-service core-service prediction-service
         throw
