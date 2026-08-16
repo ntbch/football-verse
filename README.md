@@ -80,6 +80,7 @@ The complete observed route, identity, and service-boundary contract is in [serv
 - Architecture: [current state](docs/architecture/current-state.md), [service contracts](docs/architecture/service-contracts.md), [identity](docs/architecture/identity-contract.md), and [browser auth](docs/architecture/browser-auth-contract.md).
 - API and storage: [API reference](docs/API.md) and [database ownership](docs/DATABASE.md).
 - Operations: [verification](docs/runbooks/baseline-verification.md), [database restore](docs/runbooks/database-restore.md), [upload restore](docs/runbooks/upload-restore.md), [rollback](docs/runbooks/deployment-rollback.md), [incident response](docs/runbooks/incident-response.md), and [performance baseline](docs/runbooks/performance-baseline.md).
+- Product evidence: [Daily Matchday case study](docs/case-studies/daily-matchday.md) describes the implemented local-first loop, its checks, and its verification limits; it is not a deployment claim.
 - Change design: active and historical material lives in `docs/plans/`; [project.md](project.md) preserves the original product context and is not the current topology source.
 
 Never put real tokens, credentials, user records, database rows, upload contents, or other private data in tests, fixtures, logs, screenshots, or documentation.
