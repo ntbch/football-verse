@@ -1,6 +1,7 @@
 package com.footballverse.news.model;
 
 import com.footballverse.common.AuditableEntity;
+import com.footballverse.context.model.FootballContext;
 import com.footballverse.user.model.UserAccount;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -67,6 +68,14 @@ public class NewsArticle extends AuditableEntity {
             inverseJoinColumns = @JoinColumn(name = "tag_id")
     )
     private Set<NewsTag> tags = new HashSet<>();
+
+    @ManyToMany
+    @JoinTable(
+            name = "news_article_contexts",
+            joinColumns = @JoinColumn(name = "article_id"),
+            inverseJoinColumns = @JoinColumn(name = "context_id")
+    )
+    private Set<FootballContext> contexts = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "source_id")

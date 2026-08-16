@@ -40,7 +40,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/billing/webhooks/sepay", "/billing/webhooks/sepay",
                                 "/api/v1/billing/webhooks/sepay-bankhub", "/billing/webhooks/sepay-bankhub").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/billing/plans", "/billing/plans").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/news/**", "/api/v1/forum/**", "/api/v1/uploads/**", "/api/v1/search/**", "/api/v1/notifications/stream/**", "/api/v1/predictions/**", "/api/v1/minigames/daily", "/api/v1/minigames/players", "/api/v1/minigames/leaderboard", "/predictions/**", "/minigames/daily", "/minigames/players", "/minigames/leaderboard", "/api/v1/matches/**", "/matches/**", "/news/**", "/forum/**", "/uploads/**", "/search/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/news/**", "/api/v1/forum/**", "/api/v1/uploads/**", "/api/v1/search/**", "/api/v1/contexts/**", "/api/v1/notifications/stream/**", "/api/v1/predictions/**", "/api/v1/minigames/daily", "/api/v1/minigames/players", "/api/v1/minigames/leaderboard", "/predictions/**", "/minigames/daily", "/minigames/players", "/minigames/leaderboard", "/api/v1/matches/**", "/matches/**", "/news/**", "/forum/**", "/uploads/**", "/search/**", "/contexts/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/minigames/**", "/minigames/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/uploads/**", "/uploads/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/admin/**", "/admin/**").hasRole("ADMIN")

@@ -85,6 +85,8 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
 
     Optional<NewsArticle> findByIdAndStatusNot(Long id, ArticleStatus status);
 
+    List<NewsArticle> findByContextsIdAndStatusOrderByPublishedAtDesc(Long contextId, ArticleStatus status);
+
     Optional<NewsArticle> findBySourceUrl(String sourceUrl);
 
     @Query("""

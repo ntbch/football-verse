@@ -1,6 +1,7 @@
 package com.footballverse.forum.model;
 
 import com.footballverse.common.AuditableEntity;
+import com.footballverse.context.model.FootballContext;
 import com.footballverse.user.model.UserAccount;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -45,6 +46,10 @@ public class ForumThread extends AuditableEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "author_id", nullable = false)
     private UserAccount author;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "context_id")
+    private FootballContext context;
 
     @Column(nullable = false)
     private boolean pinned;

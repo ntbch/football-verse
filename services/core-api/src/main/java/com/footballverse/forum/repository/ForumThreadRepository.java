@@ -81,6 +81,8 @@ public interface ForumThreadRepository extends JpaRepository<ForumThread, Long> 
 
     Optional<ForumThread> findBySlugAndHiddenFalse(String slug);
 
+    List<ForumThread> findByContextIdAndHiddenFalseOrderByLastActivityAtDesc(Long contextId);
+
     @Query("""
             select distinct t from ForumThread t
             join fetch t.category

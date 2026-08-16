@@ -13,6 +13,9 @@ import com.footballverse.news.model.ArticleStatus;
 import com.footballverse.news.service.CrawlService;
 import com.footballverse.news.service.NewsArticleService;
 import com.footballverse.news.service.NewsSourceService;
+import com.footballverse.context.dto.ContextAssignmentResponse;
+import com.footballverse.context.dto.ContextIdsRequest;
+import com.footballverse.context.service.FootballContextService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -36,6 +39,7 @@ public class AdminNewsController {
     private final NewsArticleService articleService;
     private final NewsSourceService sourceService;
     private final CrawlService crawlService;
+    private final FootballContextService contextService;
     private final com.footballverse.news.clustering.ClusterDecisionRepository clusterDecisionRepository;
 
     @GetMapping
@@ -84,6 +88,14 @@ public class AdminNewsController {
     @PutMapping("/{id}")
     public ApiResponse<NewsArticleResponse> update(@PathVariable Long id, @Valid @RequestBody NewsArticleRequest request) {
         return ApiResponse.ok(articleService.updateArticle(id, request));
+    }
+
+    @PutMapping("/{id}/contexts")
+    public ApiResponse<ContextAssignmentResponse> setContexts(
+            @PathVariable Long id,
+            @Valid @RequestBody ContextIdsRequest request
+    ) {
+        return ApiResponse.ok(contextService.setArticleContexts(id, request.contextIds()));
     }
 
     @PatchMapping("/{id}/status")
