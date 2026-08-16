@@ -3,8 +3,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { data, http } from "@/shared/lib/api-client";
 import type { CommunityPredictionDistribution, CurrentLeaderboard, Fixture, UserPrediction, StatsResponse, LeaderboardEntry, MatchCentreResponse, MatchDetailResponse, PredictionScoreLog, PrivateLeague } from "./types";
-import type { SearchArticleSummary, SearchResponse } from "@/features/search/types";
-import type { ThreadResponse } from "@/features/forum/types";
 import type { PageResponse } from "@/shared/lib/api-types";
 
 export const usePredictionFixtures = (league = "premier-league") =>
@@ -106,26 +104,6 @@ export const useMatchDetail = (fixtureId: string, league = "premier-league") =>
     queryFn: () => data<MatchDetailResponse>(http.get(`/predictions/match-centre/${encodeURIComponent(fixtureId)}?league=${encodeURIComponent(league)}`)),
     enabled: Boolean(fixtureId),
     refetchInterval: 30000,
-  });
-
-export const useMatchRelatedContent = (homeTeam: string, awayTeam: string, enabled: boolean) =>
-  useQuery({
-    queryKey: ["predictions", "match-related", homeTeam, awayTeam],
-    queryFn: async () => {
-      const teams = [...new Set([homeTeam, awayTeam].filter(Boolean))];
-      const results = await Promise.allSettled(
-        teams.map((team) => data<SearchResponse>(http.get("/search", { params: { q: team, page: 0, size: 4 } })))
-      );
-      const resolved = results.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
-      if (resolved.length === 0) throw new Error("Related content is unavailable");
-      const unique = <T extends { id: number }>(items: T[]) => [...new Map(items.map((item) => [item.id, item])).values()];
-      return {
-        articles: unique<SearchArticleSummary>(resolved.flatMap((result) => result.news.content)).slice(0, 4),
-        threads: unique<ThreadResponse>(resolved.flatMap((result) => result.forum.content)).slice(0, 4),
-      };
-    },
-    enabled,
-    staleTime: 120_000,
   });
 
 const privateLeagueKey = ["predictions", "private-leagues"] as const;

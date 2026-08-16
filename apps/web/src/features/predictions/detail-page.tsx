@@ -7,10 +7,12 @@ import { PublicShell } from "@/shared/components/page-shell";
 import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import { useAuthStore } from "@/shared/lib/auth-store";
 import { formatDate } from "@/shared/lib/format";
-import { useCommunityPredictionDistribution, useMatchDetail, useMatchRelatedContent } from "./api";
+import { useCommunityPredictionDistribution, useMatchDetail } from "./api";
 import { MatchAnalytics, PickForm } from "./components";
 import type { LineupTeam, MatchCentreFixture } from "./types";
 import { FollowTargetButton, useFollowTargets } from "@/features/following";
+import { useFixtureContext } from "@/features/context/api";
+import { ContextualContentPanel } from "@/features/context/contextual-content-panel";
 
 type DetailTab = "overview" | "lineups" | "analysis";
 
@@ -114,11 +116,7 @@ export default function PredictionDetailPage() {
   const returnHref = `/predictions?${returnParams.toString()}`;
   const loginHref = `/login?next=${encodeURIComponent(`${pathname}?${searchParams.toString()}`)}`;
   const fixture = data?.fixture;
-  const { data: related, isLoading: relatedLoading, isError: relatedError, refetch: refetchRelated } = useMatchRelatedContent(
-    fixture?.homeTeam ?? "",
-    fixture?.awayTeam ?? "",
-    Boolean(fixture),
-  );
+  const { data: contextContent, isLoading: contextLoading, isError: contextError, refetch: refetchContext } = useFixtureContext(fixture?.fixtureId, Boolean(fixture));
   const { data: communityDistribution, isError: communityDistributionError, refetch: refetchCommunityDistribution } = useCommunityPredictionDistribution(
     fixture?.id ?? 0,
     Boolean(fixture),
@@ -171,36 +169,11 @@ export default function PredictionDetailPage() {
           {auth ? <FollowTargetButton follows={follows} target={{ targetType: "LEAGUE", targetKey: fixture.league, targetName: fixture.league.replaceAll("-", " ") }} /> : null}
         </section>
 
-        <section aria-label="Related match coverage" className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background-surface)] p-4">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <h2 className="m-0 font-serif-title text-lg font-black text-[var(--color-text-primary)]">Related coverage</h2>
-              <Link className="min-h-11 inline-flex items-center text-xs font-bold text-[var(--color-accent)] hover:underline" href={`/search?q=${encodeURIComponent(fixture.homeTeam)}`}>Search news</Link>
-            </div>
-            {relatedLoading ? <LoadingBlock label="Loading related coverage" /> : relatedError ? <ErrorBlock message="Related coverage is unavailable." onRetry={() => void refetchRelated()} /> : related?.articles.length ? (
-              <div className="grid gap-3">
-                {related.articles.map((article) => <Link className="rounded-xl border border-[var(--color-border)] p-3 transition-colors hover:border-[var(--color-accent)]" href={`/news/${article.slug}`} key={article.id}>
-                  <p className="m-0 text-[10px] font-bold uppercase tracking-wide text-[var(--color-text-secondary)]">{article.category || "News"}</p>
-                  <h3 className="m-0 mt-1 text-sm font-black text-[var(--color-text-primary)]">{article.title}</h3>
-                </Link>)}
-              </div>
-            ) : <p className="m-0 text-sm text-[var(--color-text-secondary)]">No published coverage for these teams yet.</p>}
-          </div>
-          <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background-surface)] p-4">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <h2 className="m-0 font-serif-title text-lg font-black text-[var(--color-text-primary)]">Community discussion</h2>
-              <Link className="min-h-11 inline-flex items-center text-xs font-bold text-[var(--color-accent)] hover:underline" href={`/search?q=${encodeURIComponent(fixture.homeTeam)}`}>Search all</Link>
-            </div>
-            {relatedLoading ? <LoadingBlock label="Loading discussions" /> : relatedError ? <ErrorBlock message="Discussions are unavailable." onRetry={() => void refetchRelated()} /> : related?.threads.length ? (
-              <div className="grid gap-3">
-                {related.threads.map((thread) => <Link className="rounded-xl border border-[var(--color-border)] p-3 transition-colors hover:border-[var(--color-accent)]" href={`/forum/threads/${thread.slug}`} key={thread.id}>
-                  <p className="m-0 text-[10px] font-bold uppercase tracking-wide text-[var(--color-text-secondary)]">{thread.categoryName}</p>
-                  <h3 className="m-0 mt-1 text-sm font-black text-[var(--color-text-primary)]">{thread.title}</h3>
-                </Link>)}
-              </div>
-            ) : <p className="m-0 text-sm text-[var(--color-text-secondary)]">No public discussion for these teams yet.</p>}
-          </div>
-        </section>
+        <ContextualContentPanel
+          content={contextContent}
+          onRetry={() => void refetchContext()}
+          status={contextLoading ? "loading" : contextError ? "error" : "success"}
+        />
 
         {/* Tab Navigation & Content */}
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
