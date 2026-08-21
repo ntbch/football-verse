@@ -51,6 +51,36 @@ const handleProxyError = (
   }
 };
 
+type ProxyMountOptions = {
+  mount: string;
+  upstream: string;
+  auth?: boolean;
+  onProxyRes?: (proxyRes: IncomingMessage, req: IncomingMessage, res: ServerResponse) => void;
+};
+
+function mountProxy(app: Express, opts: ProxyMountOptions): void {
+  app.use(
+    opts.mount,
+    createReadProxyMiddleware({
+      target: opts.upstream,
+      rewrite: originalUrl => originalUrl,
+      timeoutMs: 30000,
+      retries: 3,
+    }),
+    createProxyMiddleware({
+      target: opts.upstream,
+      changeOrigin: true,
+      proxyTimeout: 60000,
+      timeout: 60000,
+      pathRewrite: (path) => `${opts.mount}${path}`,
+      on: {
+        ...(opts.onProxyRes ? { proxyRes: opts.onProxyRes } : {}),
+        error: handleProxyError,
+      },
+    })
+  );
+}
+
 export const setupProxy = (app: Express): void => {
   const { backendUrl, predictionServiceUrl } = getConfig();
 
@@ -60,67 +90,9 @@ export const setupProxy = (app: Express): void => {
   });
 
   // Route /api/v1/* to Spring Boot Core
-  app.use(
-    '/api/v1',
-    createReadProxyMiddleware({
-      target: backendUrl,
-      rewrite: originalUrl => originalUrl,
-      timeoutMs: 30000,
-      retries: 3,
-    }),
-    createProxyMiddleware({
-      target: backendUrl,
-      changeOrigin: true,
-      proxyTimeout: 60000,
-      timeout: 60000,
-      pathRewrite: (path) => `/api/v1${path}`,
-      on: {
-        proxyRes: protectPrivateResponse,
-        error: handleProxyError
-      },
-    })
-  );
+  mountProxy(app, { mount: '/api/v1', upstream: backendUrl, auth: true, onProxyRes: protectPrivateResponse });
 
-  // Route /matches/* to Python Prediction Service
-  app.use(
-    '/matches',
-    createReadProxyMiddleware({
-      target: predictionServiceUrl,
-      rewrite: originalUrl => originalUrl,
-      timeoutMs: 30000,
-      retries: 3,
-    }),
-    createProxyMiddleware({
-      target: predictionServiceUrl,
-      changeOrigin: true,
-      proxyTimeout: 60000,
-      timeout: 60000,
-      pathRewrite: (path) => `/matches${path}`,
-      on: {
-        error: handleProxyError
-      }
-    })
-  );
-
-  // Route /standings/* to Python Prediction Service
-  app.use(
-    '/standings',
-    createReadProxyMiddleware({
-      target: predictionServiceUrl,
-      rewrite: originalUrl => originalUrl,
-      timeoutMs: 30000,
-      retries: 3,
-    }),
-    createProxyMiddleware({
-      target: predictionServiceUrl,
-      changeOrigin: true,
-      proxyTimeout: 60000,
-      timeout: 60000,
-      pathRewrite: (path) => `/standings${path}`,
-      on: {
-        error: handleProxyError
-      }
-    })
-  );
-
+  // Route /matches/* and /standings/* to Python Prediction Service
+  mountProxy(app, { mount: '/matches', upstream: predictionServiceUrl });
+  mountProxy(app, { mount: '/standings', upstream: predictionServiceUrl });
 };

@@ -73,11 +73,19 @@ export class RedisRateLimitStore implements RateLimitStore {
   }
 }
 
-function routeGroup(path: string): string {
-  if (path.endsWith('/billing/webhooks/sepay') || path.endsWith('/billing/webhooks/sepay-bankhub')) return 'billing-ipn';
-  if (path.startsWith('/api/v1')) return 'core';
-  if (path.startsWith('/matches') || path.startsWith('/standings')) return 'prediction';
-  return 'other';
+const ROUTE_GROUPS = {
+  CORE: 'core',
+  PREDICTION: 'prediction',
+  BILLING_IPN: 'billing-ipn',
+  OTHER: 'other',
+} as const;
+type RouteGroup = typeof ROUTE_GROUPS[keyof typeof ROUTE_GROUPS];
+
+function routeGroup(path: string): RouteGroup {
+  if (path.endsWith('/billing/webhooks/sepay') || path.endsWith('/billing/webhooks/sepay-bankhub')) return ROUTE_GROUPS.BILLING_IPN;
+  if (path.startsWith('/api/v1')) return ROUTE_GROUPS.CORE;
+  if (path.startsWith('/matches') || path.startsWith('/standings')) return ROUTE_GROUPS.PREDICTION;
+  return ROUTE_GROUPS.OTHER;
 }
 
 export function createRateLimitMiddleware(options: RateLimitOptions) {
@@ -92,7 +100,7 @@ export function createRateLimitMiddleware(options: RateLimitOptions) {
 
     const address = req.ip || req.socket?.remoteAddress || 'unknown';
     const group = routeGroup(req.path);
-    const limit = group === 'billing-ipn' ? (options.billingIpnLimit ?? options.limit) : options.limit;
+    const limit = group === ROUTE_GROUPS.BILLING_IPN ? (options.billingIpnLimit ?? options.limit) : options.limit;
     const key = `${address}:${group}`;
     const apply = (entry: RateLimitResult): void => {
       const timestamp = now();
@@ -126,3 +134,6 @@ export function createRateLimitMiddleware(options: RateLimitOptions) {
     }
   };
 }
+
+</parameter>
+</invoke>

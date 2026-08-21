@@ -13,8 +13,11 @@ import com.footballverse.minigame.model.MinigamePlayer;
 import com.footballverse.minigame.model.MinigameType;
 import com.footballverse.minigame.repository.MinigameAttemptRepository;
 import com.footballverse.minigame.repository.MinigameChallengeRepository;
+import com.footballverse.minigame.repository.MinigameDailyRunRepository;
 import com.footballverse.minigame.repository.MinigamePlayerRepository;
 import com.footballverse.user.model.UserAccount;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -51,7 +54,9 @@ public class DailyMinigameService {
     private final MinigamePlayerRepository players;
     private final MinigameChallengeRepository challenges;
     private final MinigameAttemptRepository attempts;
+    private final MinigameDailyRunRepository dailyRuns;
     private final ObjectMapper mapper;
+    @PersistenceContext private EntityManager entityManager;
 
     @Transactional
     public MinigameDtos.DailyResponse daily(UserAccount user) {
@@ -163,6 +168,8 @@ public class DailyMinigameService {
 
     @Transactional
     public void ensureBuffer() {
+        // PostgreSQL advisory lock ensures only one publisher instance runs at a time
+        entityManager.createNativeQuery("SELECT pg_advisory_xact_lock(hashtext('minigame_daily_publisher'))").getSingleResult();
         LocalDate first = LocalDate.now(GAME_ZONE);
         for (int offset = 0; offset < 7; offset++) for (MinigameType type : MinigameType.values()) challenge(first.plusDays(offset), type);
     }
@@ -303,7 +310,7 @@ public class DailyMinigameService {
 
     private List<Ranked> ranksFor(MinigameChallenge challenge) {
         if (challenge == null) return List.of();
-        return attempts.completed(challenge.getId(), MinigameAttemptMode.OFFICIAL, PageRequest.of(0, 10_000)).stream()
+        return attempts.completed(challenge.getId(), MinigameAttemptMode.OFFICIAL, PageRequest.of(0, 100)).stream()
                 .map(attempt -> new Ranked(attempt.getUser().getId(), attempt.getUser().getUsername(), attempt.getScore(), attempt.getCompletedAt(), 0, 0))
                 .sorted(rankOrder()).collect(Collectors.collectingAndThen(Collectors.toList(), this::withRanks));
     }

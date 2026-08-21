@@ -1,14 +1,19 @@
 import { data, http } from "@/shared/lib/api-client";
 
-const guestToken = () => {
-  if (typeof window === "undefined") return "";
-  const current = window.localStorage.getItem("football-verse:minigame-guest");
-  if (current) return current;
-  const created = crypto.randomUUID();
-  window.localStorage.setItem("football-verse:minigame-guest", created);
-  return created;
+// Guest session is now managed server-side via HttpOnly cookie.
+// On first load, ensure the cookie exists by hitting the guest-session endpoint.
+let guestSessionInitialized = false;
+const ensureGuestSession = async () => {
+  if (guestSessionInitialized || typeof window === "undefined") return;
+  try {
+    await http.post("/minigames/guest-session");
+    guestSessionInitialized = true;
+  } catch {
+    // Non-fatal: authenticated users don't need a guest cookie
+  }
 };
-const guestHeaders = () => ({ "X-Minigame-Guest": guestToken() });
+// Eagerly initialize on module load
+ensureGuestSession();
 
 export type GameType = "WHO_AM_I" | "GRID";
 export type AttemptMode = "OFFICIAL" | "PRACTICE";
@@ -49,11 +54,14 @@ export type LeaderboardEntry = { rank: number; username: string; displayName: st
 export type Leaderboard = { scope: "combined" | "who-am-i" | "grid"; entries: LeaderboardEntry[]; yourRank: number | null };
 
 export const minigameApi = {
-  daily: () => data<DailyGames>(http.get("/minigames/daily", { headers: guestHeaders() })),
-  start: (game: "who-am-i" | "grid", practice = false) => data<Attempt>(http.post(`/minigames/daily/${game}/attempt`, undefined, { params: { practice }, headers: guestHeaders() })),
-  players: (query: string) => data<PlayerOption[]>(http.get("/minigames/players", { params: { q: query }, headers: guestHeaders() })),
-  guess: (attemptId: number, payload: { playerId: number; cell?: string; version: number }) => data<Attempt>(http.post(`/minigames/attempts/${attemptId}/guess`, payload, { headers: guestHeaders() })),
-  reveal: (attemptId: number, version: number) => data<Attempt>(http.post(`/minigames/attempts/${attemptId}/reveal`, { version }, { headers: guestHeaders() })),
-  claim: () => data<void>(http.post("/minigames/claim", undefined, { headers: guestHeaders() })),
+  daily: () => data<DailyGames>(http.get("/minigames/daily")),
+  start: (game: "who-am-i" | "grid", practice = false) => data<Attempt>(http.post(`/minigames/daily/${game}/attempt`, undefined, { params: { practice } })),
+  players: (query: string) => data<PlayerOption[]>(http.get("/minigames/players", { params: { q: query } })),
+  guess: (attemptId: number, payload: { playerId: number; cell?: string; version: number }) => data<Attempt>(http.post(`/minigames/attempts/${attemptId}/guess`, payload)),
+  reveal: (attemptId: number, version: number) => data<Attempt>(http.post(`/minigames/attempts/${attemptId}/reveal`, { version })),
+  claim: () => data<void>(http.post("/minigames/claim")),
   leaderboard: (scope: "combined" | "who-am-i" | "grid") => data<Leaderboard>(http.get("/minigames/leaderboard", { params: { scope } })),
 };
+
+</parameter>
+</invoke>

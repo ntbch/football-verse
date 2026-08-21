@@ -122,34 +122,36 @@ export default function RssCrawlerPage() {
     });
   };
 
+  const enrichedSources = useMemo(() => {
+    return sources.map((s) => ({ ...s, effectiveCategory: getEffectiveProvider(s) }));
+  }, [sources]);
+
   // Provider counts
   const categoryCounts = useMemo(() => {
     const counts: Record<ProviderCategory, number> = {
-      ALL: sources.length,
+      ALL: enrichedSources.length,
       RSS: 0,
       GNEWS: 0,
       REDDIT: 0,
       TWITTER: 0,
       YOUTUBE: 0,
     };
-    sources.forEach((s) => {
-      const cat = getEffectiveProvider(s);
-      counts[cat] = (counts[cat] || 0) + 1;
+    enrichedSources.forEach((s) => {
+      counts[s.effectiveCategory] = (counts[s.effectiveCategory] || 0) + 1;
     });
     return counts;
-  }, [sources]);
+  }, [enrichedSources]);
 
   const filtered = useMemo(() => {
-    return sources.filter((s) => {
-      const effectiveCat = getEffectiveProvider(s);
-      if (providerTab !== "ALL" && effectiveCat !== providerTab) return false;
+    return enrichedSources.filter((s) => {
+      if (providerTab !== "ALL" && s.effectiveCategory !== providerTab) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
         return s.name.toLowerCase().includes(q) || s.feedUrl.toLowerCase().includes(q);
       }
       return true;
     });
-  }, [sources, providerTab, search]);
+  }, [enrichedSources, providerTab, search]);
 
   if (isLoading) return <LoadingBlock label="Fetching ingestion crawler directory" />;
   if (error && sources.length === 0) return <ErrorBlock message="News sources could not be loaded." onRetry={() => refetch()} />;
@@ -339,7 +341,6 @@ export default function RssCrawlerPage() {
               {filtered.length === 0 ? (
                 <tr><td colSpan={5} className="py-12 text-center text-xs italic text-[var(--color-text-secondary)]">No crawler sources matching category filter.</td></tr>
               ) : filtered.map((src, i) => {
-                const effType = getEffectiveProvider(src);
                 return (
                   <tr key={src.id} className="hover:bg-white/[0.03] transition-colors border-b border-[var(--color-border)] last:border-0">
                     <td className="py-3 px-4 font-bold text-[var(--color-text-primary)]">{src.name}</td>
@@ -350,7 +351,7 @@ export default function RssCrawlerPage() {
                     </td>
                     <td className="py-3 px-4">
                       <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-[var(--color-accent)]/15 text-[var(--color-accent)]">
-                        {effType}
+                        {src.effectiveCategory}
                       </span>
                     </td>
                     <td className="py-3 px-4">

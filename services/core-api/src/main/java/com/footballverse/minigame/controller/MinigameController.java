@@ -14,27 +14,44 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/minigames")
 @RequiredArgsConstructor
 public class MinigameController {
+    private static final String GUEST_COOKIE_NAME = "fv-minigame-guest";
     private final DailyMinigameService games;
     private final CurrentUser currentUser;
 
+    @PostMapping("/guest-session")
+    public ApiResponse<Void> createGuestSession(HttpServletResponse response) {
+        String token = UUID.randomUUID().toString();
+        Cookie cookie = new Cookie(GUEST_COOKIE_NAME, token);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setPath("/minigames");
+        cookie.setMaxAge(86400);
+        cookie.setAttribute("SameSite", "Lax");
+        response.addCookie(cookie);
+        return ApiResponse.ok(null);
+    }
+
     @GetMapping("/daily")
-    public ApiResponse<MinigameDtos.DailyResponse> daily(@RequestHeader(value = "X-Minigame-Guest", required = false) String guestToken) {
+    public ApiResponse<MinigameDtos.DailyResponse> daily(@CookieValue(value = GUEST_COOKIE_NAME, required = false) String guestToken) {
         return ApiResponse.ok(games.daily(currentUser.getOrNull(), guestToken));
     }
 
     @PostMapping("/daily/{game}/attempt")
     public ApiResponse<MinigameDtos.AttemptResponse> start(@PathVariable String game,
                                                              @RequestParam(defaultValue = "false") boolean practice,
-                                                             @RequestHeader(value = "X-Minigame-Guest", required = false) String guestToken) {
+                                                             @CookieValue(value = GUEST_COOKIE_NAME, required = false) String guestToken) {
         return ApiResponse.ok(games.start(currentUser.getOrNull(), guestToken, gameType(game), practice));
     }
 
@@ -46,19 +63,19 @@ public class MinigameController {
     @PostMapping("/attempts/{attemptId}/guess")
     public ApiResponse<MinigameDtos.AttemptResponse> guess(@PathVariable Long attemptId,
                                                              @Valid @RequestBody MinigameDtos.GuessRequest request,
-                                                             @RequestHeader(value = "X-Minigame-Guest", required = false) String guestToken) {
+                                                             @CookieValue(value = GUEST_COOKIE_NAME, required = false) String guestToken) {
         return ApiResponse.ok(games.guess(currentUser.getOrNull(), guestToken, attemptId, request));
     }
 
     @PostMapping("/attempts/{attemptId}/reveal")
     public ApiResponse<MinigameDtos.AttemptResponse> reveal(@PathVariable Long attemptId,
                                                               @Valid @RequestBody MinigameDtos.VersionRequest request,
-                                                              @RequestHeader(value = "X-Minigame-Guest", required = false) String guestToken) {
+                                                              @CookieValue(value = GUEST_COOKIE_NAME, required = false) String guestToken) {
         return ApiResponse.ok(games.reveal(currentUser.getOrNull(), guestToken, attemptId, request.version()));
     }
 
     @PostMapping("/claim")
-    public ApiResponse<Void> claim(@RequestHeader(value = "X-Minigame-Guest", required = false) String guestToken) {
+    public ApiResponse<Void> claim(@CookieValue(value = GUEST_COOKIE_NAME, required = false) String guestToken) {
         games.claim(currentUser.get(), guestToken);
         return ApiResponse.ok(null);
     }
