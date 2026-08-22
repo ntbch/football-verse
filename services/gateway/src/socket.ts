@@ -2,6 +2,7 @@ import { Server, Socket } from 'socket.io';
 import Redis from 'ioredis';
 import { Server as HttpServer } from 'http';
 import { verifySocketToken } from './auth';
+import { logError, logInfo, logWarn } from './logger';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
@@ -25,7 +26,7 @@ export const setupSocket = (server: HttpServer): void => {
 
       next();
     } catch {
-      console.warn('Socket.io authentication failed');
+      logWarn('Socket.io authentication failed');
       next(new Error('Unauthorized'));
     }
   });
@@ -33,7 +34,7 @@ export const setupSocket = (server: HttpServer): void => {
   const redisSub = new Redis(redisUrl);
 
   redisSub.on('error', (err: unknown) => {
-    console.error('Redis connection error:', err);
+    logError('Redis connection error:', err);
   });
 
   io.on('connection', (socket: Socket) => {
@@ -41,14 +42,14 @@ export const setupSocket = (server: HttpServer): void => {
     if (userId) {
       const room = `room:user:${userId}`;
       socket.join(room);
-      console.log(`Socket ${socket.id} joined user room: ${room}`);
+      logInfo(`Socket ${socket.id} joined user room: ${room}`);
     }
 
     socket.on('join_thread', (data: { slug: string }) => {
       if (data && data.slug) {
         const room = `room:thread:${data.slug}`;
         socket.join(room);
-        console.log(`Socket ${socket.id} joined thread room: ${room}`);
+        logInfo(`Socket ${socket.id} joined thread room: ${room}`);
       }
     });
 
@@ -56,30 +57,30 @@ export const setupSocket = (server: HttpServer): void => {
       if (data && data.slug) {
         const room = `room:thread:${data.slug}`;
         socket.leave(room);
-        console.log(`Socket ${socket.id} left thread room: ${room}`);
+        logInfo(`Socket ${socket.id} left thread room: ${room}`);
       }
     });
 
     socket.on('disconnect', () => {
-      console.log(`Socket ${socket.id} disconnected`);
+      logInfo(`Socket ${socket.id} disconnected`);
     });
   });
 
   // Subscribe to global channels
   redisSub.subscribe('realtime:matches', 'realtime:leaderboard', (err) => {
     if (err) {
-      console.error('Failed to subscribe to Redis channels:', err);
+      logError('Failed to subscribe to Redis channels:', err);
     } else {
-      console.log('Successfully subscribed to Redis channels (matches, leaderboard)');
+      logInfo('Successfully subscribed to Redis channels (matches, leaderboard)');
     }
   });
 
   // Pattern subscribe to user notifications and thread replies
   redisSub.psubscribe('realtime:notifications:*', 'realtime:threads:*', (err) => {
     if (err) {
-      console.error('Failed to psubscribe to Redis patterns:', err);
+      logError('Failed to psubscribe to Redis patterns:', err);
     } else {
-      console.log('Successfully pattern-subscribed to realtime:notifications:* and realtime:threads:*');
+      logInfo('Successfully pattern-subscribed to realtime:notifications:* and realtime:threads:*');
     }
   });
 
@@ -89,7 +90,7 @@ export const setupSocket = (server: HttpServer): void => {
       const data: unknown = JSON.parse(message);
       io.emit(channel, data);
     } catch (error: unknown) {
-      console.error(`Error parsing Redis message on channel ${channel}`);
+      logError(`Error parsing Redis message on channel ${channel}`);
     }
   });
 
@@ -107,7 +108,7 @@ export const setupSocket = (server: HttpServer): void => {
           const room = `room:user:${userId}`;
           io.to(room).emit('notification', data);
         } else {
-          console.warn('[Socket Gateway] userId not found in channel name');
+          logWarn('[Socket Gateway] userId not found in channel name');
         }
       } else if (pattern === 'realtime:threads:*') {
         const slug = parts[2];
@@ -115,11 +116,11 @@ export const setupSocket = (server: HttpServer): void => {
           const room = `room:thread:${slug}`;
           io.to(room).emit('new_reply', data);
         } else {
-          console.warn('[Socket Gateway] thread slug not found in channel name');
+          logWarn('[Socket Gateway] thread slug not found in channel name');
         }
       }
     } catch (error: unknown) {
-      console.error(`Error parsing Redis pattern message on channel ${channel}`);
+      logError(`Error parsing Redis pattern message on channel ${channel}`);
     }
   });
 };

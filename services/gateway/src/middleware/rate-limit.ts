@@ -1,6 +1,8 @@
 import type { NextFunction, Request, Response } from 'express';
 import Redis from 'ioredis';
 
+import { logError } from '../logger';
+
 type Entry = { count: number; resetAt: number };
 
 type RateLimitResult = { count: number; resetAt: number };
@@ -122,15 +124,22 @@ export function createRateLimitMiddleware(options: RateLimitOptions) {
       next();
     };
 
+    const failOpen = (error: unknown): void => {
+      // Documented behavior: when the rate-limit store is unavailable the
+      // gateway keeps serving (availability over throttling). Account-level
+      // brute force remains bounded by core-api's login throttle.
+      logError('rate-limit store failure, failing open', error instanceof Error ? error.message : String(error));
+      next();
+    };
     try {
       const result = store.increment(key, options.windowMs);
       if (result instanceof Promise) {
-        void result.then(apply).catch(next);
+        void result.then(apply).catch(failOpen);
       } else {
         apply(result);
       }
     } catch (error) {
-      next(error);
+      failOpen(error);
     }
   };
 }

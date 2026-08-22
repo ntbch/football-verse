@@ -31,6 +31,9 @@ export function validateSecurityEnvironment(environment: NodeJS.ProcessEnv = pro
     if (jwtSecret === developmentJwtSecret) {
       throw new Error("Development JWT secret is forbidden in production");
     }
+    if (internalToken.includes("change-me")) {
+      throw new Error("INTERNAL_TOKEN still contains the development placeholder; generate a real secret");
+    }
     if (!corsOrigin.startsWith("https://")) {
       throw new Error("Production CORS_ORIGIN must use HTTPS");
     }

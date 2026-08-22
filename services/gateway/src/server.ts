@@ -6,6 +6,7 @@ import { metricsMiddleware } from './middleware/metrics';
 import { safeErrorHandler } from './middleware/error-handler';
 import { createRateLimitMiddleware, RedisRateLimitStore } from './middleware/rate-limit';
 import { createHealthRouter } from './routes/health-routes';
+import { logInfo } from './logger';
 import { setupProxy } from './proxy';
 import { setupSocket } from './socket';
 
@@ -41,7 +42,7 @@ setupSocket(server);
 app.use(safeErrorHandler);
 
 server.listen(config.port, () => {
-  console.log(`Realtime Gateway listening on port ${config.port} (${config.appEnv})`);
+  logInfo(`Realtime Gateway listening on port ${config.port} (${config.appEnv})`);
 });
 
 const shutdown = (): void => {
