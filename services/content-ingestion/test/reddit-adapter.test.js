@@ -1,12 +1,12 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { RedditAdapter } from '../src/adapters/reddit-adapter';
-import { SourceDescriptor } from '../src/contracts/normalized-item';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+
+const { RedditAdapter } = require('../dist/adapters/reddit-adapter.js');
 
 test('RedditAdapter supports reddit provider and reddit.com URLs', () => {
   const adapter = new RedditAdapter();
 
-  const sourceReddit: SourceDescriptor = {
+  const sourceReddit = {
     id: 1,
     name: 'Reddit r/soccer',
     feedUrl: 'https://www.reddit.com/r/soccer',
@@ -14,7 +14,7 @@ test('RedditAdapter supports reddit provider and reddit.com URLs', () => {
     active: true,
   };
 
-  const sourceOther: SourceDescriptor = {
+  const sourceOther = {
     id: 2,
     name: 'BBC Sport',
     feedUrl: 'https://feeds.bbci.co.uk/sport/rss.xml',
