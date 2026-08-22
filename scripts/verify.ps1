@@ -121,11 +121,21 @@ function Invoke-IntegratedSmoke {
     if (-not (Test-Path -LiteralPath $env:PLAYWRIGHT_MODULE_PATH)) {
         throw "Daily Matchday browser prerequisite is missing: install the Gateway Playwright dependency before running integrated smoke."
     }
-    if (-not $env:PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH -and $onWindows) {
-        $chromeCandidates = @(
-            (Join-Path $env:ProgramFiles "Google/Chrome/Application/chrome.exe"),
-            (Join-Path ${env:ProgramFiles(x86)} "Google/Chrome/Application/chrome.exe")
-        )
+    if (-not $env:PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH) {
+        $chromeCandidates = if ($onWindows) {
+            @(
+                (Join-Path $env:ProgramFiles "Google/Chrome/Application/chrome.exe"),
+                (Join-Path ${env:ProgramFiles(x86)} "Google/Chrome/Application/chrome.exe")
+            )
+        } else {
+            @(
+                "/usr/bin/google-chrome",
+                "/usr/bin/google-chrome-stable",
+                "/usr/bin/chromium",
+                "/usr/bin/chromium-browser",
+                "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+            )
+        }
         $chrome = $chromeCandidates | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
         if ($chrome) { $env:PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH = $chrome }
     }

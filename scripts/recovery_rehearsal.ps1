@@ -10,8 +10,13 @@ $scratchRelative = "scratch/recovery-$PID"
 
 function Wait-Database([string]$name) {
     for ($attempt = 0; $attempt -lt 30; $attempt++) {
-        docker exec $name pg_isready -U rehearsal -d rehearsal 1>$null 2>$null
-        if ($LASTEXITCODE -eq 0) { return }
+        $comm = (docker exec $name sh -c "cat /proc/1/comm 2>/dev/null" 2>$null)
+        if ($LASTEXITCODE -eq 0 -and $comm -and $comm.Trim() -eq "postgres") {
+            $probe = (docker exec $name psql -U rehearsal -d rehearsal -v ON_ERROR_STOP=1 -Atc "SELECT 1" 2>$null)
+            if ($LASTEXITCODE -eq 0 -and $probe -and $probe.Trim() -eq "1") {
+                return
+            }
+        }
         Start-Sleep -Seconds 1
     }
     throw "$name did not become ready"

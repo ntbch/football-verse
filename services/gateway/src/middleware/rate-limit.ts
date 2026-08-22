@@ -134,6 +134,3 @@ export function createRateLimitMiddleware(options: RateLimitOptions) {
     }
   };
 }
-
-</parameter>
-</invoke>

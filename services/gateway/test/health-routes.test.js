@@ -28,6 +28,8 @@ test('health is public and metrics require the internal token', async () => {
     server.listen(0, '127.0.0.1', resolve);
   });
 
+  const expectedInternalToken = process.env.INTERNAL_TOKEN || 'dev-internal-token-change-me-in-production';
+
   try {
     const health = await request(server, '/health');
     assert.equal(health.status, 200);
@@ -42,7 +44,7 @@ test('health is public and metrics require the internal token', async () => {
     assert.equal(unauthorized.status, 401);
 
     const metrics = await request(server, '/metrics', {
-      'X-Internal-Token': 'dev-internal-token-change-me-in-production',
+      'X-Internal-Token': expectedInternalToken,
     });
     assert.equal(metrics.status, 200);
     assert.ok(metrics.body.core);
