@@ -15,6 +15,8 @@ export type RateLimitOptions = {
   limit: number;
   windowMs: number;
   billingIpnLimit?: number;
+  /** Stricter bucket for credential endpoints (/api/v1/auth/**). */
+  authLimit?: number;
   now?: () => number;
   store?: RateLimitStore;
 };
@@ -79,12 +81,17 @@ const ROUTE_GROUPS = {
   CORE: 'core',
   PREDICTION: 'prediction',
   BILLING_IPN: 'billing-ipn',
+  AUTH: 'auth',
   OTHER: 'other',
 } as const;
 type RouteGroup = typeof ROUTE_GROUPS[keyof typeof ROUTE_GROUPS];
 
 function routeGroup(path: string): RouteGroup {
   if (path.endsWith('/billing/webhooks/sepay') || path.endsWith('/billing/webhooks/sepay-bankhub')) return ROUTE_GROUPS.BILLING_IPN;
+  // Credential endpoints get a dedicated, stricter IP bucket. Identifier
+  // (account)-level failure lockout lives server-side in core-api's
+  // AuthLoginThrottleService; this layer only shapes request rates.
+  if (path.startsWith('/api/v1/auth/')) return ROUTE_GROUPS.AUTH;
   if (path.startsWith('/api/v1')) return ROUTE_GROUPS.CORE;
   if (path.startsWith('/matches') || path.startsWith('/standings')) return ROUTE_GROUPS.PREDICTION;
   return ROUTE_GROUPS.OTHER;
@@ -102,7 +109,11 @@ export function createRateLimitMiddleware(options: RateLimitOptions) {
 
     const address = req.ip || req.socket?.remoteAddress || 'unknown';
     const group = routeGroup(req.path);
-    const limit = group === ROUTE_GROUPS.BILLING_IPN ? (options.billingIpnLimit ?? options.limit) : options.limit;
+    const limit = group === ROUTE_GROUPS.BILLING_IPN
+      ? (options.billingIpnLimit ?? options.limit)
+      : group === ROUTE_GROUPS.AUTH
+        ? (options.authLimit ?? options.limit)
+        : options.limit;
     const key = `${address}:${group}`;
     const apply = (entry: RateLimitResult): void => {
       const timestamp = now();

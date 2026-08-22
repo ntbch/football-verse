@@ -27,7 +27,7 @@ app.use(metricsMiddleware);
 app.use(cachePrivacyMiddleware);
 app.use(browserSecurityHeaders);
 app.use(corsMiddleware);
-app.use(createRateLimitMiddleware({ limit: config.rateLimit, windowMs: config.rateLimitWindowMs, billingIpnLimit: config.billingIpnRateLimit, store: rateLimitStore }));
+app.use(createRateLimitMiddleware({ limit: config.rateLimit, windowMs: config.rateLimitWindowMs, billingIpnLimit: config.billingIpnRateLimit, authLimit: config.authRateLimit, store: rateLimitStore }));
 
 // 2. Health & Control Routes
 app.use(createHealthRouter(async () => rateLimitStore ? rateLimitStore.isReady() : true));
