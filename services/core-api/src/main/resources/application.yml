@@ -96,7 +96,7 @@ app:
       same-site: ${AUTH_COOKIE_SAME_SITE:None}
   mail:
     enabled: ${APP_MAIL_ENABLED:false}
-    from: ${MAIL_FROM:1footballverse@gmail.com}
+    from: ${MAIL_FROM:no-reply@footballverse.local}
     encryption-key: ${APP_MAIL_ENCRYPTION_KEY:}
     outbox-poll-ms: ${APP_MAIL_OUTBOX_POLL_MS:30000}
   prediction-service:

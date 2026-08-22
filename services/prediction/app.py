@@ -1,4 +1,5 @@
 import hmac
+import sys
 
 from fastapi import Depends, FastAPI, Query, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,14 +19,27 @@ from football_api import (
 
 app = FastAPI(title="Football Verse Prediction Service")
 
-# Setup CORS
+# Setup CORS. A wildcard origin can never be combined with credentials;
+# this service serves GET-only public data, so wildcard mode disables
+# credentials instead of reflecting arbitrary origins.
+_wildcard_origin = CORS_ORIGIN.strip() == "*"
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[CORS_ORIGIN] if CORS_ORIGIN != "*" else ["*"],
-    allow_credentials=True,
+    allow_origins=["*"] if _wildcard_origin else [CORS_ORIGIN],
+    allow_credentials=not _wildcard_origin,
     allow_methods=["GET", "OPTIONS"],
     allow_headers=["*"],
 )
+
+if sys.version_info >= (3, 14):
+    import warnings
+
+    warnings.warn(
+        "Python 3.14+ is unsupported for local runs: the pinned dependency set "
+        "(pydantic==2.10.4) ships no wheels for it and production images run "
+        "Python 3.12. Prefer Docker or a 3.12/3.13 virtualenv.",
+        stacklevel=1,
+    )
 
 def get_league_payload(payload):
     if payload is None:

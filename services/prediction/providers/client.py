@@ -10,6 +10,24 @@ import config
 FOOTBALL_DATA_CACHE = {}
 API_FOOTBALL_CACHE = {}
 CACHE_TTL_SECONDS = 60
+# Hard cap per cache; eviction sweeps expired entries first, then the
+# soonest-to-expire leftovers, so memory stays bounded even under attack
+# traffic with unbounded key cardinality.
+CACHE_MAX_ENTRIES = 256
+
+
+def _cache_put(cache, key, payload, now):
+    if len(cache) >= CACHE_MAX_ENTRIES * 2:
+        _evict(cache, now)
+    cache[key] = {"payload": payload, "expires_at": now + CACHE_TTL_SECONDS}
+
+
+def _evict(cache, now):
+    for stale_key in [k for k, entry in cache.items() if entry["expires_at"] <= now]:
+        del cache[stale_key]
+    while len(cache) > CACHE_MAX_ENTRIES:
+        oldest_key = min(cache.items(), key=lambda item: item[1]["expires_at"])[0]
+        del cache[oldest_key]
 
 
 def _get_urlopen():
@@ -38,7 +56,7 @@ def api_get(path, params):
             payload = json.loads(response.read().decode("utf-8"))
             if not isinstance(payload, dict):
                 return None
-            API_FOOTBALL_CACHE[key] = {"payload": payload, "expires_at": now + CACHE_TTL_SECONDS}
+            _cache_put(API_FOOTBALL_CACHE, key, payload, now)
             return payload
     except (HTTPError, URLError, TimeoutError, ValueError, UnicodeError):
         return None
@@ -64,7 +82,7 @@ def football_data_get(path, params=None):
             payload = json.loads(response.read().decode("utf-8"))
             if not isinstance(payload, dict):
                 return None
-            FOOTBALL_DATA_CACHE[key] = {"payload": payload, "expires_at": now + CACHE_TTL_SECONDS}
+            _cache_put(FOOTBALL_DATA_CACHE, key, payload, now)
             return payload
     except (HTTPError, URLError, TimeoutError, ValueError, UnicodeError):
         return None
