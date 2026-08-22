@@ -9,6 +9,7 @@ import { http, data } from "@/shared/lib/api-client";
 import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import { getArticleImage } from "@/shared/lib/images";
 import { formatDate } from "@/shared/lib/format";
+import { BookmarkIcon, CommentIcon, ThumbsDownIcon } from "@/shared/components/icons";
 import type { SearchResponse } from "./types";
 
 function SearchContent() {
@@ -27,8 +28,8 @@ function SearchContent() {
 
   // Fetch search results
   const { data: results, isLoading, isError, refetch } = useQuery({
-    queryKey: ["search", q, page],
-    queryFn: () => data<SearchResponse>(http.get("/search", { params: { q, page, size: 20 } })),
+    queryKey: ["search", q, page, timeFilter],
+    queryFn: () => data<SearchResponse>(http.get("/search", { params: { q, page, size: 20, period: timeFilter } })),
     enabled: !!q.trim(),
   });
 
@@ -46,26 +47,12 @@ function SearchContent() {
     setTimeFilter("all");
   };
 
-  const filterByTime = (dateStr: string) => {
-    if (timeFilter === "all") return true;
-    const date = new Date(dateStr);
-    const diffMs = Date.now() - date.getTime();
-    if (timeFilter === "24h") return diffMs <= 24 * 60 * 60 * 1000;
-    if (timeFilter === "week") return diffMs <= 7 * 24 * 60 * 60 * 1000;
-    if (timeFilter === "month") return diffMs <= 30 * 24 * 60 * 60 * 1000;
-    return true;
-  };
-
   const filteredNewsList = newsList.filter((art) => {
-    const matchCat = !selectedCategory || (art.category || "Others") === selectedCategory;
-    const matchTime = filterByTime(art.publishedAt);
-    return matchCat && matchTime;
+    return !selectedCategory || (art.category || "Others") === selectedCategory;
   });
 
   const filteredForumList = forumList.filter((thread) => {
-    const matchCat = !selectedCategory || (thread.categoryName || "Others") === selectedCategory;
-    const matchTime = filterByTime(thread.createdAt);
-    return matchCat && matchTime;
+    return !selectedCategory || (thread.categoryName || "Others") === selectedCategory;
   });
   const activePage = activeTab === "news" ? results?.news : results?.forum;
   const totalPages = activePage?.totalPages ?? 0;
@@ -152,7 +139,7 @@ function SearchContent() {
                     <svg className="w-4 h-4 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span>Filter this page: time</span>
+                    <span>Time</span>
                   </h3>
                 </div>
                 <div className="p-3 flex flex-col gap-1">
@@ -161,48 +148,19 @@ function SearchContent() {
                     { val: "24h", label: "Past 24 Hours" },
                     { val: "week", label: "Past Week" },
                     { val: "month", label: "Past Month" },
-                  ].map(({ val, label }) => {
-                    const count = activeTab === "news"
-                      ? newsList.filter((art) => {
-                          const matchCat = !selectedCategory || (art.category || "Others") === selectedCategory;
-                          const date = new Date(art.publishedAt);
-                          const diffMs = Date.now() - date.getTime();
-                          if (val === "all") return matchCat;
-                          if (val === "24h") return matchCat && diffMs <= 24 * 60 * 60 * 1000;
-                          if (val === "week") return matchCat && diffMs <= 7 * 24 * 60 * 60 * 1000;
-                          if (val === "month") return matchCat && diffMs <= 30 * 24 * 60 * 60 * 1000;
-                          return false;
-                        }).length
-                      : forumList.filter((thread) => {
-                          const matchCat = !selectedCategory || (thread.categoryName || "Others") === selectedCategory;
-                          const date = new Date(thread.createdAt);
-                          const diffMs = Date.now() - date.getTime();
-                          if (val === "all") return matchCat;
-                          if (val === "24h") return matchCat && diffMs <= 24 * 60 * 60 * 1000;
-                          if (val === "week") return matchCat && diffMs <= 7 * 24 * 60 * 60 * 1000;
-                          if (val === "month") return matchCat && diffMs <= 30 * 24 * 60 * 60 * 1000;
-                          return false;
-                        }).length;
-
-                    return (
-                      <button
-                        key={val}
-                        onClick={() => setTimeFilter(val)}
-                        className={`min-h-11 w-full px-3 py-2 rounded-xl text-left text-xs font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-between ${
-                          timeFilter === val
-                            ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
-                            : "text-[var(--color-text-secondary)] hover:bg-[var(--color-background-body)]/40 hover:text-[var(--color-text-primary)]"
-                        }`}
-                      >
-                        <span>{label}</span>
-                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${
-                          timeFilter === val ? "bg-[var(--color-text-inverse)]/20 text-[var(--color-text-inverse)]" : "bg-[var(--color-background-body)] text-[var(--color-text-secondary)]"
-                        }`}>
-                          {count}
-                        </span>
-                      </button>
-                    );
-                  })}
+                  ].map(({ val, label }) => (
+                    <button
+                      key={val}
+                      onClick={() => setTimeFilter(val)}
+                      className={`min-h-11 w-full px-3 py-2 rounded-xl text-left text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
+                        timeFilter === val
+                          ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
+                          : "text-[var(--color-text-secondary)] hover:bg-[var(--color-background-body)]/40 hover:text-[var(--color-text-primary)]"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
               </div>
             </aside>
@@ -287,15 +245,11 @@ function SearchContent() {
                           <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-3 mt-1 text-xs">
                             <div className="flex items-center gap-3">
                               <span className="flex items-center gap-1 text-[10px] text-[var(--color-text-secondary)] font-semibold">
-                                <svg className="w-3.5 h-3.5 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
-                                </svg>
+                                <ThumbsDownIcon className="w-3.5 h-3.5 mr-0.5" />
                                 {art.likes}
                               </span>
                               <span className="flex items-center gap-1 text-[10px] text-[var(--color-text-secondary)] font-semibold">
-                                <svg className="w-3.5 h-3.5 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                                </svg>
+                                <BookmarkIcon className="w-3.5 h-3.5 mr-0.5" />
                                 {art.bookmarks}
                               </span>
                             </div>
@@ -349,15 +303,11 @@ function SearchContent() {
 
                         <div className="flex items-center gap-4 text-xs text-[var(--color-text-secondary)] shrink-0 font-bold">
                           <span className="flex items-center gap-1.5">
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                            </svg>
+                            <CommentIcon className="w-3.5 h-3.5" />
                             <span>{thread.replyCount}</span>
                           </span>
                           <span className="flex items-center gap-1.5">
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
-                            </svg>
+                            <ThumbsDownIcon className="w-3.5 h-3.5" />
                             <span>{thread.likes}</span>
                           </span>
                         </div>

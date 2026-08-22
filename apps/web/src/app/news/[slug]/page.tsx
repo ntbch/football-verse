@@ -1,19 +1,12 @@
 import type { Metadata } from "next";
-import { apiBaseUrl } from "@/shared/lib/api-config";
 import NewsDetailPage from "@/features/news/[slug]/page";
 import type { NewsArticleResponse } from "@/features/news/types";
+import { publicData } from "@/shared/lib/api-server";
 
 export const runtime = "edge";
 
-async function articleForSlug(slug: string): Promise<NewsArticleResponse | null> {
-  try {
-    const response = await fetch(`${apiBaseUrl}/news/${encodeURIComponent(slug)}`, { next: { revalidate: 300 } });
-    if (!response.ok) return null;
-    return ((await response.json()) as { data: NewsArticleResponse }).data;
-  } catch {
-    return null;
-  }
-}
+const articleForSlug = (slug: string) =>
+  publicData<NewsArticleResponse>(`/news/${encodeURIComponent(slug)}`, 300);
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -39,5 +32,5 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function NewsArticleRoute({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const article = await articleForSlug(slug);
-  return <NewsDetailPage initialArticle={article ?? undefined} initialSlug={slug} />;
+  return <NewsDetailPage initialArticle={article} initialSlug={slug} />;
 }

@@ -7,6 +7,7 @@ import { http, data, apiErrorMessage } from "@/shared/lib/api-client";
 import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import { useToast } from "@/shared/components/toast";
 import { ReportDetailDrawer, ModReportDetail } from "../components/report-detail-drawer";
+import { SearchIcon } from "@/shared/components/icons";
 
 type ModReport = {
   id: number;
@@ -135,9 +136,7 @@ export default function ModeratorReportsPage() {
       <div className="card p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
-          <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+          <SearchIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" />
           <input
             type="text"
             placeholder="Search by reporter, reason, or ID..."

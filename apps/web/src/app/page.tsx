@@ -3,19 +3,10 @@ import type { NewsArticleResponse } from "@/features/news/types";
 import type { LeaderboardEntryResponse, MatchCentreResponse } from "@/features/predictions/types";
 import type { ForumCategoryResponse, ThreadResponse } from "@/features/forum/types";
 import type { PageResponse } from "@/shared/lib/api-types";
-import { apiBaseUrl } from "@/shared/lib/api-config";
+import { publicData } from "@/shared/lib/api-server";
 import { headers } from "next/headers";
 
 export const runtime = "edge";
-
-async function publicData<T>(path: string): Promise<T | undefined> {
-  try {
-    const response = await fetch(`${apiBaseUrl}${path}`, { next: { revalidate: 60 } });
-    return response.ok ? ((await response.json()) as { data: T }).data : undefined;
-  } catch {
-    return undefined;
-  }
-}
 
 export default async function HomeRoute() {
   // Render at request time so the Docker image build never captures an unavailable gateway.

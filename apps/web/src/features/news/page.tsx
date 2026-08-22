@@ -11,6 +11,7 @@ import type { PageResponse } from "@/shared/lib/api-types";
 import { getArticleImage, handleImageError } from "@/shared/lib/images";
 import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import { formatDate } from "@/shared/lib/format";
+import { ThumbsDownIcon, BookmarkIcon } from "@/shared/components/icons";
 
 type SourceType = "ALL" | "NEWS" | "REDDIT" | "X" | "YOUTUBE";
 
@@ -451,15 +452,11 @@ export default function NewsListingPage({ initialData }: { initialData?: NewsLis
                           <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-2 mt-0.5 text-[11px] font-bold text-[var(--color-text-secondary)]">
                             <div className="flex items-center gap-3">
                               <span className="flex items-center gap-1">
-                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
-                                </svg>
+                                <ThumbsDownIcon className="w-3 h-3" />
                                 {art.likes}
                               </span>
                               <span className="flex items-center gap-1">
-                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                                </svg>
+                                <BookmarkIcon className="w-3 h-3" />
                                 {art.bookmarks}
                               </span>
                             </div>

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useToast } from "@/shared/components/toast";
+import { CloseIcon } from "@/shared/components/icons";
 
 export type ModReportDetail = {
   id: number;
@@ -114,9 +115,7 @@ export function ReportDetailDrawer({
             className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] cursor-pointer"
             aria-label="Close panel"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <CloseIcon className="w-5 h-5" />
           </button>
         </div>
 

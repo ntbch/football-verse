@@ -62,6 +62,3 @@ export const minigameApi = {
   claim: () => data<void>(http.post("/minigames/claim")),
   leaderboard: (scope: "combined" | "who-am-i" | "grid") => data<Leaderboard>(http.get("/minigames/leaderboard", { params: { scope } })),
 };
-
-</parameter>
-</invoke>

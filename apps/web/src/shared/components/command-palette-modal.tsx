@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { SearchIcon } from "@/shared/components/icons";
 
 type CommandItem = {
   id: string;
@@ -121,9 +122,7 @@ export function CommandPaletteModal({ isOpen, onClose }: CommandPaletteModalProp
       >
         {/* Search Bar Input */}
         <div className="flex items-center px-4 border-b border-[var(--color-border)] bg-black/20">
-          <svg className="w-4 h-4 text-[var(--color-accent)] shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+          <SearchIcon className="w-4 h-4 text-[var(--color-accent)] shrink-0 mr-3" />
           <input
             type="text"
             autoFocus

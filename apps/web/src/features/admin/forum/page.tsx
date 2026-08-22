@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
@@ -75,35 +75,25 @@ export default function AdminForumPage() {
     onError: (err) => toast({ body: apiErrorMessage(err, "Failed to create category."), type: "error" }),
   });
 
-  const pinMutation = useMutation({
-    mutationFn: ({ id, value }: { id: number; value: boolean }) =>
-      data<ThreadResponse>(http.patch(`/admin/forum/threads/${id}/pin`, null, { params: { value } })),
-    onSuccess: (updated) => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "threads", activeCategorySlug, threadPage] });
-      toast({ body: `Thread ${updated.pinned ? "pinned" : "unpinned"}.`, type: "info" });
-    },
-    onError: (err) => toast({ body: apiErrorMessage(err, "Failed to update pin state."), type: "error" }),
-  });
+  const useThreadToggle = (
+    action: "pin" | "lock" | "hide",
+    field: "pinned" | "locked" | "hidden",
+    onLabel: string,
+    offLabel: string,
+  ) =>
+    useMutation({
+      mutationFn: ({ id, value }: { id: number; value: boolean }) =>
+        data<ThreadResponse>(http.patch(`/admin/forum/threads/${id}/${action}`, null, { params: { value } })),
+      onSuccess: (updated) => {
+        queryClient.invalidateQueries({ queryKey: ["admin", "threads", activeCategorySlug, threadPage] });
+        toast({ body: `Thread ${updated[field] ? onLabel : offLabel}.`, type: "info" });
+      },
+      onError: (err) => toast({ body: apiErrorMessage(err, `Failed to update ${action} state.`), type: "error" }),
+    });
 
-  const lockMutation = useMutation({
-    mutationFn: ({ id, value }: { id: number; value: boolean }) =>
-      data<ThreadResponse>(http.patch(`/admin/forum/threads/${id}/lock`, null, { params: { value } })),
-    onSuccess: (updated) => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "threads", activeCategorySlug, threadPage] });
-      toast({ body: `Thread ${updated.locked ? "locked" : "unlocked"}.`, type: "info" });
-    },
-    onError: (err) => toast({ body: apiErrorMessage(err, "Failed to update lock state."), type: "error" }),
-  });
-
-  const hideMutation = useMutation({
-    mutationFn: ({ id, value }: { id: number; value: boolean }) =>
-      data<ThreadResponse>(http.patch(`/admin/forum/threads/${id}/hide`, null, { params: { value } })),
-    onSuccess: (updated) => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "threads", activeCategorySlug, threadPage] });
-      toast({ body: `Thread ${updated.hidden ? "hidden" : "revealed"}.`, type: "info" });
-    },
-    onError: (err) => toast({ body: apiErrorMessage(err, "Failed to update hide state."), type: "error" }),
-  });
+  const pinMutation = useThreadToggle("pin", "pinned", "pinned", "unpinned");
+  const lockMutation = useThreadToggle("lock", "locked", "locked", "unlocked");
+  const hideMutation = useThreadToggle("hide", "hidden", "hidden", "revealed");
 
   const handleNameChange = (val: string) => {
     setNewName(val);

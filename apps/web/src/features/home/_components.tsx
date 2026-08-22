@@ -7,6 +7,7 @@ import type { NewsArticleResponse } from "@/features/news/types";
 import { ErrorBlock } from "@/shared/components/state-blocks";
 import { getArticleImage, handleImageError } from "@/shared/lib/images";
 import { formatDateTime } from "@/shared/lib/format";
+import { CommentIcon } from "@/shared/components/icons";
 
 function timeAgo(dateStr: string) {
   const now = Date.now();
@@ -121,9 +122,7 @@ export function CommunityWidget({ threads, error, onRetry }: CommunityWidgetProp
     <div className="editorial-panel overflow-hidden flex flex-col">
       <div className="px-5 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
         <h3 className="font-serif-title font-black text-sm m-0 flex items-center gap-1.5">
-          <svg className="w-4 h-4 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-          </svg>
+          <CommentIcon className="w-4 h-4 text-[var(--color-accent)]" />
           <span>Community</span>
         </h3>
         <Link

@@ -14,7 +14,7 @@ type RssSource = {
   id: number;
   name: string;
   feedUrl: string;
-  sourceType: "RSS" | "GNEWS" | "REDDIT" | "TWITTER" | "YOUTUBE";
+  sourceType: ProviderCategory;
   provider?: string;
   publisherName?: string;
   active: boolean;
@@ -22,19 +22,6 @@ type RssSource = {
 };
 
 type CrawlResult = { accepted?: boolean; saved: number; repaired: number; skipped: number; failed: number };
-
-function getEffectiveProvider(src: RssSource): ProviderCategory {
-  const p = (src.provider || "").toLowerCase();
-  const st = (src.sourceType || "").toUpperCase();
-  const url = (src.feedUrl || "").toLowerCase();
-  const name = (src.name || "").toLowerCase();
-
-  if (p === "reddit" || st === "REDDIT" || url.includes("reddit.com") || name.includes("(reddit)") || url.includes("/r/")) return "REDDIT";
-  if (p === "x" || p === "twitter" || st === "TWITTER" || url.includes("x.com") || url.includes("twitter.com") || name.includes("(x)")) return "TWITTER";
-  if (p === "youtube" || st === "YOUTUBE" || url.includes("youtube.com") || name.includes("youtube")) return "YOUTUBE";
-  if (p === "gnews" || st === "GNEWS" || url.includes("gnews")) return "GNEWS";
-  return "RSS";
-}
 
 export default function RssCrawlerPage() {
   const queryClient = useQueryClient();
@@ -122,36 +109,32 @@ export default function RssCrawlerPage() {
     });
   };
 
-  const enrichedSources = useMemo(() => {
-    return sources.map((s) => ({ ...s, effectiveCategory: getEffectiveProvider(s) }));
-  }, [sources]);
-
   // Provider counts
   const categoryCounts = useMemo(() => {
     const counts: Record<ProviderCategory, number> = {
-      ALL: enrichedSources.length,
+      ALL: sources.length,
       RSS: 0,
       GNEWS: 0,
       REDDIT: 0,
       TWITTER: 0,
       YOUTUBE: 0,
     };
-    enrichedSources.forEach((s) => {
-      counts[s.effectiveCategory] = (counts[s.effectiveCategory] || 0) + 1;
+    sources.forEach((s) => {
+      counts[s.sourceType] = (counts[s.sourceType] || 0) + 1;
     });
     return counts;
-  }, [enrichedSources]);
+  }, [sources]);
 
   const filtered = useMemo(() => {
-    return enrichedSources.filter((s) => {
-      if (providerTab !== "ALL" && s.effectiveCategory !== providerTab) return false;
+    return sources.filter((s) => {
+      if (providerTab !== "ALL" && s.sourceType !== providerTab) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
         return s.name.toLowerCase().includes(q) || s.feedUrl.toLowerCase().includes(q);
       }
       return true;
     });
-  }, [enrichedSources, providerTab, search]);
+  }, [sources, providerTab, search]);
 
   if (isLoading) return <LoadingBlock label="Fetching ingestion crawler directory" />;
   if (error && sources.length === 0) return <ErrorBlock message="News sources could not be loaded." onRetry={() => refetch()} />;
@@ -351,7 +334,7 @@ export default function RssCrawlerPage() {
                     </td>
                     <td className="py-3 px-4">
                       <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-[var(--color-accent)]/15 text-[var(--color-accent)]">
-                        {src.effectiveCategory}
+                        {src.sourceType}
                       </span>
                     </td>
                     <td className="py-3 px-4">

@@ -11,6 +11,7 @@ import type { PageResponse } from "@/shared/lib/api-types";
 import { ErrorBlock, LoadingBlock } from "@/shared/components/state-blocks";
 import Link from "next/link";
 import { formatDate } from "@/shared/lib/format";
+import { CommentIcon, ThumbsDownIcon } from "@/shared/components/icons";
 
 export default function ForumCategoryPage() {
   const params = useParams();
@@ -125,15 +126,11 @@ export default function ForumCategoryPage() {
 
                   <div className="flex items-center gap-4 text-xs text-[var(--color-text-secondary)] shrink-0 font-bold">
                     <span className="flex items-center gap-1.5">
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                      </svg>
+                      <CommentIcon className="w-3.5 h-3.5" />
                       <span>{thread.replyCount}</span>
                     </span>
                     <span className="flex items-center gap-1.5">
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
-                      </svg>
+                      <ThumbsDownIcon className="w-3.5 h-3.5" />
                       <span>{thread.likes}</span>
                     </span>
                   </div>

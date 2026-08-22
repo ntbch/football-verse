@@ -10,6 +10,7 @@ import { ErrorBlock } from "@/shared/components/state-blocks";
 import { formatDate } from "@/shared/lib/format";
 import { CommandPaletteModal } from "@/shared/components/command-palette-modal";
 import type { PageResponse } from "@/shared/lib/api-types";
+import { SearchIcon } from "@/shared/components/icons";
 
 type DashboardStats = {
   totalUsers: number;
@@ -113,9 +114,7 @@ export default function AdminDashboardPage() {
             onClick={() => setPaletteOpen(true)}
             className="flex items-center gap-3 py-1.5 px-4 rounded-full text-xs font-semibold border border-[var(--color-border)] bg-black/20 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-accent)] transition-all cursor-pointer"
           >
-            <svg className="w-3.5 h-3.5 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+            <SearchIcon className="w-3.5 h-3.5 text-[var(--color-accent)]" />
             <span>Search or command...</span>
             <kbd className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded border border-[var(--color-border)] bg-white/5">
               Ctrl K

@@ -22,21 +22,7 @@ import { CommentNode } from "./comment-node";
 import { RelatedContent } from "./related-content";
 import { YouTubeEmbed } from "../components/YouTubeEmbed";
 import { FollowTargetButton, useFollowTargets } from "@/features/following";
-
-function cleanSummaryText(text?: string): string {
-  if (!text) return "";
-  const cleaned = text.replace(/(?:\s+|-|\|)*(?:BBC|Sky Sports|Reuters|GNews|ESPN|Goal|The Guardian)$/i, "").trim();
-  const lines = cleaned
-    .split(/(?:►|\n)+/)
-    .map((line) => line.trim())
-    .filter(
-      (line) =>
-        line.length > 0 &&
-        !line.match(/^(?:Subscribe|Watch|Follow|Click|http:\/\/|https:\/\/|MNF|FNF|SNF|Super Sunday|Saturday Social|Gary Neville)/i),
-    );
-  const result = lines.join("\n\n");
-  return result || cleaned;
-}
+import { ThumbsDownIcon, BookmarkIcon } from "@/shared/components/icons";
 
 const storyStateLabel = (status?: NewsArticleResponse["verificationStatus"]) => ({
   OFFICIAL: "Officially reported",
@@ -282,15 +268,11 @@ export default function NewsDetailPage({ initialArticle, initialSlug }: NewsDeta
               </span>
               <span>·</span>
               <span className="flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5" fill={article.liked ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
-                </svg>
+                <ThumbsDownIcon className="w-3.5 h-3.5" />
                 {article.likes}
               </span>
               <span className="flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5" fill={article.bookmarked ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                </svg>
+                <BookmarkIcon className="w-3.5 h-3.5" />
                 {article.bookmarks}
               </span>
             </div>
@@ -392,7 +374,7 @@ export default function NewsDetailPage({ initialArticle, initialSlug }: NewsDeta
 
               {/* Summary Paragraphs */}
               <div className="text-base leading-relaxed text-[var(--color-text-primary)] font-serif whitespace-pre-line flex flex-col gap-3">
-                {cleanSummaryText(article.summary)}
+                {article.summary}
               </div>
 
               {/* Key Highlights Sub-Section */}
