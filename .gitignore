@@ -33,7 +33,7 @@ scratch/
 /.agent-teams/
 /temp_global_skills/
 /.fv-review-diff.patch
-/.m2-local/
+**/.m2-local/
 /.py-tools/
 .pytest_cache/
 .audit-venv/
