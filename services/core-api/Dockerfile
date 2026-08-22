@@ -7,7 +7,7 @@ RUN --mount=type=cache,id=football-verse-maven,target=/root/.m2 \
       sleep 5; \
     done; exit 1
 
-FROM eclipse-temurin:21-jre@sha256:273396ed5998598ed1091e8d72711c2d36980a0e65103859c55a4e977a41ffd3
+FROM eclipse-temurin:24-jre@sha256:8cb2387a28af84cf0db0948d9c67d4480192f4e567027a3963f145d218e8b4f2
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 RUN useradd --system --uid 1001 --create-home appuser \
