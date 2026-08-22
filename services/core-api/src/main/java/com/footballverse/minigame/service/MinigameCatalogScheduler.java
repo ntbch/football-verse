@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -43,8 +44,14 @@ public class MinigameCatalogScheduler {
 
     @Scheduled(initialDelay = 30_000, fixedDelay = 120_000)
     public void bootstrap() {
-        if (players.countByProvider(PROVIDER) < INITIAL_PLAYER_TARGET) refresh();
-        else games.ensureBuffer();
+        if (players.countByProvider(PROVIDER) < INITIAL_PLAYER_TARGET) {
+            refresh();
+            return;
+        }
+        // Without this the eligible-pool stays frozen at whatever the bootstrap
+        // window enriched: enrichment otherwise only runs in the 00:05 cron.
+        enrichOldest();
+        games.ensureBuffer();
     }
 
     @Scheduled(cron = "0 5 0 * * *", zone = "Asia/Ho_Chi_Minh")
@@ -52,14 +59,18 @@ public class MinigameCatalogScheduler {
         long knownPlayers = players.countByProvider(PROVIDER);
         boolean bootstrap = knownPlayers < INITIAL_PLAYER_TARGET;
         int imported = importPlayers(bootstrap, knownPlayers);
-        if (sportsDb.configured() && !sportsDb.rateLimited()) {
-            for (MinigamePlayer player : players.findTop20ByProviderOrderByRefreshedAtAsc(PROVIDER)) {
-                enrich(player);
-                if (sportsDb.rateLimited()) break;
-            }
-        }
+        enrichOldest();
         games.ensureBuffer();
         log.info("ESPN minigame catalog sync imported {} new player records", imported);
+    }
+
+    private void enrichOldest() {
+        if (!sportsDb.configured() || sportsDb.rateLimited()) return;
+        for (MinigamePlayer player : players.findTop20ByProviderOrderByRefreshedAtAsc(PROVIDER)) {
+            if (player.getRefreshedAt().isAfter(Instant.now().minus(Duration.ofDays(1)))) break;
+            enrich(player);
+            if (sportsDb.rateLimited()) break;
+        }
     }
 
     private int importPlayers(boolean bootstrap, long knownPlayers) {

@@ -36,7 +36,9 @@ public class MinigameController {
         Cookie cookie = new Cookie(GUEST_COOKIE_NAME, token);
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
-        cookie.setPath("/minigames");
+        // Requests reach this API through the gateway under /api/v1/minigames/**;
+        // the cookie path must cover that prefix or the browser will never send it.
+        cookie.setPath("/api/v1/minigames");
         cookie.setMaxAge(86400);
         cookie.setAttribute("SameSite", "Lax");
         response.addCookie(cookie);

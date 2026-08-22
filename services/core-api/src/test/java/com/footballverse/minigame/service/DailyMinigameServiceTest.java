@@ -9,6 +9,7 @@ import com.footballverse.minigame.model.MinigamePlayer;
 import com.footballverse.minigame.model.MinigameType;
 import com.footballverse.minigame.repository.MinigameAttemptRepository;
 import com.footballverse.minigame.repository.MinigameChallengeRepository;
+import com.footballverse.minigame.repository.MinigameDailyRunRepository;
 import com.footballverse.minigame.repository.MinigamePlayerRepository;
 import com.footballverse.user.model.UserAccount;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,7 @@ class DailyMinigameServiceTest {
     @Mock private MinigamePlayerRepository players;
     @Mock private MinigameChallengeRepository challenges;
     @Mock private MinigameAttemptRepository attempts;
+    @Mock private MinigameDailyRunRepository dailyRuns;
 
     @Test
     void scoreRewardsFewerCluesAndPreventsNegativePoints() {
@@ -52,7 +54,7 @@ class DailyMinigameServiceTest {
         player.setName("Alex Example");
         when(players.findByProviderAndNormalizedNameContainingOrderByNameAsc(eq("ESPN"), eq("alex"), any())).thenReturn(List.of(player));
 
-        assertEquals(9L, new DailyMinigameService(players, challenges, attempts, new ObjectMapper()).searchPlayers("alex").getFirst().id());
+        assertEquals(9L, new DailyMinigameService(players, challenges, attempts, dailyRuns, new ObjectMapper()).searchPlayers("alex").getFirst().id());
     }
 
     @Test
@@ -88,7 +90,7 @@ class DailyMinigameServiceTest {
         when(challenges.findByPlayDateAndGameType(any(), eq(MinigameType.WHO_AM_I))).thenReturn(Optional.of(challenge));
         when(challenges.findByPlayDateAndGameType(any(), eq(MinigameType.GRID))).thenReturn(Optional.empty());
 
-        DailyMinigameService service = new DailyMinigameService(players, challenges, attempts, new ObjectMapper());
+        DailyMinigameService service = new DailyMinigameService(players, challenges, attempts, dailyRuns, new ObjectMapper());
         var whoAmI = service.daily(null).games().stream().filter(game -> game.type().name().equals("WHO_AM_I")).findFirst().orElseThrow();
 
         assertTrue(whoAmI.available());
@@ -115,7 +117,7 @@ class DailyMinigameServiceTest {
             return saved;
         });
 
-        DailyMinigameService service = new DailyMinigameService(players, challenges, attempts, new ObjectMapper());
+        DailyMinigameService service = new DailyMinigameService(players, challenges, attempts, dailyRuns, new ObjectMapper());
 
         assertEquals(1, service.reveal(user, 12L, 0).version());
     }
@@ -136,7 +138,7 @@ class DailyMinigameServiceTest {
         when(challenges.findByPlayDateAndGameType(any(), eq(MinigameType.WHO_AM_I))).thenReturn(Optional.of(challenge));
         when(attempts.findByUserIdAndChallengeIdAndAttemptKey(4L, 7L, "official")).thenReturn(Optional.empty(), Optional.of(attempt));
 
-        DailyMinigameService service = new DailyMinigameService(players, challenges, attempts, new ObjectMapper());
+        DailyMinigameService service = new DailyMinigameService(players, challenges, attempts, dailyRuns, new ObjectMapper());
 
         assertEquals(12L, service.start(user, MinigameType.WHO_AM_I, false).id());
         verify(attempts).insertOfficialIfAbsent(eq(4L), eq(7L), any(), any());
@@ -151,7 +153,7 @@ class DailyMinigameServiceTest {
         when(attempts.findByGuestTokenHashAndChallengeIdAndAttemptKey(any(), eq(7L), eq("official"))).thenReturn(Optional.empty());
         when(attempts.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var response = new DailyMinigameService(players, challenges, attempts, new ObjectMapper())
+        var response = new DailyMinigameService(players, challenges, attempts, dailyRuns, new ObjectMapper())
                 .start(null, "guest-token", MinigameType.WHO_AM_I, false);
 
         assertEquals(MinigameAttemptMode.OFFICIAL, response.mode());
@@ -178,7 +180,7 @@ class DailyMinigameServiceTest {
         when(attempts.findByGuestTokenHashAndChallengeIdAndAttemptKey(any(), eq(7L), eq("official"))).thenReturn(Optional.of(attempt));
         when(attempts.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var game = new DailyMinigameService(players, challenges, attempts, new ObjectMapper()).daily(null, "guest-token").games().getFirst();
+        var game = new DailyMinigameService(players, challenges, attempts, dailyRuns, new ObjectMapper()).daily(null, "guest-token").games().getFirst();
 
         assertEquals(MinigameAttemptStatus.LOST, game.attempt().status());
         verify(attempts).saveAndFlush(attempt);

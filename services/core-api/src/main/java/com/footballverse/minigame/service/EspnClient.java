@@ -33,7 +33,12 @@ class EspnClient {
             long waitMillis = Duration.between(Instant.now(), nextRequestAt).toMillis();
             if (waitMillis > 0) Thread.sleep(waitMillis);
             nextRequestAt = Instant.now().plus(MIN_REQUEST_INTERVAL);
-            HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + path)).timeout(Duration.ofSeconds(12)).GET().build();
+            // ESPN's edge rejects default Java/wget user agents with 403; okhttp is accepted.
+            HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + path))
+                    .timeout(Duration.ofSeconds(12))
+                    .header("User-Agent", "okhttp/4.12.0")
+                    .GET()
+                    .build();
             HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() != 200) {
                 log.warn("ESPN request failed with status {}", response.statusCode());
