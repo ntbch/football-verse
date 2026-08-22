@@ -36,3 +36,4 @@ scratch/
 .m2-local/
 .py-tools/
 .pytest_cache/
+.audit-venv/
