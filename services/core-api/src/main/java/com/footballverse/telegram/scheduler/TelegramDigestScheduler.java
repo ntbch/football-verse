@@ -22,18 +22,20 @@ public class TelegramDigestScheduler {
     private final TelegramNotificationService telegramNotificationService;
 
     /**
-     * Morning Digest: Triggered every day at 08:00 AM (server time).
+     * Morning Digest: Triggered every day at 08:00 AM Asia/Ho_Chi_Minh,
+     * independent of the container/server timezone.
      */
-    @Scheduled(cron = "0 0 8 * * *")
+    @Scheduled(cron = "0 0 8 * * *", zone = "Asia/Ho_Chi_Minh")
     public void publishMorningDigest() {
         log.info("[TelegramScheduler] Executing Morning Digest...");
         publishDigestForPeriod("Sáng", 12);
     }
 
     /**
-     * Evening Digest: Triggered every day at 20:00 PM (server time).
+     * Evening Digest: Triggered every day at 20:00 Asia/Ho_Chi_Minh,
+     * independent of the container/server timezone.
      */
-    @Scheduled(cron = "0 0 20 * * *")
+    @Scheduled(cron = "0 0 20 * * *", zone = "Asia/Ho_Chi_Minh")
     public void publishEveningDigest() {
         log.info("[TelegramScheduler] Executing Evening Digest...");
         publishDigestForPeriod("Tối", 12);

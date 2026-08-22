@@ -103,7 +103,7 @@ public class AuthEmailFlowService {
         refreshTokens.revokeActiveByUserId(user.getId(), Instant.now());
     }
 
-    @Scheduled(cron = "0 30 3 * * *")
+    @Scheduled(cron = "0 30 3 * * *", zone = "Asia/Ho_Chi_Minh")
     @Transactional
     public void removeExpiredUnverifiedAccounts() {
         Instant cutoff = Instant.now().minus(7, ChronoUnit.DAYS);

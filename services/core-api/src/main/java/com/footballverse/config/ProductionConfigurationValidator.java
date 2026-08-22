@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProductionConfigurationValidator {
     public ProductionConfigurationValidator(String environment, boolean seedEnabled, String adminPassword, String moderatorPassword) {
-        validate(environment, seedEnabled, adminPassword, moderatorPassword, "", "", "", "", false, "", false);
+        validate(environment, seedEnabled, adminPassword, moderatorPassword, "", "", "", "", "", false, "", false);
     }
 
     @Autowired
@@ -20,6 +20,7 @@ public class ProductionConfigurationValidator {
             @Value("${app.cors-origin:http://localhost:3000}") String corsOrigin,
             @Value("${app.internal.token:}") String internalToken,
             @Value("${app.jwt.secret:}") String jwtSecret,
+            @Value("${app.auth.rate-limit-secret:}") String rateLimitSecret,
             @Value("${app.auth.refresh-cookie.secure:true}") boolean cookieSecure,
             @Value("${spring.datasource.url:}") String datasourceUrl,
             @Value("${app.billing.enabled:false}") boolean billingEnabled,
@@ -34,7 +35,7 @@ public class ProductionConfigurationValidator {
              @Value("${app.billing.premium-12-month-price-vnd:0}") long premium12MonthPrice,
              @Value("${app.billing.sepay.checkout-url:https://pay-sandbox.sepay.vn/v1/checkout/init}") String sepayCheckoutUrl
     ) {
-        validate(environment, seedEnabled, adminPassword, moderatorPassword, publicUrl, corsOrigin, internalToken, jwtSecret, cookieSecure, datasourceUrl, true);
+        validate(environment, seedEnabled, adminPassword, moderatorPassword, publicUrl, corsOrigin, internalToken, jwtSecret, rateLimitSecret, cookieSecure, datasourceUrl, true);
         validateBilling(environment, billingEnabled, billingSalesEnabled, sepayEnvironment, sepayMerchantId,
                 sepaySecretKey, sepayIpnSecret, premium1MonthPrice, premium3MonthPrice,
                 premium6MonthPrice, premium12MonthPrice, sepayCheckoutUrl);
@@ -49,6 +50,7 @@ public class ProductionConfigurationValidator {
             String corsOrigin,
             String internalToken,
             String jwtSecret,
+            String rateLimitSecret,
             boolean cookieSecure,
             String datasourceUrl,
             boolean enforceRuntimeSafety
@@ -64,6 +66,9 @@ public class ProductionConfigurationValidator {
         if (!corsOrigin.startsWith("https://")) throw new IllegalArgumentException("CORS_ORIGIN must use HTTPS in production");
         if (internalToken.length() < 24 || internalToken.contains("change-me")) throw new IllegalArgumentException("INTERNAL_TOKEN is unsafe in production");
         if (jwtSecret.length() < 32 || jwtSecret.contains("dev-secret")) throw new IllegalArgumentException("JWT_SECRET is unsafe in production");
+        if (rateLimitSecret.isBlank() || rateLimitSecret.equals(jwtSecret)) {
+            throw new IllegalArgumentException("APP_AUTH_RATE_LIMIT_SECRET must be set and must differ from JWT_SECRET in production");
+        }
         if (!cookieSecure) throw new IllegalArgumentException("Refresh cookies must be Secure in production");
         if (datasourceUrl.matches("(?i).*://(localhost|127\\.0\\.0\\.1)(:|/|$).*")) throw new IllegalArgumentException("Production database cannot use localhost");
     }
