@@ -27,6 +27,8 @@ RUN --mount=type=cache,id=football-verse-npm,target=/root/.npm \
 
 COPY --from=builder /app/dist ./dist
 
+USER node
+
 EXPOSE 8000
 
 CMD ["node", "dist/server.js"]

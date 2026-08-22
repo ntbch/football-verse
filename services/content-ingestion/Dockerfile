@@ -19,4 +19,6 @@ RUN --mount=type=cache,id=football-verse-npm,target=/root/.npm \
 
 COPY --from=builder /app/dist ./dist
 
+USER node
+
 CMD ["node", "dist/worker.js"]
