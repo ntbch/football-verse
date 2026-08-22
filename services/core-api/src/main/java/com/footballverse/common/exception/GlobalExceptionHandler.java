@@ -96,6 +96,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ErrorResponse.of(exception.getMessage(), List.of()));
     }
 
+    /**
+     * Method-security denials (@PreAuthorize on forum/moderator/admin
+     * controllers) surface here as AuthorizationDeniedException. They previously
+     * fell through to the 500 catch-all; 403 is the contract-correct response
+     * and matches what the filter chain produces for filter-level denials.
+     */
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(org.springframework.security.access.AccessDeniedException exception) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ErrorResponse.of("Access denied", List.of()));
+    }
+
     // ---- CONFLICT family: 409 ----
 
     @ExceptionHandler(ConflictException.class)
