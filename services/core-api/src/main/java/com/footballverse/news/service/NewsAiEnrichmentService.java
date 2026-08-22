@@ -82,7 +82,7 @@ public class NewsAiEnrichmentService {
             NewsArticle story = item.getStory();
             if (work.summaryBasisHash().equals(story.getSummaryBasisHash())) {
                 story.setSummary(result.summary());
-                keyPoints.deleteByStoryId(story.getId());
+                keyPoints.deleteAllForStory(story.getId());
                 int ordinal = 1;
                 for (String text : result.keyPoints()) {
                     StoryKeyPoint point = new StoryKeyPoint();
