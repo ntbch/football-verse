@@ -30,7 +30,11 @@ public class FixtureService {
 
     private final FixtureRepository fixtureRepo;
     private final ObjectMapper objectMapper;
+    // HTTP_1_1 explicitly: the JDK default (HTTP/2) sends an h2c Upgrade on
+    // every new cleartext connection, which uvicorn rejects per request with
+    // "Unsupported upgrade request." log noise.
     private final HttpClient httpClient = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1)
             .connectTimeout(Duration.ofSeconds(5))
             .build();
 

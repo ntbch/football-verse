@@ -21,7 +21,9 @@ import java.time.Duration;
 public class PredictionServiceClient {
 
     private final ObjectMapper objectMapper;
+    // HTTP_1_1 explicitly: see FixtureService — avoids h2c Upgrade noise.
     private final HttpClient httpClient = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1)
             .connectTimeout(Duration.ofSeconds(5))
             .build();
 
