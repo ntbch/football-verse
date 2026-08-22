@@ -322,7 +322,7 @@ public class NewsArticleService {
         }
         return new NewsArticleResponse(
                 article.getId(), article.getTitle(), article.getSlug(),
-                article.getSummary(), includeContent ? article.getContent() : "", article.getStatus(),
+                SummarySanitizer.clean(article.getSummary()), includeContent ? article.getContent() : "", article.getStatus(),
                 article.getCategory() == null ? null : article.getCategory().getName(),
                 article.getTags().stream().map(NewsTag::getName).collect(Collectors.toSet()),
                 interactions == null ? likes.countByArticleId(article.getId()) : interactions.likeCounts().getOrDefault(article.getId(), 0L),

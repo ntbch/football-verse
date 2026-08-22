@@ -85,11 +85,46 @@ public class NewsSourceService {
                 source.getFeedUrl(),
                 source.isActive(),
                 source.isAutoPublish(),
-                source.getSourceType(),
+                resolveEffectiveType(source),
                 source.getCssSelector(),
                 source.getProvider(),
                 source.getPublisher() == null ? source.getName() : source.getPublisher().getName(),
                 source.getFetchIntervalSeconds()
         );
+    }
+
+    /**
+     * Resolves the effective source type by applying classification rules.
+     * Ports the frontend's getEffectiveProvider logic: checks provider, sourceType,
+     * feedUrl, and name fields in priority order to determine the canonical category.
+     */
+    private com.footballverse.news.model.NewsSourceType resolveEffectiveType(NewsSource source) {
+        String provider = source.getProvider() == null ? "" : source.getProvider().toLowerCase(java.util.Locale.ROOT);
+        String url = source.getFeedUrl() == null ? "" : source.getFeedUrl().toLowerCase(java.util.Locale.ROOT);
+        String name = source.getName() == null ? "" : source.getName().toLowerCase(java.util.Locale.ROOT);
+        com.footballverse.news.model.NewsSourceType stored = source.getSourceType();
+
+        // Reddit detection
+        if (provider.equals("reddit") || stored == com.footballverse.news.model.NewsSourceType.REDDIT
+                || url.contains("reddit.com") || name.contains("(reddit)") || url.contains("/r/")) {
+            return com.footballverse.news.model.NewsSourceType.REDDIT;
+        }
+        // Twitter/X detection
+        if (provider.equals("x") || provider.equals("twitter") || stored == com.footballverse.news.model.NewsSourceType.TWITTER
+                || url.contains("x.com") || url.contains("twitter.com") || name.contains("(x)")) {
+            return com.footballverse.news.model.NewsSourceType.TWITTER;
+        }
+        // YouTube detection
+        if (provider.equals("youtube") || stored == com.footballverse.news.model.NewsSourceType.YOUTUBE
+                || url.contains("youtube.com") || name.contains("youtube")) {
+            return com.footballverse.news.model.NewsSourceType.YOUTUBE;
+        }
+        // GNews detection
+        if (provider.equals("gnews") || stored == com.footballverse.news.model.NewsSourceType.GNEWS
+                || url.contains("gnews")) {
+            return com.footballverse.news.model.NewsSourceType.GNEWS;
+        }
+        // Default to RSS
+        return com.footballverse.news.model.NewsSourceType.RSS;
     }
 }
