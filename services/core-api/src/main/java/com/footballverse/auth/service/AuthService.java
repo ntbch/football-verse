@@ -51,6 +51,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final CurrentUser currentUser;
     private final AuthEmailFlowService emailFlows;
+    private final AuthLoginThrottleService loginThrottle;
 
     @Value("${app.jwt.refresh-token-days}")
     private long refreshTokenDays;
@@ -83,14 +84,17 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResponse login(LoginRequest request) {
+    public AuthResponse login(LoginRequest request, HttpServletRequest servletRequest) {
         String input = request.email().trim();
-        UserAccount user = users.findByEmail(input.toLowerCase())
+        String accountKey = input.toLowerCase(Locale.ROOT);
+        loginThrottle.checkLockout(accountKey, servletRequest);
+        UserAccount user = users.findByEmail(accountKey)
                 .orElseGet(() -> users.findByUsername(input).orElse(null));
-        if (user == null) {
-            throw new BadRequestException("Invalid credentials");
-        }
-        if (user.getPasswordHash() == null || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+        boolean passwordMatches = user != null
+                && user.getPasswordHash() != null
+                && passwordEncoder.matches(request.password(), user.getPasswordHash());
+        if (!passwordMatches) {
+            loginThrottle.recordFailure(accountKey, servletRequest);
             throw new BadRequestException("Invalid credentials");
         }
         if (!user.isEmailVerified()) {

@@ -15,5 +15,13 @@ public interface AuthRateLimitWindowRepository extends JpaRepository<AuthRateLim
     @Query("select window from AuthRateLimitWindow window where window.action = :action and window.identityHash = :identityHash")
     Optional<AuthRateLimitWindow> findForUpdate(@Param("action") String action, @Param("identityHash") String identityHash);
 
+    /**
+     * Current failure count for an unexpired lockout window. Returns a scalar
+     * (not the entity) so callers never cache a stale copy in their own
+     * persistence context across nested transactions.
+     */
+    @Query("select window.attempts from AuthRateLimitWindow window where window.action = :action and window.identityHash = :identityHash and window.windowStartedAt > :windowCutoff")
+    Optional<Integer> findActiveAttempts(@Param("action") String action, @Param("identityHash") String identityHash, @Param("windowCutoff") Instant windowCutoff);
+
     void deleteByWindowStartedAtBefore(Instant before);
 }

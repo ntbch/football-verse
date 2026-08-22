@@ -45,8 +45,12 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ApiResponse<AuthResponse> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
-        return withRefreshCookie(authService.login(request), response);
+    public ApiResponse<AuthResponse> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest servletRequest,
+            HttpServletResponse response
+    ) {
+        return withRefreshCookie(authService.login(request, servletRequest), response);
     }
 
     @PostMapping("/google")

@@ -12,12 +12,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.UUID;
 
 @SpringBootTest
 @TestPropertySource(properties = "app.crawl.startup-enabled=false")
@@ -43,7 +47,7 @@ public class LoginTest {
         user.setEmailVerified(true);
         users.save(user);
         try {
-            AuthResponse response = authService.login(new LoginRequest(email, password));
+            AuthResponse response = authService.login(new LoginRequest(email, password), new MockHttpServletRequest());
             var stored = refreshTokens.findAll().stream()
                     .filter(token -> token.getUser().getId().equals(user.getId()))
                     .findFirst()
@@ -67,6 +71,26 @@ public class LoginTest {
         users.save(user);
 
         assertThrows(BadRequestException.class,
-                () -> authService.login(new LoginRequest(user.getEmail(), "TestPassword123!")));
+                () -> authService.login(new LoginRequest(user.getEmail(), "TestPassword123!"), new MockHttpServletRequest()));
+    }
+
+    @Test
+    @Transactional
+    public void repeatedFailuresLockAccountTemporarily() {
+        String email = "lockout-" + UUID.randomUUID() + "@example.test";
+        UserAccount user = new UserAccount(email, "lockout_test", passwordEncoder.encode("TestPassword123!"));
+        user.setEmailVerified(true);
+        users.save(user);
+
+        LoginRequest wrongPassword = new LoginRequest(email, "WrongPassword123!");
+        for (int attempt = 0; attempt < 5; attempt++) {
+            assertThrows(BadRequestException.class,
+                    () -> authService.login(wrongPassword, new MockHttpServletRequest()));
+        }
+
+        // Correct credentials must now be rejected by the lockout, not by the password check.
+        BadRequestException blocked = assertThrows(BadRequestException.class,
+                () -> authService.login(new LoginRequest(email, "TestPassword123!"), new MockHttpServletRequest()));
+        assertTrue(blocked.getMessage().contains("Too many failed sign-in attempts"));
     }
 }
