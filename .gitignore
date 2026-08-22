@@ -1,6 +1,5 @@
 # Java
 services/core-api/target/
-services/career/target/
 *.class
 
 # Node / Next
@@ -26,3 +25,14 @@ __pycache__/
 
 # Local scratch
 scratch/
+
+# Local-only tooling and audit artifacts (not part of the product)
+/run_agent.py
+/skills/
+/.superpowers/
+/.agent-teams/
+/temp_global_skills/
+/.fv-review-diff.patch
+.m2-local/
+.py-tools/
+.pytest_cache/
