@@ -6,9 +6,12 @@ sign-off window. Each entry names its audit finding id.
 
 ## Scheduled
 
-### Spring Boot 3.3.7 -> 3.5.x upgrade (audit finding #3, HIGH)
+### Spring Boot -> 3.5.x upgrade (audit finding #3, HIGH)
 
-* Status: 3.3.x is past OSS support end; no more security patches.
+* Status: PARTIALLY RESOLVED - pom bumped 3.3.7 -> **3.3.13**, the newest
+  and final OSS patch of the 3.3.x line, picking up all remaining OSS
+  fixes; full `mvn test` suite green on the bump. The line itself is past
+  OSS support end, so the minor-line jump remains scheduled:
 * Why not now: a minor-line jump touches framework behavior across 120+
   tests, security filters, and Flyway; it must not land immediately before
   a production sign-off.
