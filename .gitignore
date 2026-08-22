@@ -37,3 +37,4 @@ scratch/
 .py-tools/
 .pytest_cache/
 .audit-venv/
+.pip-cache/
