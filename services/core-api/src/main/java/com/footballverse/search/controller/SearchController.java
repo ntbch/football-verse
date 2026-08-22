@@ -25,8 +25,9 @@ public class SearchController {
     public ApiResponse<SearchResponse> search(
             @RequestParam @NotBlank String q,
             @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(50) int size
+            @RequestParam(defaultValue = "20") @Min(1) @Max(50) int size,
+            @RequestParam(defaultValue = "all") String period
     ) {
-        return ApiResponse.ok(searchService.search(q, page, size));
+        return ApiResponse.ok(searchService.search(q, page, size, period));
     }
 }

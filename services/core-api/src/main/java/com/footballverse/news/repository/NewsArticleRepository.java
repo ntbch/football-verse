@@ -46,6 +46,14 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
            "(LOWER(a.title) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(a.content) LIKE LOWER(CONCAT('%', :query, '%')))")
     Page<NewsArticle> searchPublishedArticles(String query, Pageable pageable);
 
+    @Query("SELECT DISTINCT a FROM NewsArticle a WHERE a.status = com.footballverse.news.model.ArticleStatus.PUBLISHED AND " +
+           "a.publishedAt >= :since AND " +
+           "(LOWER(a.title) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(a.content) LIKE LOWER(CONCAT('%', :query, '%')))")
+    Page<NewsArticle> searchPublishedArticlesSince(
+            @org.springframework.data.repository.query.Param("query") String query,
+            @org.springframework.data.repository.query.Param("since") Instant since,
+            Pageable pageable);
+
     @Query("SELECT a FROM NewsArticle a WHERE " +
            "a.status <> 'DELETED' " +
            "AND (:hasStatus = false OR a.status = :status) " +

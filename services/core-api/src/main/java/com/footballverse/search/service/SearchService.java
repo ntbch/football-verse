@@ -21,6 +21,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashMap;
@@ -41,10 +43,13 @@ public class SearchService {
     private final NewsBookmarkRepository bookmarks;
     private final CurrentUser currentUser;
 
-    public SearchResponse search(String query, int page, int size) {
+    public SearchResponse search(String query, int page, int size, String period) {
         Pageable pageable = PageRequest.of(page, size);
 
-        Page<NewsArticle> newsArticles = articles.searchPublishedArticles(query, pageable);
+        Instant since = resolveSince(period);
+        Page<NewsArticle> newsArticles = since != null
+                ? articles.searchPublishedArticlesSince(query, since, pageable)
+                : articles.searchPublishedArticles(query, pageable);
         NewsInteractions newsInteractions = newsInteractions(newsArticles.getContent());
         Page<SearchArticleSummaryResponse> newsResult = newsArticles.map(article -> toArticleResponse(article, newsInteractions));
 
@@ -140,4 +145,15 @@ public class SearchService {
     ) {}
 
     private record ThreadInteractions(Map<Long, Long> postCounts, Map<Long, Long> likeCounts) {}
+
+    private static Instant resolveSince(String period) {
+        if (period == null || "all".equalsIgnoreCase(period)) return null;
+        Instant now = Instant.now();
+        return switch (period.toLowerCase()) {
+            case "24h" -> now.minus(24, ChronoUnit.HOURS);
+            case "week" -> now.minus(7, ChronoUnit.DAYS);
+            case "month" -> now.minus(30, ChronoUnit.DAYS);
+            default -> null;
+        };
+    }
 }
