@@ -1,6 +1,10 @@
 spring:
   application:
     name: football-verse-api
+  servlet:
+    multipart:
+      max-file-size: ${APP_UPLOAD_MAX_FILE_SIZE:8MB}
+      max-request-size: ${APP_UPLOAD_MAX_REQUEST_SIZE:10MB}
   task:
     scheduling:
       pool:

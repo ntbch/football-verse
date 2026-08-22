@@ -17,7 +17,6 @@ import com.footballverse.user.repository.UserAccountRepository;
 import com.footballverse.user.model.UserProfile;
 import com.footballverse.user.repository.UserProfileRepository;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,11 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import jakarta.servlet.http.HttpServletRequest;
 
-import java.net.URI;
-import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.nio.charset.StandardCharsets;
@@ -52,12 +46,11 @@ public class AuthService {
     private final CurrentUser currentUser;
     private final AuthEmailFlowService emailFlows;
     private final AuthLoginThrottleService loginThrottle;
+    private final GoogleTokenVerifier googleTokenVerifier;
+    private final org.springframework.transaction.PlatformTransactionManager transactionManager;
 
     @Value("${app.jwt.refresh-token-days}")
     private long refreshTokenDays;
-
-    @Value("${app.google.client-id:}")
-    private String googleClientId;
 
     @Transactional
     public VerificationPendingResponse register(RegisterRequest request, HttpServletRequest servletRequest) {
@@ -103,10 +96,16 @@ public class AuthService {
         return tokens(user);
     }
 
-    @Transactional
     public AuthResponse googleLogin(GoogleAuthRequest request) {
-        // Verify the Google ID token
-        JsonNode payload = verifyGoogleToken(request.idToken());
+        // Network verification happens outside any transaction so a slow or
+        // hung upstream call can never hold a servlet thread with a database
+        // connection open.
+        JsonNode payload = googleTokenVerifier.verify(request.idToken());
+        var tx = new org.springframework.transaction.support.TransactionTemplate(transactionManager);
+        return tx.execute(status -> completeGoogleLogin(payload));
+    }
+
+    private AuthResponse completeGoogleLogin(JsonNode payload) {
         String googleId = payload.get("sub").asText();
         String email = payload.get("email").asText().toLowerCase();
         String name = payload.has("name") ? payload.get("name").asText() : email.split("@")[0];
@@ -134,44 +133,6 @@ public class AuthService {
         return tokens(user);
     }
 
-    private JsonNode verifyGoogleToken(String idToken) {
-        try {
-            if (googleClientId.isBlank()) {
-                throw new BadRequestException("Google Sign-In is not configured");
-            }
-            HttpClient client = HttpClient.newHttpClient();
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create("https://oauth2.googleapis.com/tokeninfo?id_token="
-                            + URLEncoder.encode(idToken, StandardCharsets.UTF_8)))
-                    .GET()
-                    .build();
-            HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
-            if (resp.statusCode() != 200) {
-                throw new BadRequestException("Invalid Google token");
-            }
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode node = mapper.readTree(resp.body());
-
-            String issuer = node.path("iss").asText();
-            if (!"accounts.google.com".equals(issuer) && !"https://accounts.google.com".equals(issuer)) {
-                throw new BadRequestException("Invalid Google token");
-            }
-            if (!googleClientId.equals(node.path("aud").asText())
-                    || !"true".equalsIgnoreCase(node.path("email_verified").asText())
-                    || node.path("email").asText().isBlank()
-                    || node.path("sub").asText().isBlank()
-                    || node.path("exp").asLong(0) <= Instant.now().getEpochSecond()) {
-                throw new BadRequestException("Invalid Google token");
-            }
-
-            return node;
-        } catch (BadRequestException e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("Failed to verify Google token", e);
-            throw new BadRequestException("Failed to verify Google token");
-        }
-    }
 
     private String generateUniqueUsername(String name) {
         String base = name.toLowerCase().replaceAll("[^a-z0-9]", "");
