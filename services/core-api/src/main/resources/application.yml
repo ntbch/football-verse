@@ -142,6 +142,16 @@ app:
         account-name: ${SEPAY_QR_ACCOUNT_NAME:}
         template: ${SEPAY_QR_TEMPLATE:compact}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
 server:
   compression:
     enabled: true

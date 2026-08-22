@@ -36,7 +36,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**", "/auth/**").permitAll()
-                        .requestMatchers("/api/v1/internal/**", "/internal/**").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/health/liveness", "/actuator/health/readiness").permitAll()
+                        .requestMatchers("/internal/**").permitAll()
                         .requestMatchers("/api/v1/billing/webhooks/sepay", "/billing/webhooks/sepay",
                                 "/api/v1/billing/webhooks/sepay-bankhub", "/billing/webhooks/sepay-bankhub").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/billing/plans", "/billing/plans").permitAll()
