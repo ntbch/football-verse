@@ -16,6 +16,9 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -37,6 +40,9 @@ public class LoginTest {
 
     @Autowired
     private RefreshTokenRepository refreshTokens;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Test
     @Transactional
@@ -92,5 +98,29 @@ public class LoginTest {
         BadRequestException blocked = assertThrows(BadRequestException.class,
                 () -> authService.login(new LoginRequest(email, "TestPassword123!"), new MockHttpServletRequest()));
         assertTrue(blocked.getMessage().contains("Too many failed sign-in attempts"));
+    }
+
+    @Test
+    @Transactional
+    public void replayedRefreshTokenRevokesItsSessionFamily() {
+        String email = "family-" + UUID.randomUUID() + "@example.test";
+        UserAccount user = new UserAccount(email, "family_test", passwordEncoder.encode("TestPassword123!"));
+        user.setEmailVerified(true);
+        users.save(user);
+
+        AuthResponse first = authService.login(new LoginRequest(email, "TestPassword123!"), new MockHttpServletRequest());
+        AuthResponse rotated = authService.refresh(first.refreshToken());
+        assertNotEquals(first.refreshToken(), rotated.refreshToken());
+
+        // Replaying the already-rotated-away token is a theft signal.
+        assertThrows(BadRequestException.class, () -> authService.refresh(first.refreshToken()));
+
+        // Bulk family revocation bypasses the persistence context; sync like a
+        // fresh request would and confirm the newest token is dead too.
+        entityManager.flush();
+        entityManager.clear();
+        BadRequestException familyRevoked = assertThrows(BadRequestException.class,
+                () -> authService.refresh(rotated.refreshToken()));
+        assertTrue(familyRevoked.getMessage().contains("Invalid refresh token"));
     }
 }

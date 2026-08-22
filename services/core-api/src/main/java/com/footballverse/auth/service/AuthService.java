@@ -151,10 +151,19 @@ public class AuthService {
         RefreshToken refreshToken = refreshTokens.findByTokenHash(tokenHash(token))
                 .orElseThrow(() -> new BadRequestException("Invalid refresh token"));
         if (!refreshToken.isActive()) {
+            // Reuse of an already-revoked token is a theft signal: revoke every
+            // still-active session in the same family.
+            java.util.UUID familyId = refreshToken.getFamilyId();
+            if (familyId != null) {
+                int revoked = refreshTokens.revokeActiveByFamilyId(familyId, Instant.now());
+                if (revoked > 0) {
+                    log.warn("Refresh token reuse detected; revoked {} active session(s) of family {}", revoked, familyId);
+                }
+            }
             throw new BadRequestException("Invalid refresh token");
         }
         refreshToken.setRevokedAt(Instant.now());
-        return tokens(refreshToken.getUser());
+        return tokens(refreshToken.getUser(), refreshToken.getFamilyId());
     }
 
     @Transactional
@@ -174,14 +183,20 @@ public class AuthService {
     }
 
     private AuthResponse tokens(UserAccount user) {
+        return tokens(user, null);
+    }
+
+    private AuthResponse tokens(UserAccount user, UUID existingFamilyId) {
         if (user.getStatus() != UserStatus.ACTIVE) {
             throw new BadRequestException("Invalid credentials");
         }
         String rawRefreshToken = UUID.randomUUID().toString();
+        UUID familyId = existingFamilyId != null ? existingFamilyId : UUID.randomUUID();
         RefreshToken refreshToken = refreshTokens.save(new RefreshToken(
                 user,
                 tokenHash(rawRefreshToken),
-                Instant.now().plus(refreshTokenDays, ChronoUnit.DAYS)
+                Instant.now().plus(refreshTokenDays, ChronoUnit.DAYS),
+                familyId
         ));
         return new AuthResponse(
                 jwtService.createAccessToken(user),

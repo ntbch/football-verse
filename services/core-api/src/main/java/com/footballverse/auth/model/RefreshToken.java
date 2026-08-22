@@ -44,11 +44,20 @@ public class RefreshToken {
     @Column(name = "revoked_at")
     private Instant revokedAt;
 
+    /** Session family: rotations inherit it; reuse of a revoked member revokes all. */
+    @Column(name = "family_id")
+    private java.util.UUID familyId;
+
     public RefreshToken(UserAccount user, String tokenHash, Instant expiresAt) {
+        this(user, tokenHash, expiresAt, null);
+    }
+
+    public RefreshToken(UserAccount user, String tokenHash, Instant expiresAt, java.util.UUID familyId) {
         this.user = user;
         this.tokenHash = tokenHash;
         this.legacyToken = tokenHash;
         this.expiresAt = expiresAt;
+        this.familyId = familyId;
     }
 
     public boolean isActive() {
