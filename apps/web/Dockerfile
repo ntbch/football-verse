@@ -17,6 +17,9 @@ RUN npm run build
 FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+# next standalone binds to HOSTNAME (defaults to the container id); bind all
+# interfaces so loopback health probes and published ports reach the server.
+ENV HOSTNAME=0.0.0.0
 
 # Copy standalone build and static files
 COPY --from=build /app/.next/standalone ./
