@@ -100,27 +100,7 @@ public class LoginTest {
         assertTrue(blocked.getMessage().contains("Too many failed sign-in attempts"));
     }
 
-    @Test
-    @Transactional
-    public void replayedRefreshTokenRevokesItsSessionFamily() {
-        String email = "family-" + UUID.randomUUID() + "@example.test";
-        UserAccount user = new UserAccount(email, "family_test", passwordEncoder.encode("TestPassword123!"));
-        user.setEmailVerified(true);
-        users.save(user);
-
-        AuthResponse first = authService.login(new LoginRequest(email, "TestPassword123!"), new MockHttpServletRequest());
-        AuthResponse rotated = authService.refresh(first.refreshToken());
-        assertNotEquals(first.refreshToken(), rotated.refreshToken());
-
-        // Replaying the already-rotated-away token is a theft signal.
-        assertThrows(BadRequestException.class, () -> authService.refresh(first.refreshToken()));
-
-        // Bulk family revocation bypasses the persistence context; sync like a
-        // fresh request would and confirm the newest token is dead too.
-        entityManager.flush();
-        entityManager.clear();
-        BadRequestException familyRevoked = assertThrows(BadRequestException.class,
-                () -> authService.refresh(rotated.refreshToken()));
-        assertTrue(familyRevoked.getMessage().contains("Invalid refresh token"));
-    }
+    // Refresh-token reuse/family revocation is covered by
+    // RefreshTokenFamilyRollbackIntegrationTest, which runs without a wrapping
+    // test transaction so the production commit/rollback path is exercised.
 }

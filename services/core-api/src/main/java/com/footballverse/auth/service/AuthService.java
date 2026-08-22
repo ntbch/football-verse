@@ -46,6 +46,7 @@ public class AuthService {
     private final CurrentUser currentUser;
     private final AuthEmailFlowService emailFlows;
     private final AuthLoginThrottleService loginThrottle;
+    private final RefreshTokenReuseService refreshTokenReuseService;
     private final GoogleTokenVerifier googleTokenVerifier;
     private final org.springframework.transaction.PlatformTransactionManager transactionManager;
 
@@ -152,13 +153,12 @@ public class AuthService {
                 .orElseThrow(() -> new BadRequestException("Invalid refresh token"));
         if (!refreshToken.isActive()) {
             // Reuse of an already-revoked token is a theft signal: revoke every
-            // still-active session in the same family.
+            // still-active session in the same family. The revocation commits
+            // in its own transaction FIRST, because rejecting the request below
+            // rolls this method's transaction back.
             java.util.UUID familyId = refreshToken.getFamilyId();
             if (familyId != null) {
-                int revoked = refreshTokens.revokeActiveByFamilyId(familyId, Instant.now());
-                if (revoked > 0) {
-                    log.warn("Refresh token reuse detected; revoked {} active session(s) of family {}", revoked, familyId);
-                }
+                refreshTokenReuseService.revokeActiveFamilyTokens(familyId);
             }
             throw new BadRequestException("Invalid refresh token");
         }
